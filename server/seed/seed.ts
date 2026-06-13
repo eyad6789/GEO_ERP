@@ -485,10 +485,12 @@ function seed() {
   ]
   // المصارف (183) becomes a header; each bank is a posting sub-account under it.
   db.prepare(`UPDATE accounts SET is_posting = 0 WHERE code = '183'`).run()
+  const bankCodes: string[] = []
   BANKS.forEach(([ar, en], i) => {
     const iqd = ri(50, 900) * 1000000
     const usd = ri(10, 300) * 1000
     const acctCode = `183${pad(i + 1, 2)}`
+    bankCodes.push(acctCode)
     ins('accounts', {
       code: acctCode, name_ar: ar, name_en: en, type: 'ASSET', normal_balance: 'DEBIT',
       parent_code: '183', level: 4, is_posting: 1, sort_order: 1000 + i, archived: 0,
@@ -501,6 +503,177 @@ function seed() {
     })
   })
 
+
+  // ---- Journal entries (balanced double-entry — drives EVERY accounting report) ----
+  // Each entry has Σdebit === Σcredit, so the books always balance. Entries spread
+  // across the last ~8 months so the dashboard month chart and reports have data.
+  console.log('  · journal entries (balanced double-entry)')
+  const projRows = db.prepare('SELECT id, company_id FROM projects').all() as Array<{ id: string; company_id: string }>
+  const M = 1_000_000
+  let jeSeq = 0
+  let jlSeq = 0
+  type JLine = { acc: string; debit?: number; credit?: number; project_id?: string | null; desc?: string }
+  function jentry(day: number, desc: string, companyId: string, lines: JLine[], opts: { project_id?: string | null; currency?: string; rate?: number } = {}) {
+    const id = `je-${pad(++jeSeq, 4)}`
+    const cur = opts.currency ?? 'IQD'
+    const rate = opts.rate ?? 1
+    const round = (n: number) => Math.round(n * 100) / 100
+    const td = round(lines.reduce((s, l) => s + (l.debit ?? 0), 0))
+    const tc = round(lines.reduce((s, l) => s + (l.credit ?? 0), 0))
+    ins('journal_entries', {
+      id, serial_number: `JV-${pad(jeSeq, 5)}`, doc_number: `JV-2026-${pad(jeSeq, 4)}`,
+      company_id: companyId, project_id: opts.project_id ?? null, date: daysAgo(day), description: desc,
+      currency: cur, exchange_rate: rate, status: 'APPROVED', total_debit: td, total_credit: tc, created_at: isoNow(day),
+    })
+    for (const l of lines) {
+      const amt = l.debit ?? l.credit ?? 0
+      ins('journal_lines', {
+        id: `jl-${pad(++jlSeq, 6)}`, entry_id: id, account_code: l.acc,
+        company_id: companyId, project_id: l.project_id ?? opts.project_id ?? null, description: l.desc ?? desc,
+        currency: cur, price: rate, value: round(amt * rate), debit: l.debit ?? 0, credit: l.credit ?? 0,
+      })
+    }
+  }
+  const bankPick = () => pick(bankCodes)
+
+  // Completed-works revenue per project (مدين نقد/مصرف، دائن إيراد ذرعات منجزة).
+  // Sized so the group is comfortably profitable across the period.
+  for (const p of projRows) {
+    const n = ri(8, 12)
+    for (let k = 0; k < n; k++) {
+      const amt = ri(120, 550) * M
+      jentry(ri(10, 230), `إيراد ذرعة منجزة - دفعة ${k + 1}`, p.company_id, [
+        { acc: chance(0.7) ? '181' : bankPick(), debit: amt },
+        { acc: '4121', credit: amt },
+      ], { project_id: p.id })
+    }
+  }
+  // Scrap / incidental revenue.
+  for (let k = 0; k < 6; k++) {
+    const amt = ri(2, 20) * M
+    jentry(ri(10, 220), 'إيراد عرضي', pick(subIds), [
+      { acc: '181', debit: amt },
+      { acc: chance(0.5) ? '417' : '49', credit: amt },
+    ])
+  }
+  // Monthly salaries per company (مدين رواتب + ضمان اجتماعي، دائن مصرف).
+  const salaryMonths = [200, 170, 140, 110, 80, 50, 20]
+  for (const cid of subIds) {
+    const payroll = db.prepare(`SELECT COALESCE(SUM(basic_salary),0) s FROM employees WHERE company_id=? AND status='ACTIVE'`).get(cid) as { s: number }
+    const base = payroll.s || ri(20, 60) * M
+    for (const day of salaryMonths) {
+      const ss = Math.round(base * 0.05)
+      jentry(day, 'رواتب وأجور الموظفين', cid, [
+        { acc: '311', debit: base },
+        { acc: '316', debit: ss },
+        { acc: bankPick(), credit: base + ss },
+      ])
+    }
+  }
+  // Construction material purchases (cash, bank, or on account/accruals).
+  const matAccts = ['3521', '3522', '3523', '3524', '3525', '3526']
+  for (let k = 0; k < 30; k++) {
+    const amt = ri(5, 120) * M
+    const p = chance(0.7) ? pick(projRows) : null
+    const credAcc = chance(0.4) ? '22' : chance(0.5) ? '181' : bankPick()
+    jentry(ri(5, 235), 'شراء مواد إنشائية', p ? p.company_id : pick(subIds), [
+      { acc: pick(matAccts), debit: amt },
+      { acc: credAcc, credit: amt },
+    ], { project_id: p?.id ?? null })
+  }
+  // Fuel & oils.
+  for (let k = 0; k < 12; k++) {
+    const amt = ri(1, 15) * M
+    jentry(ri(5, 235), 'وقود وزيوت للآليات', pick(subIds), [
+      { acc: pick(['3511', '3512', '3513']), debit: amt },
+      { acc: '181', credit: amt },
+    ])
+  }
+  // Service expenses (maintenance, rent, transport, communications, …).
+  const svcAccts = ['3201', '3202', '3203', '3204', '3206', '3207', '3209', '3210', '3211', '3212', '3216', '3219']
+  for (let k = 0; k < 18; k++) {
+    const amt = ri(2, 40) * M
+    jentry(ri(5, 235), 'مصاريف خدمية', pick(subIds), [
+      { acc: pick(svcAccts), debit: amt },
+      { acc: chance(0.5) ? bankPick() : '181', credit: amt },
+    ])
+  }
+  // Sub-contracts (مقاولات ثانوية) — tied to projects.
+  for (let k = 0; k < 10; k++) {
+    const amt = ri(20, 200) * M
+    const p = pick(projRows)
+    jentry(ri(5, 235), 'مستخلص مقاول ثانوي', p.company_id, [
+      { acc: '371', debit: amt },
+      { acc: chance(0.5) ? '22' : bankPick(), credit: amt },
+    ], { project_id: p.id })
+  }
+  // Employee advances (سلف المنتسبين).
+  for (let k = 0; k < 8; k++) {
+    const amt = ri(1, 8) * M
+    jentry(ri(20, 230), 'صرف سلفة منتسب', pick(subIds), [
+      { acc: '16114', debit: amt },
+      { acc: '181', credit: amt },
+    ])
+  }
+  // Operational advances (السلف التشغيلية) — drives the advance-split report.
+  for (let k = 0; k < 10; k++) {
+    const amt = ri(3, 30) * M
+    jentry(ri(20, 230), 'صرف سلفة تشغيلية', pick(subIds), [
+      { acc: '16112', debit: amt },
+      { acc: chance(0.5) ? bankPick() : '181', credit: amt },
+    ])
+  }
+  // Operational-advance settlements (تسوية السلف — مدين مصروف، دائن السلفة).
+  for (let k = 0; k < 6; k++) {
+    const amt = ri(2, 15) * M
+    jentry(ri(5, 60), 'تسوية سلفة تشغيلية', pick(subIds), [
+      { acc: pick(['3215', '3219', '3206']), debit: amt },
+      { acc: '16112', credit: amt },
+    ])
+  }
+  // Taxes, fees & audit.
+  for (let k = 0; k < 5; k++) {
+    const amt = ri(5, 50) * M
+    jentry(ri(10, 200), 'ضرائب ورسوم / أتعاب تدقيق', pick(subIds), [
+      { acc: chance(0.5) ? '382' : '381', debit: amt },
+      { acc: bankPick(), credit: amt },
+    ])
+  }
+  // Fixed-asset purchases (machines, vehicles, office equipment).
+  for (let k = 0; k < 6; k++) {
+    const amt = ri(50, 400) * M
+    jentry(ri(40, 235), 'شراء أصل ثابت', pick(subIds), [
+      { acc: pick(['113', '114', '116']), debit: amt },
+      { acc: chance(0.5) ? '22' : bankPick(), credit: amt },
+    ])
+  }
+  // Cash deposited into the bank (IQD) — asset↔asset, no P&L impact.
+  for (let k = 0; k < 8; k++) {
+    const amt = ri(20, 150) * M
+    jentry(ri(5, 235), 'إيداع نقدي في المصرف', pick(subIds), [
+      { acc: bankPick(), debit: amt },
+      { acc: '181', credit: amt },
+    ])
+  }
+  // USD completed-works revenue paid into a bank account (exercises dual-currency).
+  for (let k = 0; k < 3; k++) {
+    const usd = ri(20, 150) * 1000
+    const rate = 1300 + ri(0, 40)
+    const p = pick(projRows)
+    jentry(ri(10, 200), 'إيراد ذرعة منجزة (دولار)', p.company_id, [
+      { acc: bankPick(), debit: usd },
+      { acc: '4121', credit: usd },
+    ], { project_id: p.id, currency: 'USD', rate })
+  }
+  // USD withdrawn from bank into the USD cash box (صندوق $) — asset↔asset.
+  for (let k = 0; k < 2; k++) {
+    const usd = ri(5, 40) * 1000
+    const rate = 1300 + ri(0, 40)
+    jentry(ri(5, 150), 'سحب دولار إلى الصندوق', pick(subIds), [
+      { acc: '182', debit: usd },
+      { acc: bankPick(), credit: usd },
+    ], { currency: 'USD', rate })
+  }
 
   // ---- Archive ----
   console.log('  · archive documents')
