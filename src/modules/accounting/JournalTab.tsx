@@ -80,20 +80,9 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
       if (range.to && e.date > range.to) return false
       if (filter !== 'ALL' && e.type !== filter) return false
       if (q) {
-        // Flexible search: document number, description, and the account
-        // name OR code of the cash / counter sides (the "subject").
-        const hay = [
-          e.serial_number,
-          e.doc_number,
-          e.description,
-          e.cash_account,
-          e.counter_account,
-          nameOf(e.cash_account),
-          nameOf(e.counter_account),
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase()
+        // Search by document number (رقم المستند) only — plus the displayed
+        // serial, which is the same entry number. No description/account match.
+        const hay = [e.doc_number, e.serial_number].filter(Boolean).join(' ').toLowerCase()
         if (!hay.includes(q)) return false
       }
       return true

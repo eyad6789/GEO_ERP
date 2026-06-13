@@ -131,7 +131,7 @@ registerStrings({
     en: 'Start by creating a new journal entry',
   },
   'accounting.journal.count': { ar: 'قيد', en: 'entries' },
-  'accounting.journal.search_ph': { ar: 'بحث برقم المستند أو اسم/رقم الحساب أو البيان...', en: 'Search by document no., account name/code, or note...' },
+  'accounting.journal.search_ph': { ar: 'بحث برقم المستند...', en: 'Search by document number...' },
   'accounting.journal.all_projects': { ar: 'كل المشاريع', en: 'All projects' },
   'accounting.journal.all_accounts': { ar: 'كل الحسابات', en: 'All accounts' },
   'accounting.journal.clear_filters': { ar: 'مسح الفلاتر', en: 'Clear filters' },
