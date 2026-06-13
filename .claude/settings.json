@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./.git/**)",
+      "Read(./**/.git/**)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/.env)",
+      "Read(./**/*.zip)",
+      "Read(./**/*.tar.gz)",
+      "Read(./node_modules/**)",
+      "Read(./**/node_modules/**)",
+      "Read(./.next/**)",
+      "Read(./dist/**)",
+      "Read(./build/**)",
+      "Read(./coverage/**)",
+      "Read(./package-lock.json)",
+      "Read(./**/package-lock.json)",
+      "Read(./pnpm-lock.yaml)",
+      "Read(./yarn.lock)",
+      "Read(./server/data/**)",
+      "Read(./**/*.db)",
+      "Read(./**/*.db-journal)",
+      "Read(./**/*.db-wal)",
+      "Read(./**/*.db-shm)",
+      "Read(./**/*.png)",
+      "Read(./files/erp-system-plan/**)"
+    ]
+  }
+}

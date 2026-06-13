@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --header-h: 60px;
+    --sidebar-w: 248px;
+  }
+
+  * {
+    border-color: theme('colors.slate.200');
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    /* Large base size for high readability (older users). All rem-based text
+       scales up proportionally. */
+    font-size: 20px;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-800 font-sans font-medium;
+    margin: 0;
+  }
+
+  html[dir='ltr'] body {
+    @apply font-latin;
+  }
+
+  ::selection {
+    background-color: theme('colors.primary.light');
+    color: white;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: theme('colors.slate.300');
+    border-radius: 9999px;
+    border: 2px solid theme('colors.slate.50');
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: theme('colors.slate.400');
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-xl border border-slate-200 shadow-card;
+  }
+
+  .input-base {
+    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm
+      outline-none transition placeholder:text-slate-400
+      focus:border-primary focus:ring-2 focus:ring-primary/15
+      disabled:cursor-not-allowed disabled:bg-slate-100;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold
+      transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 select-none;
+  }
+
+  /* gradient used by sidebar / hero accents */
+  .brand-gradient {
+    background: linear-gradient(135deg, #1a5f7a 0%, #134b61 100%);
+  }
+}
+
+@layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Print: only the .printable region shows */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .printable,
+  .printable * {
+    visibility: visible;
+  }
+  .printable {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
