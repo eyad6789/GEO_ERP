@@ -1,0 +1,42 @@
+{
+  "name": "geo-erp-system",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "GEO ERP System — Arabic-first demo ERP for a construction/engineering group",
+  "scripts": {
+    "seed": "tsx server/seed/seed.ts",
+    "server": "tsx watch server/index.ts",
+    "client": "vite",
+    "dev": "concurrently -n api,web -c blue,green \"npm:server\" \"npm:client\"",
+    "build": "vite build",
+    "start": "tsx server/index.ts",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "clsx": "^2.1.1",
+    "express": "^4.21.0",
+    "lucide-react": "^0.451.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "recharts": "^2.12.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.7.4",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.2",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.0.1",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8"
+  }
+}
