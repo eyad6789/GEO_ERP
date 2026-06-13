@@ -22,20 +22,25 @@ dashboardRouter.get('/dashboard', (_req, res) => {
       journal_entries: count('SELECT COUNT(*) c FROM journal_entries'),
     }
 
-    // Finance from journal lines joined to account type.
+    // Finance from journal lines joined to account type. IQD and USD are kept
+    // strictly separate — never converted or summed across currencies.
     const fin = db
       .prepare(
         `SELECT
-           SUM(CASE WHEN a.type='REVENUE' THEN jl.credit - jl.debit ELSE 0 END) revenue,
-           SUM(CASE WHEN a.type='EXPENSE' THEN jl.debit - jl.credit ELSE 0 END) expense,
-           SUM(CASE WHEN a.type='ASSET' THEN jl.debit - jl.credit ELSE 0 END) assets,
-           SUM(CASE WHEN a.type='LIABILITY' THEN jl.credit - jl.debit ELSE 0 END) liabilities
+           SUM(CASE WHEN a.type='REVENUE'   AND jl.currency!='USD' THEN jl.credit - jl.debit ELSE 0 END) revenue,
+           SUM(CASE WHEN a.type='EXPENSE'   AND jl.currency!='USD' THEN jl.debit - jl.credit ELSE 0 END) expense,
+           SUM(CASE WHEN a.type='ASSET'     AND jl.currency!='USD' THEN jl.debit - jl.credit ELSE 0 END) assets,
+           SUM(CASE WHEN a.type='LIABILITY' AND jl.currency!='USD' THEN jl.credit - jl.debit ELSE 0 END) liabilities,
+           SUM(CASE WHEN a.type='REVENUE'   AND jl.currency='USD' THEN jl.credit - jl.debit ELSE 0 END) revenue_usd,
+           SUM(CASE WHEN a.type='EXPENSE'   AND jl.currency='USD' THEN jl.debit - jl.credit ELSE 0 END) expense_usd,
+           SUM(CASE WHEN a.type='ASSET'     AND jl.currency='USD' THEN jl.debit - jl.credit ELSE 0 END) assets_usd,
+           SUM(CASE WHEN a.type='LIABILITY' AND jl.currency='USD' THEN jl.credit - jl.debit ELSE 0 END) liabilities_usd
          FROM journal_lines jl
          JOIN accounts a ON a.code = jl.account_code
          JOIN journal_entries je ON je.id = jl.entry_id
          WHERE je.status != 'CANCELLED'`,
       )
-      .get() as { revenue: number; expense: number; assets: number; liabilities: number }
+      .get() as Record<string, number>
 
     const contractTotal = num(
       (db.prepare('SELECT SUM(contract_value) s FROM projects').get() as { s: number } | undefined)?.s,
@@ -48,6 +53,11 @@ dashboardRouter.get('/dashboard', (_req, res) => {
       total_assets: num(fin?.assets),
       total_liabilities: num(fin?.liabilities),
       contract_value_total: contractTotal,
+      total_revenue_usd: num(fin?.revenue_usd),
+      total_expense_usd: num(fin?.expense_usd),
+      net_profit_usd: num(fin?.revenue_usd) - num(fin?.expense_usd),
+      total_assets_usd: num(fin?.assets_usd),
+      total_liabilities_usd: num(fin?.liabilities_usd),
     }
 
     // Low stock: items whose total stock across warehouses is at/under min.
@@ -69,6 +79,8 @@ dashboardRouter.get('/dashboard', (_req, res) => {
       .prepare('SELECT status, COUNT(*) count FROM projects GROUP BY status')
       .all() as Array<{ status: string; count: number }>
 
+    // Monthly chart is IQD-only (the reporting currency) so it never mixes
+    // currencies; USD activity is shown separately on the accounting screens.
     const revenue_expense_by_month = db
       .prepare(
         `SELECT substr(je.date,1,7) month,
@@ -77,7 +89,7 @@ dashboardRouter.get('/dashboard', (_req, res) => {
          FROM journal_lines jl
          JOIN accounts a ON a.code = jl.account_code
          JOIN journal_entries je ON je.id = jl.entry_id
-         WHERE je.status != 'CANCELLED' AND je.date IS NOT NULL
+         WHERE je.status != 'CANCELLED' AND je.date IS NOT NULL AND jl.currency != 'USD'
          GROUP BY month ORDER BY month DESC LIMIT 8`,
       )
       .all() as Array<{ month: string; revenue: number; expense: number }>

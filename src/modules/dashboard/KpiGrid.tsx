@@ -9,6 +9,18 @@ export function KpiGrid({ data }: { data: DashboardData }) {
   const { lang } = useLang()
   const { counts, finance } = data
 
+  // IQD figure with a small USD sub-line when USD activity exists. The two
+  // currencies are kept separate — never summed or converted.
+  const withUsd = (iqd: number, usd: number) =>
+    usd ? (
+      <span className="inline-flex flex-col">
+        <span>{formatCurrency(iqd, 'IQD', lang)}</span>
+        <span className="text-sm font-semibold text-emerald-600">{formatCurrency(usd, 'USD', lang)}</span>
+      </span>
+    ) : (
+      formatCurrency(iqd, 'IQD', lang)
+    )
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <KpiCard
@@ -34,14 +46,14 @@ export function KpiGrid({ data }: { data: DashboardData }) {
       />
       <KpiCard
         label={t('dashboard.kpi.net_profit')}
-        value={formatCurrency(finance.net_profit, 'IQD', lang)}
+        value={withUsd(finance.net_profit, finance.net_profit_usd)}
         hint={t('dashboard.kpi.net_profit_hint')}
         icon={<TrendingUp className="h-5 w-5" />}
         accent={finance.net_profit >= 0 ? 'success' : 'danger'}
       />
       <KpiCard
         label={t('dashboard.kpi.revenue')}
-        value={formatCurrency(finance.total_revenue, 'IQD', lang)}
+        value={withUsd(finance.total_revenue, finance.total_revenue_usd)}
         hint={t('dashboard.kpi.revenue_hint')}
         icon={<Banknote className="h-5 w-5" />}
         accent="success"

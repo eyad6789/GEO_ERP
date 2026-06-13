@@ -473,6 +473,11 @@ export interface DashboardData {
     total_assets: number
     total_liabilities: number
     contract_value_total: number
+    total_revenue_usd: number
+    total_expense_usd: number
+    net_profit_usd: number
+    total_assets_usd: number
+    total_liabilities_usd: number
   }
   alerts: {
     low_stock: number

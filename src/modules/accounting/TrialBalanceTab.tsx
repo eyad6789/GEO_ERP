@@ -30,8 +30,10 @@ export function TrialBalanceTab({
 
   const { data, loading } = useApi<TrialBalanceResp>('/reports/trial-balance', params)
   const rows = data?.rows ?? []
-  const totals = data?.totals ?? { debit: 0, credit: 0 }
+  const totals = data?.totals ?? { debit: 0, credit: 0, debit_usd: 0, credit_usd: 0 }
   const balanced = isBalanced(totals.debit, totals.credit)
+  const balancedUsd = isBalanced(totals.debit_usd, totals.credit_usd)
+  const hasUsd = totals.debit_usd !== 0 || totals.credit_usd !== 0
 
   const name = (r: TrialBalanceRow) => (lang === 'en' ? r.name_en || r.name_ar : r.name_ar)
 
@@ -41,9 +43,12 @@ export function TrialBalanceTab({
       rows.map((r) => ({
         code: r.code,
         name: name(r),
-        debit: r.total_debit,
-        credit: r.total_credit,
-        balance: r.balance,
+        debit_iqd: r.total_debit,
+        credit_iqd: r.total_credit,
+        balance_iqd: r.balance,
+        debit_usd: r.debit_usd ?? 0,
+        credit_usd: r.credit_usd ?? 0,
+        balance_usd: r.balance_usd ?? 0,
       })),
     )
   }
@@ -90,13 +95,22 @@ export function TrialBalanceTab({
                     <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{r.code}</td>
                     <td className="px-4 py-2.5 text-slate-700">{name(r)}</td>
                     <td className="px-4 py-2.5 text-end tabular-nums text-emerald-700">
-                      {r.total_debit ? formatCurrency(r.total_debit, 'IQD', lang) : '—'}
+                      <span className="inline-flex flex-col items-end">
+                        <span>{r.total_debit ? formatCurrency(r.total_debit, 'IQD', lang) : '—'}</span>
+                        {r.debit_usd ? <span className="text-[11px] text-emerald-600">{formatCurrency(r.debit_usd, 'USD', lang)}</span> : null}
+                      </span>
                     </td>
                     <td className="px-4 py-2.5 text-end tabular-nums text-sky-700">
-                      {r.total_credit ? formatCurrency(r.total_credit, 'IQD', lang) : '—'}
+                      <span className="inline-flex flex-col items-end">
+                        <span>{r.total_credit ? formatCurrency(r.total_credit, 'IQD', lang) : '—'}</span>
+                        {r.credit_usd ? <span className="text-[11px] text-sky-600">{formatCurrency(r.credit_usd, 'USD', lang)}</span> : null}
+                      </span>
                     </td>
                     <td className="px-4 py-2.5 text-end font-medium tabular-nums text-slate-800">
-                      {formatCurrency(Math.abs(r.balance), 'IQD', lang)}
+                      <span className="inline-flex flex-col items-end">
+                        <span>{formatCurrency(Math.abs(r.balance), 'IQD', lang)}</span>
+                        {r.balance_usd ? <span className="text-[11px] text-emerald-600">{formatCurrency(Math.abs(r.balance_usd), 'USD', lang)}</span> : null}
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -126,6 +140,32 @@ export function TrialBalanceTab({
                     )}
                   </td>
                 </tr>
+                {hasUsd && (
+                  <tr className="border-t border-slate-200 bg-slate-50 font-semibold text-slate-700">
+                    <td className="px-4 py-3 text-emerald-700" colSpan={2}>
+                      {t('accounting.trial.totals')} ($)
+                    </td>
+                    <td className="px-4 py-3 text-end tabular-nums text-emerald-700">
+                      {formatCurrency(totals.debit_usd, 'USD', lang)}
+                    </td>
+                    <td className="px-4 py-3 text-end tabular-nums text-sky-700">
+                      {formatCurrency(totals.credit_usd, 'USD', lang)}
+                    </td>
+                    <td className="px-4 py-3 text-end">
+                      {balancedUsd ? (
+                        <span className="inline-flex items-center gap-1 text-emerald-700">
+                          <Check className="h-4 w-4" />
+                          {t('accounting.trial.balanced')}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-amber-700">
+                          <AlertTriangle className="h-4 w-4" />
+                          {t('accounting.trial.unbalanced')}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                )}
               </tfoot>
             </table>
           </div>

@@ -10,22 +10,25 @@ export interface TrialBalanceRow {
   name_ar: string
   name_en: string
   type: AccountType
-  total_debit: number
-  total_credit: number
-  balance: number
-  balance_iqd?: number // converted to IQD via each line's rate
-  balance_usd?: number // raw USD amounts only
+  total_debit: number // IQD lines only
+  total_credit: number // IQD lines only
+  balance: number // IQD balance
+  balance_iqd?: number // IQD lines only (no conversion)
+  balance_usd?: number // USD lines only
+  debit_usd?: number
+  credit_usd?: number
 }
 export interface TrialBalanceResp {
   rows: TrialBalanceRow[]
-  totals: { debit: number; credit: number }
+  totals: { debit: number; credit: number; debit_usd: number; credit_usd: number }
 }
 
 export interface IncomeLine {
   code: string
   name_ar: string
   name_en: string
-  amount: number
+  amount: number // IQD lines only
+  amount_usd?: number // USD lines only
 }
 export interface IncomeStatementResp {
   revenue: IncomeLine[]
@@ -33,6 +36,9 @@ export interface IncomeStatementResp {
   total_revenue: number
   total_expense: number
   net_profit: number
+  total_revenue_usd?: number
+  total_expense_usd?: number
+  net_profit_usd?: number
 }
 
 export interface BalanceSheetLine {
@@ -51,6 +57,11 @@ export interface BalanceSheetResp {
   total_liabilities: number
   total_equity: number
   balanced: boolean
+  net_profit_usd?: number
+  total_assets_usd?: number
+  total_liabilities_usd?: number
+  total_equity_usd?: number
+  balanced_usd?: boolean
 }
 
 export interface LedgerRow {
@@ -77,6 +88,9 @@ export interface PnlResp {
   revenue: number
   expense: number
   net: number
+  revenue_usd?: number
+  expense_usd?: number
+  net_usd?: number
 }
 
 export interface JournalEntryFull {

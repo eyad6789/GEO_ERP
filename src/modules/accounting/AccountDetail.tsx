@@ -210,12 +210,11 @@ export default function AccountDetail() {
       key: 'debit',
       header: t('accounting.reports.ledger_debit'),
       align: 'end',
-      accessor: (r) => r.debit_iqd ?? r.debit,
+      accessor: (r) => r.debit,
       render: (r) =>
         r.debit ? (
-          <span className="inline-flex flex-col items-end tabular-nums text-slate-700">
-            <span>{formatCurrency(r.debit_iqd ?? r.debit, 'IQD', lang)}</span>
-            {r.currency === 'USD' && <span className="text-[10px] text-emerald-600">{formatCurrency(r.debit, 'USD', lang)}</span>}
+          <span className="tabular-nums text-slate-700">
+            {formatCurrency(r.debit, r.currency === 'USD' ? 'USD' : 'IQD', lang)}
           </span>
         ) : (
           <span className="text-slate-300">—</span>
@@ -225,12 +224,11 @@ export default function AccountDetail() {
       key: 'credit',
       header: t('accounting.reports.ledger_credit'),
       align: 'end',
-      accessor: (r) => r.credit_iqd ?? r.credit,
+      accessor: (r) => r.credit,
       render: (r) =>
         r.credit ? (
-          <span className="inline-flex flex-col items-end tabular-nums text-slate-700">
-            <span>{formatCurrency(r.credit_iqd ?? r.credit, 'IQD', lang)}</span>
-            {r.currency === 'USD' && <span className="text-[10px] text-emerald-600">{formatCurrency(r.credit, 'USD', lang)}</span>}
+          <span className="tabular-nums text-slate-700">
+            {formatCurrency(r.credit, r.currency === 'USD' ? 'USD' : 'IQD', lang)}
           </span>
         ) : (
           <span className="text-slate-300">—</span>
@@ -241,7 +239,11 @@ export default function AccountDetail() {
       header: t('accounting.reports.ledger_balance'),
       align: 'end',
       accessor: (r) => r.balance,
-      render: (r) => <span className="font-semibold tabular-nums text-primary">{formatCurrency(r.balance, 'IQD', lang)}</span>,
+      render: (r) => (
+        <span className="font-semibold tabular-nums text-primary">
+          {formatCurrency(r.balance, r.currency === 'USD' ? 'USD' : 'IQD', lang)}
+        </span>
+      ),
     },
   ]
 
