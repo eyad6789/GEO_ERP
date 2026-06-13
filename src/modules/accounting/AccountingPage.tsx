@@ -19,9 +19,13 @@ type TabKey = 'journal' | 'chart' | 'trial' | 'vouchers' | 'parties' | 'cash' | 
 const TAB_KEYS: TabKey[] = ['journal', 'chart', 'trial', 'vouchers', 'parties', 'cash', 'bank']
 
 const defaultRange = (): DateRange => {
+  // Format from LOCAL date parts. Using toISOString() here would convert local
+  // midnight to UTC and shift "from" back a day (e.g. 2026-01-01 → 2025-12-31)
+  // in any timezone ahead of UTC.
   const now = new Date()
-  const from = new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 10)
-  const to = now.toISOString().slice(0, 10)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const from = `${now.getFullYear()}-01-01`
+  const to = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
   return { from, to }
 }
 
