@@ -59,8 +59,10 @@ export function CashTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accounts, iqdMap, usdMap, lang])
 
-  const totalIqd = cashBoxes.reduce((s, c) => s + c.iqd, 0)
-  const totalUsd = cashBoxes.reduce((s, c) => s + c.usd, 0)
+  // Each total counts only boxes of its own currency, so "إجمالي النقد (دينار)"
+  // equals the dinar cash box(es) and excludes the dinar-equivalent of USD cash.
+  const totalIqd = cashBoxes.filter((c) => c.currency === 'IQD').reduce((s, c) => s + c.iqd, 0)
+  const totalUsd = cashBoxes.filter((c) => c.currency === 'USD').reduce((s, c) => s + c.usd, 0)
   // Operational advance funded from CASH (split server-side by funding source).
   const { data: advSplit } = useApi<AdvanceSplit>('/accounting/advance-split', companyId ? { company_id: companyId } : undefined)
   const advance = advSplit?.cash ?? { iqd: 0, usd: 0 }
