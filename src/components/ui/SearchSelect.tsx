@@ -13,9 +13,10 @@ export interface ComboOption {
  * The options dropdown is rendered in a portal with fixed positioning so it is
  * never clipped by scrolling dialogs or `overflow-hidden` table wrappers.
  *
- * Keyboard: ↑/↓ move the highlight, Enter selects the highlighted option (and
- * stops propagation so the form-level Enter-navigation doesn't also fire). When
- * the list is closed, Enter bubbles up so Enter-to-next-field still works.
+ * Keyboard: when the list is OPEN, ↑/↓ move the highlight and Enter selects the
+ * highlighted option (both stop propagation so the form's own navigation does
+ * not also fire). When the list is CLOSED, ↑/↓ and Enter bubble up so the
+ * form's field/grid navigation still works. Open by clicking or by typing.
  */
 export function SearchSelect({
   value,
@@ -76,11 +77,14 @@ export function SearchSelect({
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
+      // Only drive the dropdown while it's open; when closed, let ↑/↓ bubble so
+      // the form's grid navigation can move to the row above/below.
+      if (!open) return
       e.preventDefault()
-      e.stopPropagation() // arrows drive the dropdown, not form-field navigation
-      setOpen(true)
+      e.stopPropagation()
       setHi((h) => Math.min(h + 1, filtered.length - 1))
     } else if (e.key === 'ArrowUp') {
+      if (!open) return
       e.preventDefault()
       e.stopPropagation()
       setHi((h) => Math.max(h - 1, 0))
@@ -117,7 +121,6 @@ export function SearchSelect({
           setOpen(true)
           setHi(0)
         }}
-        onFocus={openList}
         onMouseDown={() => {
           if (!open) openList()
         }}

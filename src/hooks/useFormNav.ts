@@ -29,15 +29,9 @@ function focusablesIn(container: HTMLElement): HTMLElement[] {
   )
 }
 
-/** Focus the field `dir` steps from `target`. Returns true if it moved. */
-function moveFocus(container: HTMLElement, target: HTMLElement, dir: number): boolean {
-  const items = focusablesIn(container)
-  const idx = items.indexOf(target)
-  if (idx === -1) return false
-  const next = items[idx + dir]
-  if (!next) return false
-  next.focus()
-  const ni = next as HTMLInputElement
+function focusAndSelect(el: HTMLElement): void {
+  el.focus()
+  const ni = el as HTMLInputElement
   if (ni.tagName === 'INPUT' && typeof ni.select === 'function') {
     try {
       ni.select()
@@ -45,6 +39,47 @@ function moveFocus(container: HTMLElement, target: HTMLElement, dir: number): bo
       /* number/date inputs may not support select() */
     }
   }
+}
+
+/** Focus the field `dir` steps from `target`. Returns true if it moved. */
+function moveFocus(container: HTMLElement, target: HTMLElement, dir: number): boolean {
+  const items = focusablesIn(container)
+  const idx = items.indexOf(target)
+  if (idx === -1) return false
+  const next = items[idx + dir]
+  if (!next) return false
+  focusAndSelect(next)
+  return true
+}
+
+/**
+ * Move focus to the field directly above/below `target` (dir -1 = up, +1 =
+ * down), chosen by screen position: the nearest row in that direction, then the
+ * closest column. Makes ↑/↓ behave like a grid instead of a flat list. Returns
+ * false when there is nothing in that direction (caller can fall back).
+ */
+function moveVertical(container: HTMLElement, target: HTMLElement, dir: number): boolean {
+  const items = focusablesIn(container)
+  if (!items.includes(target)) return false
+  const cur = target.getBoundingClientRect()
+  const curMidX = cur.left + cur.width / 2
+  let best: HTMLElement | null = null
+  let bestScore = Infinity
+  for (const el of items) {
+    if (el === target) continue
+    const r = el.getBoundingClientRect()
+    const inDir = dir > 0 ? r.top > cur.top + 4 : r.top < cur.top - 4
+    if (!inDir) continue
+    const dy = Math.abs(r.top - cur.top)
+    const dx = Math.abs(r.left + r.width / 2 - curMidX)
+    const score = dy * 1000 + dx // nearest row dominates, then closest column
+    if (score < bestScore) {
+      bestScore = score
+      best = el
+    }
+  }
+  if (!best) return false
+  focusAndSelect(best)
   return true
 }
 
@@ -119,7 +154,17 @@ export function useFormNav() {
       return
     }
 
-    const moved = moveFocus(e.currentTarget, target, isUp ? -1 : 1)
+    // Up / Down: move to the field above/below by position (grid-like). Fall
+    // back to a flat step when there is no row in that direction.
+    if (isUp || isDown) {
+      const dir = isDown ? 1 : -1
+      const moved = moveVertical(e.currentTarget, target, dir) || moveFocus(e.currentTarget, target, dir)
+      if (moved) e.preventDefault()
+      return
+    }
+
+    // Enter / Tab → next field.
+    const moved = moveFocus(e.currentTarget, target, 1)
     if (moved || isEnter) e.preventDefault()
   }, [])
 
