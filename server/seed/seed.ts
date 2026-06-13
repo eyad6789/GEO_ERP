@@ -615,12 +615,13 @@ function seed() {
       { acc: '181', credit: amt },
     ])
   }
-  // Operational advances (السلف التشغيلية) — drives the advance-split report.
+  // Operational advances (السلف التشغيلية) — always disbursed from the cash box
+  // (181), never a bank account.
   for (let k = 0; k < 10; k++) {
     const amt = ri(3, 30) * M
     jentry(ri(20, 230), 'صرف سلفة تشغيلية', pick(subIds), [
       { acc: '16112', debit: amt },
-      { acc: chance(0.5) ? bankPick() : '181', credit: amt },
+      { acc: '181', credit: amt },
     ])
   }
   // Operational-advance settlements (تسوية السلف — مدين مصروف، دائن السلفة).
