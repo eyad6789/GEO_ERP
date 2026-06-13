@@ -2,14 +2,13 @@ import { useMemo, useState } from 'react'
 import { Landmark, Coins, Plus, Pencil, Trash2, Lock } from 'lucide-react'
 import { Card, CardHeader, Button } from '../../components/ui'
 import { ArabicTable, KpiCard, type Column } from '../../components/shared'
-import { useApi, useResource } from '../../hooks/useResource'
+import { useResource } from '../../hooks/useResource'
 import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { formatCurrency, pickName } from '../../lib/format'
 import type { Bank } from '../../types'
-import { canEditAccounting, type AdvanceSplit } from './shared'
+import { canEditAccounting } from './shared'
 import { NewBankDialog } from './NewBankDialog'
-import { AdvanceCard } from './AdvanceCard'
 
 export function BankTab() {
   const t = useT()
@@ -21,7 +20,6 @@ export function BankTab() {
     'banks',
     companyId ? { company_id: companyId } : undefined,
   )
-  const { data: advSplit } = useApi<AdvanceSplit>('/accounting/advance-split', companyId ? { company_id: companyId } : undefined)
   const [bankDialog, setBankDialog] = useState<{ open: boolean; bank: Bank | null }>({ open: false, bank: null })
 
   const totals = useMemo(() => {
@@ -29,9 +27,6 @@ export function BankTab() {
     const usd = banks.reduce((s, b) => s + (b.balance_usd || 0), 0)
     return { iqd, usd }
   }, [banks])
-
-  // Operational advance funded from a BANK (split server-side by funding source).
-  const advance = advSplit?.bank ?? { iqd: 0, usd: 0 }
 
   const handleDelete = async (b: Bank) => {
     if (!window.confirm(t('accounting.bank.confirm_delete'))) return
@@ -64,10 +59,9 @@ export function BankTab() {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <KpiCard label={t('accounting.bank.total_iqd')} value={formatCurrency(totals.iqd, 'IQD', lang)} icon={<Landmark className="h-5 w-5" />} accent="info" />
         <KpiCard label={t('accounting.bank.total_usd')} value={formatCurrency(totals.usd, 'USD', lang)} icon={<Coins className="h-5 w-5" />} accent="success" />
-        <AdvanceCard iqd={advance.iqd} usd={advance.usd} lang={lang} t={t} />
       </div>
 
       <Card className="overflow-hidden">
