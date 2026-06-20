@@ -22,6 +22,9 @@ const COLOR_MAP: Record<string, BadgeColor> = {
   ON_LEAVE: 'amber',
   SUSPENDED: 'red',
   TERMINATED: 'gray',
+  // fleet
+  MAINTENANCE: 'amber',
+  RETIRED: 'gray',
   // logs
   SUCCESS: 'green',
   FAILED: 'red',
