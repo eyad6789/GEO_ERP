@@ -12,6 +12,7 @@ import {
   FolderOpen,
   ScrollText,
   Bug,
+  Truck,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -28,6 +29,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'dashboard', path: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
   { key: 'companies', path: '/companies', labelKey: 'nav.companies', icon: Building2 },
   { key: 'projects', path: '/projects', labelKey: 'nav.projects', icon: BarChart3 },
+  { key: 'fleet', path: '/fleet', labelKey: 'nav.fleet', icon: Truck },
   { key: 'hr', path: '/hr', labelKey: 'nav.hr', icon: Users },
   { key: 'accounting', path: '/accounting', labelKey: 'nav.accounting', icon: Calculator },
   { key: 'warehouse', path: '/warehouse', labelKey: 'nav.warehouse', icon: Warehouse },
@@ -37,7 +39,7 @@ export const NAV_ITEMS: NavItem[] = [
 ]
 
 // Demo gating: only these modules are usable; the rest render a locked screen.
-export const UNLOCKED_MODULES = new Set<string>(['dashboard', 'accounting'])
+export const UNLOCKED_MODULES = new Set<string>(['dashboard', 'accounting', 'fleet'])
 export function isModuleLocked(key: string): boolean {
   return !UNLOCKED_MODULES.has(key)
 }

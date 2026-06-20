@@ -10,6 +10,7 @@ import { dashboardRouter } from './routes/dashboard.js'
 import { accountingRouter } from './routes/accounting.js'
 import { warehouseRouter } from './routes/warehouse.js'
 import { reportsRouter } from './routes/reports.js'
+import { fleetRouter } from './routes/fleet.js'
 import { resourceRouter } from './routes/resource.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -23,6 +24,7 @@ app.use('/api', dashboardRouter)
 app.use('/api', accountingRouter)
 app.use('/api', warehouseRouter)
 app.use('/api', reportsRouter)
+app.use('/api', fleetRouter)
 
 // Generic CRUD last.
 app.use('/api', resourceRouter)

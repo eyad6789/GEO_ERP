@@ -6,6 +6,7 @@
 // ============================================================================
 import { db, initSchema } from '../db/connection.js'
 import { buildAccounts, postingAccounts } from './chartOfAccounts.js'
+import { FLEET_ROWS } from './fleetData.js'
 
 // ---- deterministic RNG (Mulberry32) ---------------------------------------
 let _s = 0x9e3779b9
@@ -80,13 +81,17 @@ const ITEM_DEFS: [string, string, string, string][] = [
   ['أبواب خشبية', 'Wooden Doors', 'تشطيبات', 'قطعة'],
 ]
 
-// Only the client's real projects (from the handwritten list).
-const PROJECT_DEFS: [string, string][] = [
-  ['مشروع جولان', 'Jawlan Project'],
-  ['مشروع خان ضاري', 'Khan Dhari Project'],
+// The client's real projects. The first 3 are ACTIVE construction sites that get
+// vehicles; the last 3 are master-plan sites (PLANNING) shown as map pins only.
+// [name_ar, name_en, location, lat, lng, status]. Order is stable: prj-001 = جلولاء …
+const PROJECT_DEFS: [string, string, string, number, number, string][] = [
+  ['مشروع جلولاء', 'Jalawla Project', 'جلولاء - ديالى', 34.27, 45.15, 'ACTIVE'],
+  ['مشروع خان ضاري', 'Khan Dhari Project', 'خان ضاري - بغداد', 33.36, 43.78, 'ACTIVE'],
+  ['مشروع اليرموك', 'Al-Yarmouk Project', 'اليرموك - بغداد', 33.295, 44.336, 'ACTIVE'],
+  ['مخطط واسط الرئيسي', 'Wasit Master Plan', 'واسط - الكوت', 32.512, 45.818, 'PLANNING'],
+  ['مخطط المثنى الرئيسي', 'Muthanna Master Plan', 'المثنى - السماوة', 31.318, 45.281, 'PLANNING'],
+  ['مخطط ميسان الرئيسي', 'Maysan Master Plan', 'ميسان - العمارة', 31.836, 47.144, 'PLANNING'],
 ]
-
-const PROJECT_STATUSES = ['PLANNING', 'ACTIVE', 'ACTIVE', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED']
 const MACHINERY = ['حفارة', 'شيول', 'رافعة برجية', 'شاحنة قلابة', 'خلاطة خرسانة', 'مضخة خرسانة', 'بلدوزر', 'مدحلة']
 const LEAVE_TYPES = ['سنوية', 'مرضية', 'اضطرارية', 'أمومة', 'بدون راتب']
 const OCCASIONS = ['عيد الفطر', 'عيد الأضحى', 'ترقية', 'مكافأة سنوية', 'مناسبة خاصة']
@@ -99,7 +104,7 @@ function clearAll() {
   const tables = [
     'companies', 'departments', 'employees', 'attendance', 'leave_requests', 'advances', 'payroll',
     'gifts', 'performance_reviews', 'projects', 'project_milestones', 'project_machinery', 'project_staff',
-    'project_expenditures', 'project_diagrams', 'warehouses', 'items', 'stock', 'inventory_transactions',
+    'project_expenditures', 'project_diagrams', 'vehicles', 'vehicle_costs', 'warehouses', 'items', 'stock', 'inventory_transactions',
     'inventory_lines', 'accounts', 'journal_entries', 'journal_lines', 'banks', 'archive_documents', 'notes', 'event_logs',
   ]
   for (const t of tables) db.prepare(`DELETE FROM ${t}`).run()
@@ -328,7 +333,7 @@ function seed() {
     const id = `prj-${pad(i + 1)}`
     projectIds.push(id)
     const cid = pick(subIds)
-    const status = PROJECT_STATUSES[i % PROJECT_STATUSES.length]
+    const status = p[5]
     const start = ri(60, 600)
     const dur = ri(180, 720)
     const progress = status === 'COMPLETED' ? 100 : status === 'PLANNING' ? ri(0, 10) : status === 'CANCELLED' ? ri(10, 60) : ri(20, 90)
@@ -339,7 +344,7 @@ function seed() {
       contract_number: `CON-2026-${pad(ri(100, 999))}`, contract_value: ri(500, 8000) * 1000000, currency: CURR,
       start_date: daysAgo(start), end_date: daysAgo(start - dur),
       actual_end_date: status === 'COMPLETED' ? daysAgo(start - dur + ri(-30, 30)) : null, status,
-      manager_id: mgr, location: pick(CITIES), description: `مشروع ${p[0]} ضمن خطة التطوير العمراني`, progress,
+      manager_id: mgr, location: p[2], lat: p[3], lng: p[4], description: `مشروع ${p[0]} ضمن خطة التطوير العمراني`, progress,
       created_at: isoNow(start),
     })
 
@@ -390,6 +395,110 @@ function seed() {
       })
     }
   })
+
+  // ---- Vehicles + costs (Fleet module) ----
+  console.log('  · vehicles + vehicle costs')
+  {
+    // Map location strings to {project_id, base lat, base lng}
+    const LOCATION_MAP: Record<string, { pid: string | null; lat: number; lng: number }> = {
+      'خان ضاري':        { pid: projectIds[1], lat: 33.36,  lng: 43.78  },
+      'جلولاء':          { pid: projectIds[0], lat: 34.27,  lng: 45.15  },
+      'اليرموك':         { pid: projectIds[2], lat: 33.295, lng: 44.336 },
+      'المقر':           { pid: null,           lat: 33.313, lng: 44.358 },
+      'الدورة':          { pid: null,           lat: 33.265, lng: 44.401 },
+      'مخزن الدورة':    { pid: null,           lat: 33.265, lng: 44.401 },
+      'أبو غريب':        { pid: null,           lat: 33.308, lng: 44.000 },
+      'معمل الثيرمستون': { pid: null,           lat: 32.47,  lng: 44.42  },
+    }
+
+    let vcostCounter = 0
+
+    for (const row of FLEET_ROWS) {
+      // Resolve location
+      const loc = LOCATION_MAP[row.location.trim()] ?? { pid: null, lat: 33.313, lng: 44.358 }
+
+      // Small deterministic jitter so pins don't overlap
+      const jLat = loc.lat + (rand() - 0.5) * 0.06
+      const jLng = loc.lng + (rand() - 0.5) * 0.06
+
+      // Deterministic status
+      const r = rand()
+      const status =
+        r < 0.72 ? 'ACTIVE' :
+        r < 0.85 ? 'MAINTENANCE' :
+        r < 0.95 ? 'INACTIVE' :
+                   'RETIRED'
+
+      const oil_change_date = daysAgo(ri(10, 240))
+      const company_id = pick(subIds)
+
+      ins('vehicles', {
+        id: `veh-${pad(row.seq)}`,
+        code: row.code,
+        vehicle_type: row.vehicle_type,
+        type_group: row.type_group,
+        name_ar: row.name_ar,
+        name_en: row.name_en,
+        emoji: row.emoji,
+        plate_number: row.plate_number,
+        model_year: row.model_year,
+        owner_name: row.owner_name,
+        owner_company_id: null,
+        registration_expiry: row.registration_expiry,
+        oil_change_date,
+        status,
+        location: row.location,
+        project_id: loc.pid,
+        driver_name: row.driver_name,
+        driver_id: null,
+        company_id,
+        last_odometer: row.last_odometer,
+        lat: jLat,
+        lng: jLng,
+        notes: '',
+        created_at: isoNow(ri(100, 400)),
+      })
+
+      const vehId = `veh-${pad(row.seq)}`
+
+      // IQD costs: split into 2–3 rows (MAINTENANCE + FUEL rows) across different months
+      if (row.amount_iqd > 0) {
+        const splitCount = ri(2, 3)
+        const categories = ['MAINTENANCE', 'FUEL', 'PARTS'] as const
+        for (let s = 0; s < splitCount; s++) {
+          const share = s < splitCount - 1
+            ? Math.round((row.amount_iqd / splitCount) * (0.4 + rand() * 0.4))
+            : 0 // last share computed below
+          const amount = s < splitCount - 1 ? share : Math.max(1, row.amount_iqd - Math.round(row.amount_iqd * 0.8))
+          const finalAmount = s < splitCount - 1 ? share : row.amount_iqd - (splitCount - 1) * Math.round(row.amount_iqd / splitCount)
+          ins('vehicle_costs', {
+            id: `vcost-${pad(++vcostCounter, 4)}`,
+            vehicle_id: vehId,
+            category: categories[s % categories.length],
+            amount: Math.abs(s < splitCount - 1 ? share : row.amount_iqd - (splitCount - 1) * Math.round(row.amount_iqd / splitCount)) || 1,
+            currency: 'IQD',
+            date: daysAgo(ri(15, 300)),
+            note: '',
+            created_at: isoNow(ri(15, 300)),
+          })
+        }
+      }
+
+      // USD costs: one MAINTENANCE row
+      if (row.amount_usd > 0) {
+        ins('vehicle_costs', {
+          id: `vcost-${pad(++vcostCounter, 4)}`,
+          vehicle_id: vehId,
+          category: 'MAINTENANCE',
+          amount: row.amount_usd,
+          currency: 'USD',
+          date: daysAgo(ri(15, 300)),
+          note: '',
+          created_at: isoNow(ri(15, 300)),
+        })
+      }
+    }
+  }
 
   // ---- Warehouses + items + stock + transactions ----
   console.log('  · warehouse (items, stock, transactions)')
@@ -735,7 +844,7 @@ function seed() {
   // counts
   const c = (t: string) => (db.prepare(`SELECT COUNT(*) n FROM ${t}`).get() as { n: number }).n
   console.log('\n  ✓ seeded:')
-  for (const t of ['companies', 'departments', 'employees', 'projects', 'accounts', 'journal_entries', 'journal_lines', 'items', 'inventory_transactions', 'archive_documents', 'event_logs'])
+  for (const t of ['companies', 'departments', 'employees', 'projects', 'vehicles', 'vehicle_costs', 'accounts', 'journal_entries', 'journal_lines', 'items', 'inventory_transactions', 'archive_documents', 'event_logs'])
     console.log(`     ${t.padEnd(24)} ${c(t)}`)
 }
 
