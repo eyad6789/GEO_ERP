@@ -175,6 +175,8 @@ CREATE TABLE IF NOT EXISTS projects (
   status TEXT,               -- PLANNING | ACTIVE | ON_HOLD | COMPLETED | CANCELLED
   manager_id TEXT,
   location TEXT,
+  lat REAL,                  -- map coordinate (drives the Fleet map; set when a project is created)
+  lng REAL,
   description TEXT,
   progress INTEGER DEFAULT 0,
   created_at TEXT
@@ -421,6 +423,55 @@ CREATE TABLE IF NOT EXISTS event_logs (
   new_values TEXT,
   error_message TEXT
 );
+
+-- ---- Fleet / Vehicles (الآليات) -------------------------------------------
+-- The Fleet module owns vehicle records. Money is NEVER edited here — costs live
+-- in vehicle_costs (seeded from finance) and are shown read-only. project_id is
+-- auto-derived from the vehicle's location, or set manually by an admin.
+CREATE TABLE IF NOT EXISTS vehicles (
+  id TEXT PRIMARY KEY,
+  code TEXT,                 -- VEH-001 …
+  vehicle_type TEXT,         -- CAR | PICKUP | MIXER | EXCAVATOR | LOADER | BULLDOZER | CRANE | DUMP_TRUCK | LIFT | ROLLER | DUMPER | TANKER | PUMP | MISC
+  type_group TEXT,           -- original Arabic category group from the fleet sheet
+  name_ar TEXT,              -- specific type label (e.g. حفارة كوماتسو)
+  name_en TEXT,
+  emoji TEXT,                -- marker/icon glyph
+  plate_number TEXT,
+  model_year INTEGER,
+  owner_name TEXT,           -- free text (company or individual)
+  owner_company_id TEXT,     -- optional FK -> companies.id
+  registration_expiry TEXT,  -- ISO date; drives red/yellow/green alarms
+  oil_change_date TEXT,      -- ISO date; last oil change
+  status TEXT,               -- ACTIVE | INACTIVE | MAINTENANCE | RETIRED
+  location TEXT,             -- site / governorate text
+  project_id TEXT,           -- FK -> projects.id (nullable; auto by location or manual)
+  driver_name TEXT,          -- free text
+  driver_id TEXT,            -- optional FK -> employees.id
+  company_id TEXT,           -- operating subsidiary
+  last_odometer INTEGER,
+  lat REAL,                  -- current map position (near its project)
+  lng REAL,
+  notes TEXT,
+  created_at TEXT
+);
+
+-- Vehicle costs are finance-owned: the Fleet module READS these (read-only),
+-- editing happens only in the Accounting/Finance section. IQD and USD are kept
+-- as separate rows and are never summed together.
+CREATE TABLE IF NOT EXISTS vehicle_costs (
+  id TEXT PRIMARY KEY,
+  vehicle_id TEXT,           -- FK -> vehicles.id
+  category TEXT,             -- PURCHASE | MAINTENANCE | FUEL | PARTS
+  amount REAL DEFAULT 0,
+  currency TEXT,             -- IQD | USD
+  date TEXT,
+  note TEXT,
+  created_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_vehicles_project ON vehicles(project_id);
+CREATE INDEX IF NOT EXISTS idx_vehicles_company ON vehicles(company_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_costs_vehicle ON vehicle_costs(vehicle_id);
 
 CREATE INDEX IF NOT EXISTS idx_employees_company ON employees(company_id);
 CREATE INDEX IF NOT EXISTS idx_projects_company ON projects(company_id);
