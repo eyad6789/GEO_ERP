@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "better-sqlite3": "^11.3.0",
+    "better-sqlite3": "^12.11.1",
     "clsx": "^2.1.1",
     "express": "^4.21.0",
     "lucide-react": "^0.451.0",
