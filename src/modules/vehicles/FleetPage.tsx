@@ -8,10 +8,12 @@ import { VehiclesTab } from './tabs/VehiclesTab'
 import { AccountingTab } from './tabs/AccountingTab'
 import { MapTab } from './tabs/MapTab'
 import { ArchiveTab } from './tabs/ArchiveTab'
+import { MapComingSoon } from './MapComingSoon'
 
 // Fleet shell: header + tabs. Each tab owns its own data fetching.
-// The Map tab is gated behind FEATURES.fleetMap so it can be hidden while it's
-// being finished — WITHOUT removing any of the map code.
+// The Map tab stays visible, but while FEATURES.fleetMap is off it shows a
+// "قريباً / coming soon" placeholder instead of the real map — no map code is
+// removed, so Joseph keeps working. Flip FEATURES.fleetMap to show the real map.
 export function FleetPage() {
   const t = useT()
   const [tab, setTab] = useState('vehicles')
@@ -19,7 +21,7 @@ export function FleetPage() {
   const tabs: TabItem[] = [
     { key: 'vehicles', label: t('fleet.tab.vehicles'), icon: <Truck className="h-4 w-4" /> },
     { key: 'accounting', label: t('fleet.tab.accounting'), icon: <Banknote className="h-4 w-4" /> },
-    ...(FEATURES.fleetMap ? [{ key: 'map', label: t('fleet.tab.map'), icon: <MapIcon className="h-4 w-4" /> }] : []),
+    { key: 'map', label: t('fleet.tab.map'), icon: <MapIcon className="h-4 w-4" /> },
     { key: 'archive', label: t('fleet.tab.archive'), icon: <Archive className="h-4 w-4" /> },
   ]
 
@@ -33,7 +35,7 @@ export function FleetPage() {
       <Tabs tabs={tabs} value={tab} onChange={setTab} className="mb-6" />
       {tab === 'vehicles' && <VehiclesTab />}
       {tab === 'accounting' && <AccountingTab />}
-      {FEATURES.fleetMap && tab === 'map' && <MapTab />}
+      {tab === 'map' && (FEATURES.fleetMap ? <MapTab /> : <MapComingSoon />)}
       {tab === 'archive' && <ArchiveTab />}
     </div>
   )

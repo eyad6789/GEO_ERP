@@ -1,9 +1,10 @@
-// Feature flags. Flipping a flag shows/hides a feature WITHOUT deleting its code,
-// so work-in-progress can stay in the codebase while being hidden from the app.
+// Feature flags. Flipping a flag toggles a feature WITHOUT deleting its code,
+// so work-in-progress stays in the codebase.
 //
-// fleetMap: the Fleet «الخريطة/Map» tab and the mini map on the Vehicles tab.
-//   Temporarily OFF while the map is being finished. Set to `true` to bring it
-//   back — no other change needed.
+// fleetMap: the real Fleet map (the «الخريطة/Map» tab and the mini map on the
+//   Vehicles tab). While this is OFF, those spots show a «قريباً / coming soon»
+//   placeholder instead of the real map — nothing is removed. Set to `true` to
+//   show the real map once it's ready.
 export const FEATURES = {
   fleetMap: false,
 }

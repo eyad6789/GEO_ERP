@@ -42,6 +42,7 @@ import { VehicleCard } from '../VehicleCard'
 import { AddVehicleDialog } from '../AddVehicleDialog'
 import { LeafletMap } from '../LeafletMap'
 import { FEATURES } from '../../../config/features'
+import { MapComingSoon } from '../MapComingSoon'
 import { registerStrings } from '../../../i18n/strings'
 
 // Oil-change i18n keys used by VehicleCard (registered here so VehicleCard stays lean)
@@ -378,7 +379,7 @@ export function VehiclesTab() {
       </div>
 
       {/* ── Mini-map card ── */}
-      {FEATURES.fleetMap && (
+      {FEATURES.fleetMap ? (
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
           <div className="flex items-center gap-2">
@@ -397,6 +398,8 @@ export function VehiclesTab() {
           )}
         </div>
       </div>
+      ) : (
+        <MapComingSoon minHeight={240} />
       )}
 
       {/* ── Inventory section header ── */}
