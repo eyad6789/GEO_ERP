@@ -7,6 +7,7 @@ import { isModuleLocked, LANDING_PATH } from './config/nav'
 import { routes as dashboardRoutes } from './modules/dashboard/routes'
 import { routes as companiesRoutes } from './modules/companies/routes'
 import { routes as projectsRoutes } from './modules/projects/routes'
+import { routes as vehiclesRoutes } from './modules/vehicles/routes'
 import { routes as hrRoutes } from './modules/hr/routes'
 import { routes as accountingRoutes } from './modules/accounting/routes'
 import { routes as warehouseRoutes } from './modules/warehouse/routes'
@@ -44,6 +45,7 @@ export const router = createBrowserRouter([
       ...gate('dashboard', dashboardRoutes),
       ...gate('companies', companiesRoutes),
       ...gate('projects', projectsRoutes),
+      ...gate('fleet', vehiclesRoutes),
       ...gate('hr', hrRoutes),
       ...gate('accounting', accountingRoutes),
       ...gate('warehouse', warehouseRoutes),

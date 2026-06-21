@@ -186,6 +186,8 @@ export interface Project {
   status: ProjectStatus
   manager_id: ID | null
   location: string
+  lat?: number | null // map coordinate (drives the Fleet map)
+  lng?: number | null
   description: string
   progress: number // 0..100
   created_at?: string
@@ -488,4 +490,81 @@ export interface DashboardData {
   revenue_expense_by_month: Array<{ month: string; revenue: number; expense: number }>
   employees_by_company: Array<{ company: string; count: number }>
   recent_logs: EventLog[]
+}
+
+// ---- Fleet / Vehicles (الآليات) -------------------------------------------
+export type VehicleType =
+  | 'CAR' | 'PICKUP' | 'MIXER' | 'EXCAVATOR' | 'LOADER' | 'BULLDOZER' | 'CRANE'
+  | 'DUMP_TRUCK' | 'LIFT' | 'ROLLER' | 'DUMPER' | 'TANKER' | 'PUMP' | 'MISC'
+export type VehicleStatus = 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE' | 'RETIRED'
+export type VehicleCostCategory = 'PURCHASE' | 'MAINTENANCE' | 'FUEL' | 'PARTS'
+
+export interface Vehicle {
+  id: ID
+  code: string
+  vehicle_type: VehicleType
+  type_group: string // original Arabic fleet-sheet group
+  name_ar: string
+  name_en: string
+  emoji: string
+  plate_number: string
+  model_year: number | null
+  owner_name: string
+  owner_company_id: ID | null
+  registration_expiry: ISODate | null
+  oil_change_date: ISODate | null
+  status: VehicleStatus
+  location: string
+  project_id: ID | null
+  driver_name: string
+  driver_id: ID | null
+  company_id: ID
+  last_odometer: number | null
+  lat: number | null
+  lng: number | null
+  notes: string
+  created_at?: string
+}
+
+export interface VehicleCost {
+  id: ID
+  vehicle_id: ID
+  category: VehicleCostCategory
+  amount: number
+  currency: Currency
+  date: ISODate
+  note: string
+  created_at?: string
+}
+
+// /api/fleet/summary — read-only KPI + rollup endpoint
+export interface FleetSummary {
+  counts: { total: number; active: number; inactive: number; maintenance: number; retired: number }
+  by_type: Array<{ vehicle_type: VehicleType; name_en: string; emoji: string; count: number }>
+  by_project: Array<{ project_id: ID | null; name_ar: string; name_en: string; count: number }>
+  by_status: Array<{ status: VehicleStatus; count: number }>
+  registration_alerts: { expired: number; soon: number; ok: number }
+  oil_alerts: { due: number }
+}
+
+// /api/fleet/map — projects + positioned vehicles for Leaflet
+export interface FleetMapData {
+  projects: Array<{
+    id: ID; name_ar: string; name_en: string; location: string
+    lat: number; lng: number; status: ProjectStatus; kind: 'ACTIVE' | 'MASTERPLAN' | 'BASE'; vehicle_count: number
+  }>
+  vehicles: Array<{
+    id: ID; code: string; plate_number: string; name_ar: string; name_en: string; emoji: string
+    vehicle_type: VehicleType; status: VehicleStatus; lat: number; lng: number
+    project_id: ID | null; project_name: string; location: string; driver_name: string
+  }>
+}
+
+// /api/fleet/costs — read-only finance preview (IQD and USD kept separate)
+export interface FleetCosts {
+  totals: { iqd: number; usd: number }
+  by_category: Array<{ category: VehicleCostCategory; iqd: number; usd: number }>
+  by_type: Array<{ vehicle_type: VehicleType; name_en: string; iqd: number; usd: number }>
+  by_project: Array<{ project_id: ID | null; name_ar: string; iqd: number; usd: number; vehicles: number }>
+  by_month: Array<{ month: string; iqd: number; usd: number }>
 }
