@@ -12,8 +12,13 @@ import { LoadingState } from '../../../components/ui/Spinner'
 import { useT, useLang } from '../../../context/LangContext'
 import { useResource } from '../../../hooks/useResource'
 import { formatDate, pickName } from '../../../lib/format'
-import { regState, REG_CHIP, REG_LABEL_KEY, TYPE_EMOJI } from '../fleetUtils'
-import type { Vehicle } from '../../../types'
+import { regState, REG_CHIP, REG_LABEL_KEY, TYPE_ICON } from '../fleetUtils'
+import type { Vehicle, VehicleType } from '../../../types'
+
+function VehicleTypeIcon({ type, className }: { type: VehicleType; className?: string }) {
+  const Icon = TYPE_ICON[type]
+  return <Icon className={className} />
+}
 
 function ListItem({ children }: { children: React.ReactNode }) {
   return (
@@ -103,7 +108,7 @@ export function ArchiveTab() {
               const rs = regState(v.registration_expiry)
               return (
                 <ListItem key={v.id}>
-                  <span className="text-lg leading-none">{v.emoji || TYPE_EMOJI[v.vehicle_type]}</span>
+                  <VehicleTypeIcon type={v.vehicle_type} className="h-5 w-5 shrink-0 text-slate-500" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-slate-700" dir="ltr">{v.plate_number}</p>
                     <p className="truncate text-xs text-slate-400">{pickName(v, lang)}</p>
@@ -155,7 +160,7 @@ export function ArchiveTab() {
             {retired.length ? (
               retired.slice(0, 7).map((v) => (
                 <ListItem key={v.id}>
-                  <span className="text-lg leading-none opacity-60">{v.emoji || TYPE_EMOJI[v.vehicle_type]}</span>
+                  <VehicleTypeIcon type={v.vehicle_type} className="h-5 w-5 shrink-0 text-slate-500 opacity-60" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-slate-600" dir="ltr">{v.plate_number}</p>
                     <p className="truncate text-xs text-slate-400">
