@@ -1,12 +1,12 @@
-import { useMemo } from 'react'
-import { Truck, Coins, CalendarDays, CalendarRange, Fuel, Wrench, Package, ShoppingCart } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Truck, Coins, CalendarDays, CalendarRange, Fuel, Wrench, Package, ShoppingCart, User, BadgeCheck, MapPin, Hash } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { Card, CardHeader, LoadingState } from '../../components/ui'
+import { Card, CardHeader, LoadingState, Dialog, Badge } from '../../components/ui'
 import { KpiCard, ChartCard, EmptyState, ArabicTable, type Column } from '../../components/shared'
 import { useApi } from '../../hooks/useResource'
 import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
-import { formatCurrency, formatNumber } from '../../lib/format'
+import { formatCurrency, formatNumber, formatDate } from '../../lib/format'
 
 interface Money {
   iqd: number
@@ -20,6 +20,22 @@ interface CompanyRow {
   usd: number
   vehicles: number
 }
+interface VehicleRow {
+  id: string
+  code: string
+  name_ar: string
+  name_en: string
+  plate_number: string
+  driver_name: string
+  owner_name: string
+  vehicle_type: string
+  status: string
+  model_year: number
+  registration_expiry: string
+  location: string
+  iqd: number
+  usd: number
+}
 interface SpendResp {
   totals: Money
   this_month: Money
@@ -28,6 +44,7 @@ interface SpendResp {
   by_year: Array<{ year: string; iqd: number; usd: number }>
   by_category: Array<{ category: string; iqd: number; usd: number }>
   by_company: CompanyRow[]
+  by_vehicle: VehicleRow[]
   expenses: { month: number; year: number; total: number }
 }
 
@@ -36,6 +53,12 @@ const CAT_ICON: Record<string, JSX.Element> = {
   MAINTENANCE: <Wrench className="h-4 w-4" />,
   PARTS: <Package className="h-4 w-4" />,
   PURCHASE: <ShoppingCart className="h-4 w-4" />,
+}
+const STATUS_COLOR: Record<string, 'green' | 'amber' | 'gray' | 'red'> = {
+  ACTIVE: 'green',
+  MAINTENANCE: 'amber',
+  INACTIVE: 'gray',
+  RETIRED: 'red',
 }
 
 // IQD (big) over USD (small green) — the standard money cell used across cash views.
@@ -52,6 +75,7 @@ export function VehiclesTab() {
   const t = useT()
   const { lang } = useLang()
   const { companyId } = useCompany()
+  const [selected, setSelected] = useState<VehicleRow | null>(null)
 
   const { data, loading } = useApi<SpendResp>(
     '/accounting/vehicle-spending',
@@ -68,13 +92,41 @@ export function VehiclesTab() {
   )
 
   if (loading) return <LoadingState label={t('common.loading')} />
-  if (!data || (data.totals.iqd === 0 && data.totals.usd === 0 && data.by_company.length === 0)) {
+  if (!data || data.by_vehicle.length === 0) {
     return (
       <Card>
         <EmptyState title={t('accounting.vehicles.empty')} hint={t('common.empty_hint')} />
       </Card>
     )
   }
+
+  const vehicleColumns: Column<VehicleRow>[] = [
+    {
+      key: 'vehicle',
+      header: t('accounting.vehicles.vehicle'),
+      render: (r) => (
+        <span className="flex flex-col">
+          <span className="font-medium text-slate-800">{lang === 'en' ? r.name_en || r.name_ar : r.name_ar}</span>
+          <span className="font-mono text-[11px] text-slate-400">{r.code}</span>
+        </span>
+      ),
+    },
+    { key: 'plate', header: t('accounting.vehicles.plate'), render: (r) => <span className="font-mono text-xs text-slate-600">{r.plate_number || '—'}</span> },
+    { key: 'driver', header: t('accounting.vehicles.driver'), render: (r) => r.driver_name || '—' },
+    { key: 'status', header: t('accounting.vehicles.status'), render: (r) => <Badge color={STATUS_COLOR[r.status] ?? 'gray'}>{t(`accounting.vehicles.st.${r.status}`)}</Badge> },
+    {
+      key: 'spend',
+      header: t('accounting.vehicles.spend'),
+      align: 'end',
+      accessor: (r) => r.iqd,
+      render: (r) => (
+        <span className="inline-flex flex-col items-end tabular-nums">
+          <span className="font-semibold text-slate-800">{formatCurrency(r.iqd, 'IQD', lang)}</span>
+          {r.usd ? <span className="text-[11px] text-emerald-600">{formatCurrency(r.usd, 'USD', lang)}</span> : null}
+        </span>
+      ),
+    },
+  ]
 
   const companyColumns: Column<CompanyRow>[] = [
     { key: 'name', header: t('accounting.vehicles.company'), render: (r) => (lang === 'en' ? r.name_en || r.name_ar : r.name_ar) },
@@ -118,6 +170,21 @@ export function VehiclesTab() {
           accent="warning"
         />
       </div>
+
+      {/* Vehicles list — clickable rows open the detail dialog */}
+      <Card>
+        <CardHeader title={t('accounting.vehicles.list_title')} subtitle={t('accounting.vehicles.list_sub')} icon={<Truck className="h-5 w-5" />} />
+        <ArabicTable
+          columns={vehicleColumns}
+          data={data.by_vehicle}
+          rowKey={(r) => r.id}
+          onRowClick={(r) => setSelected(r)}
+          searchable
+          searchPlaceholder={t('accounting.vehicles.list_sub')}
+          pageSize={12}
+          emptyTitle={t('accounting.vehicles.empty')}
+        />
+      </Card>
 
       {/* Monthly spend chart (IQD) */}
       <ChartCard
@@ -199,6 +266,108 @@ export function VehiclesTab() {
           emptyTitle={t('accounting.vehicles.empty')}
         />
       </Card>
+
+      {selected && <VehicleDetailDialog vehicle={selected} onClose={() => setSelected(null)} />}
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Vehicle detail dialog — full info + cost breakdown + recent costs.
+// ---------------------------------------------------------------------------
+interface DetailResp {
+  vehicle: Record<string, string | number | null>
+  by_category: Array<{ category: string; iqd: number; usd: number }>
+  costs: Array<{ id: string; category: string; amount: number; currency: string; date: string; note: string }>
+}
+
+function Field({ icon, label, value }: { icon: JSX.Element; label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 px-3 py-2.5">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">{icon}</span>
+      <span className="flex min-w-0 flex-col">
+        <span className="text-[11px] font-medium text-slate-400">{label}</span>
+        <span className="truncate text-sm font-medium text-slate-700">{value || '—'}</span>
+      </span>
+    </div>
+  )
+}
+
+function VehicleDetailDialog({ vehicle, onClose }: { vehicle: VehicleRow; onClose: () => void }) {
+  const t = useT()
+  const { lang } = useLang()
+  const { data, loading } = useApi<DetailResp>(`/accounting/vehicle-spending/${vehicle.id}`)
+  const v = (data?.vehicle ?? {}) as Record<string, string | number | null>
+  const name = lang === 'en' ? vehicle.name_en || vehicle.name_ar : vehicle.name_ar
+
+  const costColumns: Column<DetailResp['costs'][number]>[] = [
+    { key: 'date', header: t('accounting.vehicles.date'), accessor: (r) => r.date, render: (r) => formatDate(r.date, lang) },
+    { key: 'category', header: t('accounting.vehicles.type'), render: (r) => t(`accounting.vehicles.cat.${r.category}`) },
+    { key: 'note', header: t('accounting.vehicles.note'), render: (r) => <span className="text-slate-500">{r.note || '—'}</span> },
+    { key: 'amount', header: t('accounting.vehicles.spend'), align: 'end', accessor: (r) => r.amount, render: (r) => <span className="tabular-nums">{formatCurrency(r.amount, r.currency, lang)}</span> },
+  ]
+
+  return (
+    <Dialog open onClose={onClose} size="lg" title={<span className="flex items-center gap-2"><Truck className="h-5 w-5 text-primary" />{t('accounting.vehicles.detail_title')} — {name}</span>}>
+      {loading ? (
+        <LoadingState label={t('common.loading')} />
+      ) : (
+        <div className="space-y-5">
+          {/* totals */}
+          <div className="flex items-center justify-between rounded-2xl bg-primary/5 px-4 py-3">
+            <span className="text-sm font-semibold text-slate-600">{t('accounting.vehicles.total_spend')}</span>
+            <Dual iqd={vehicle.iqd} usd={vehicle.usd} lang={lang} />
+          </div>
+
+          {/* details grid */}
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            <Field icon={<Hash className="h-4 w-4" />} label={t('accounting.vehicles.plate')} value={String(v.plate_number ?? vehicle.plate_number ?? '')} />
+            <Field icon={<User className="h-4 w-4" />} label={t('accounting.vehicles.driver')} value={String(v.driver_name ?? vehicle.driver_name ?? '')} />
+            <Field icon={<BadgeCheck className="h-4 w-4" />} label={t('accounting.vehicles.owner')} value={String(v.owner_name ?? vehicle.owner_name ?? '')} />
+            <Field icon={<Truck className="h-4 w-4" />} label={t('accounting.vehicles.type')} value={String(v.vehicle_type ?? vehicle.vehicle_type ?? '')} />
+            <Field icon={<CalendarDays className="h-4 w-4" />} label={t('accounting.vehicles.model_year')} value={v.model_year ? String(v.model_year) : ''} />
+            <Field icon={<CalendarRange className="h-4 w-4" />} label={t('accounting.vehicles.reg_expiry')} value={v.registration_expiry ? formatDate(String(v.registration_expiry), lang) : ''} />
+            <Field icon={<MapPin className="h-4 w-4" />} label={t('accounting.vehicles.location')} value={String(v.location ?? vehicle.location ?? '')} />
+            <Field icon={<BadgeCheck className="h-4 w-4" />} label={t('accounting.vehicles.status')} value={t(`accounting.vehicles.st.${String(v.status ?? vehicle.status)}`)} />
+          </div>
+
+          {/* cost by category */}
+          {(data?.by_category.length ?? 0) > 0 && (
+            <div>
+              <p className="mb-2 text-sm font-semibold text-slate-600">{t('accounting.vehicles.by_category')}</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {data!.by_category.map((c) => (
+                  <div key={c.category} className="rounded-xl border border-slate-100 px-3 py-2">
+                    <span className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                      {CAT_ICON[c.category] ?? <Coins className="h-3.5 w-3.5" />}
+                      {t(`accounting.vehicles.cat.${c.category}`)}
+                    </span>
+                    <span className="mt-1 block text-sm font-semibold tabular-nums text-slate-800">{formatCurrency(c.iqd, 'IQD', lang)}</span>
+                    {c.usd ? <span className="block text-[11px] tabular-nums text-emerald-600">{formatCurrency(c.usd, 'USD', lang)}</span> : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* recent costs */}
+          <div>
+            <p className="mb-2 text-sm font-semibold text-slate-600">{t('accounting.vehicles.recent_costs')}</p>
+            {(data?.costs.length ?? 0) > 0 ? (
+              <ArabicTable
+                columns={costColumns}
+                data={data!.costs}
+                rowKey={(r) => r.id}
+                searchable={false}
+                pageSize={8}
+                emptyTitle={t('accounting.vehicles.no_costs')}
+              />
+            ) : (
+              <EmptyState title={t('accounting.vehicles.no_costs')} />
+            )}
+          </div>
+        </div>
+      )}
+    </Dialog>
   )
 }

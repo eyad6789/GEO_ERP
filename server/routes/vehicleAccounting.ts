@@ -96,7 +96,50 @@ vehicleAccountingRouter.get('/accounting/vehicle-spending', (req, res) => {
       total: expVal(''),
     }
 
-    res.json({ totals, this_month, this_year, by_month, by_year, by_category, by_company, expenses })
+    // Per-vehicle list — every vehicle with its key details and total spend
+    // (LEFT JOIN so vehicles with no costs yet still appear). Clickable in the UI.
+    const by_vehicle = db
+      .prepare(
+        `SELECT v.id, v.code, v.name_ar, v.name_en, v.plate_number, v.driver_name,
+                v.owner_name, v.vehicle_type, v.status, v.model_year,
+                v.registration_expiry, v.location,
+                COALESCE(SUM(CASE WHEN vc.currency='USD' THEN 0 ELSE vc.amount END),0) iqd,
+                COALESCE(SUM(CASE WHEN vc.currency='USD' THEN vc.amount ELSE 0 END),0) usd
+         FROM vehicles v
+         LEFT JOIN vehicle_costs vc ON vc.vehicle_id = v.id
+         WHERE ${where}
+         GROUP BY v.id
+         ORDER BY iqd DESC, v.code ASC`,
+      )
+      .all(...params)
+
+    res.json({ totals, this_month, this_year, by_month, by_year, by_category, by_company, by_vehicle, expenses })
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message })
+  }
+})
+
+// GET /api/accounting/vehicle-spending/:id — full detail for one vehicle:
+// all its fields + cost breakdown by category + its recent cost rows.
+vehicleAccountingRouter.get('/accounting/vehicle-spending/:id', (req, res) => {
+  try {
+    const vehicle = db.prepare('SELECT * FROM vehicles WHERE id = ?').get(req.params.id)
+    if (!vehicle) return res.status(404).json({ error: 'Vehicle not found' })
+    const by_category = db
+      .prepare(
+        `SELECT category,
+                SUM(CASE WHEN currency='USD' THEN 0 ELSE amount END) iqd,
+                SUM(CASE WHEN currency='USD' THEN amount ELSE 0 END) usd
+         FROM vehicle_costs WHERE vehicle_id = ? GROUP BY category ORDER BY iqd DESC`,
+      )
+      .all(req.params.id)
+    const costs = db
+      .prepare(
+        `SELECT id, category, amount, currency, date, note
+         FROM vehicle_costs WHERE vehicle_id = ? ORDER BY date DESC LIMIT 200`,
+      )
+      .all(req.params.id)
+    res.json({ vehicle, by_category, costs })
   } catch (e) {
     res.status(500).json({ error: (e as Error).message })
   }
