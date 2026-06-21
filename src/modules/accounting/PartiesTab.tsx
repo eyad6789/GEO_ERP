@@ -8,7 +8,7 @@ import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { formatCurrency, pickName } from '../../lib/format'
 import type { Account } from '../../types'
-import { AR_PARENT, AP_PARENT, type TrialBalanceResp } from './shared'
+import { CUSTOMER_ROOTS, SUPPLIER_ROOTS, resolvePostingDescendants, type TrialBalanceResp } from './shared'
 
 interface PartyRow {
   code: string
@@ -31,22 +31,27 @@ export function PartiesTab() {
     return m
   }, [trial])
 
-  // AR (customers) = debit-normal, balance positive. AP (suppliers) = credit-normal, payable = -balance.
+  // Posting leaves under each configured node (chart-agnostic via the tree).
+  const customerCodes = useMemo(() => new Set(resolvePostingDescendants(CUSTOMER_ROOTS, accounts)), [accounts])
+  const supplierCodes = useMemo(() => new Set(resolvePostingDescendants(SUPPLIER_ROOTS, accounts)), [accounts])
+
+  // Customers (العملاء) = debit-normal, balance positive. Suppliers (الموردون)
+  // here come from the debtors tree, so they read as debit-normal too.
   const receivables: PartyRow[] = useMemo(
     () =>
       accounts
-        .filter((a) => a.parent_code === AR_PARENT)
+        .filter((a) => customerCodes.has(a.code))
         .map((a) => ({ code: a.code, name: pickName(a, lang), balance: balanceMap.get(a.code) ?? 0 }))
         .sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance)),
-    [accounts, balanceMap, lang],
+    [accounts, customerCodes, balanceMap, lang],
   )
   const payables: PartyRow[] = useMemo(
     () =>
       accounts
-        .filter((a) => a.parent_code === AP_PARENT)
-        .map((a) => ({ code: a.code, name: pickName(a, lang), balance: -(balanceMap.get(a.code) ?? 0) }))
+        .filter((a) => supplierCodes.has(a.code))
+        .map((a) => ({ code: a.code, name: pickName(a, lang), balance: balanceMap.get(a.code) ?? 0 }))
         .sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance)),
-    [accounts, balanceMap, lang],
+    [accounts, supplierCodes, balanceMap, lang],
   )
 
   const totalAR = receivables.reduce((s, r) => s + r.balance, 0)

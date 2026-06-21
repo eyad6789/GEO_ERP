@@ -6,10 +6,11 @@ import { useResource, useApi } from '../../hooks/useResource'
 import { useFormNav } from '../../hooks/useFormNav'
 import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
-import { apiPost, apiPut } from '../../lib/api'
+import { apiPost, apiPut, apiDelete } from '../../lib/api'
 import { formatCurrency, pickName } from '../../lib/format'
 import { type Account, type Company, type Project, type Currency } from '../../types'
 import { isBalanced, type JournalEntryFull } from './shared'
+import { DateField } from './DateField'
 
 interface LineState {
   uid: number
@@ -82,6 +83,7 @@ export function NewEntryDialog({
   const [docNumber, setDocNumber] = useState('')
   const [lines, setLines] = useState<LineState[]>(blankLines(companyId ?? ''))
   const [submitting, setSubmitting] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   // قيد / سند قبض / سند صرف — all three use the same line editor below.
   const [mode, setMode] = useState<'JOURNAL' | 'RECEIPT' | 'PAYMENT'>('JOURNAL')
@@ -98,11 +100,17 @@ export function NewEntryDialog({
         .map((a) => ({ value: a.code, label: `${a.code} — ${lang === 'en' ? a.name_en || a.name_ar : a.name_ar}` })),
     [accounts, lang],
   )
-  // Project options scoped to the line's company.
-  const projectOptionsFor = (company: string) =>
-    projects
-      .filter((p) => !company || p.company_id === company)
-      .map((p) => ({ value: p.id, label: pickName(p, lang) }))
+  // Project options scoped to the line's company. "عام / General" (value '' →
+  // no specific project) is always first, and every option carries a quick-entry
+  // digit in its label — like the currency field — so you can Tab into the field,
+  // type the number and Enter to pick it (1 = عام, 2 = first project, …).
+  const projectOptionsFor = (company: string) => {
+    const list = projects.filter((p) => !company || p.company_id === company)
+    return [
+      { value: '', label: `1 — ${t('accounting.new.general_project')}` },
+      ...list.map((p, i) => ({ value: p.id, label: `${i + 2} — ${pickName(p, lang)}` })),
+    ]
+  }
 
   // First cash/bank account — used to pre-fill the cash line for قبض / صرف.
   const defaultCashAccount = useMemo(
@@ -121,8 +129,13 @@ export function NewEntryDialog({
     }
   }
 
-  const totalDebit = lines.reduce((s, l) => s + num(l.debit), 0)
-  const totalCredit = lines.reduce((s, l) => s + num(l.credit), 0)
+  // Balance on the DINAR VALUE (amount × rate). A tasarif (currency exchange)
+  // mixes currencies per line — e.g. $100 debit vs 150,000 IQD credit — and
+  // balances when the dinar values match. IQD lines have rate 1, so ordinary
+  // single-currency entries are unaffected.
+  const lineRate = (l: LineState) => num(rateFor(l.currency, l.price)) || 1
+  const totalDebit = lines.reduce((s, l) => s + num(l.debit) * lineRate(l), 0)
+  const totalCredit = lines.reduce((s, l) => s + num(l.credit) * lineRate(l), 0)
   const diff = totalDebit - totalCredit
   const balanced = isBalanced(totalDebit, totalCredit) && totalDebit > 0
   const canSubmit = balanced && !!docNumber.trim()
@@ -166,9 +179,42 @@ export function NewEntryDialog({
   }, [open, editId, editEntry])
 
   const handleClose = () => {
-    if (submitting) return
+    if (submitting || deleting) return
     reset()
     onClose()
+  }
+
+  // Keyboard: F5 saves the entry (without reloading the page), Escape exits
+  // without saving. Everything else falls through to the grid navigation.
+  const onFormKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (e.key === 'F5') {
+      e.preventDefault()
+      if (!submitting && !deleting && canSubmit) handleSubmit()
+      return
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      handleClose()
+      return
+    }
+    formNav.onKeyDown(e)
+  }
+
+  const handleDelete = async () => {
+    if (!editId) return
+    if (!window.confirm(t('accounting.edit.confirm_delete'))) return
+    setDeleting(true)
+    try {
+      await apiDelete(`/journal_entries/${editId}`)
+      success(t('accounting.edit.deleted'))
+      reset()
+      onCreated()
+      onClose()
+    } catch (e) {
+      error((e as Error)?.message || t('common.error'))
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const handleSubmit = async () => {
@@ -183,7 +229,10 @@ export function NewEntryDialog({
     const company = valid.find((l) => l.company_id)?.company_id || companyId || GENERAL_COMPANY
 
     const first = valid[0]
-    const description = valid.find((l) => l.description.trim())?.description.trim() ?? ''
+    // Use the LAST non-empty البيان as the entry's description (what the journal
+    // list shows), so the most recently typed line wins.
+    const described = valid.filter((l) => l.description.trim())
+    const description = described.length ? described[described.length - 1].description.trim() : ''
 
     const body = {
       company_id: company,
@@ -239,17 +288,23 @@ export function NewEntryDialog({
         <div className="flex w-full items-center justify-between gap-3">
           <BalanceIndicator balanced={balanced} totalDebit={totalDebit} totalCredit={totalCredit} diff={diff} lang={lang} t={t} />
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleClose} disabled={submitting}>
+            {isEdit && (
+              <Button variant="outline" onClick={handleDelete} disabled={submitting || deleting} className="text-danger hover:bg-red-50">
+                <Trash2 className="h-4 w-4" />
+                {deleting ? t('accounting.edit.deleting') : t('accounting.edit.delete')}
+              </Button>
+            )}
+            <Button variant="outline" onClick={handleClose} disabled={submitting || deleting}>
               {t('common.cancel')}
             </Button>
-            <Button variant="primary" onClick={handleSubmit} disabled={submitting || !canSubmit}>
+            <Button variant="primary" onClick={handleSubmit} disabled={submitting || deleting || !canSubmit}>
               {submitting ? t('accounting.new.saving') : t('accounting.new.submit')}
             </Button>
           </div>
         </div>
       }
     >
-      <div className="space-y-5" {...formNav}>
+      <div className="space-y-5" onKeyDown={onFormKeyDown} onKeyUp={formNav.onKeyUp}>
         {/* Type toggle: قيد / سند قبض / سند صرف (new entries only) */}
         {!isEdit && (
           <div className="flex gap-1.5 rounded-xl bg-slate-100 p-1">
@@ -277,7 +332,7 @@ export function NewEntryDialog({
         <section>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label={t('accounting.new.date')} required>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              <DateField value={date} onChange={setDate} />
             </Field>
             <Field label={t('accounting.new.doc_number')} required hint={t('accounting.new.doc_number_hint')}>
               <Input value={docNumber} onChange={(e) => setDocNumber(e.target.value)} placeholder={t('accounting.new.doc_number_ph')} className="font-mono" />
@@ -369,9 +424,12 @@ export function NewEntryDialog({
                         value={line.currency}
                         onChange={(v) => {
                           const c = v as Currency
+                          // Currency is PER LINE so a tasarif (currency exchange) can
+                          // mix a USD line with an IQD line in the same entry.
                           updateLine(line.uid, { currency: c, price: rateFor(c, line.price) })
                         }}
-                        options={CONVERTIBLE.map((c) => ({ value: c, label: c }))}
+                        // Labels carry the quick-entry digit: type 1 → IQD, 2 → USD.
+                        options={CONVERTIBLE.map((c, i) => ({ value: c, label: `${i + 1} — ${c}` }))}
                         placeholder={t('common.select')}
                       />
                     </td>

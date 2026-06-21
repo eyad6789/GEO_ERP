@@ -8,7 +8,15 @@ import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { formatCurrency, formatDate, pickName } from '../../lib/format'
 import type { Account } from '../../types'
-import { CASH_PARENT, CASH_BOX_USD, BANKS_ACCOUNT, type TrialBalanceResp, type CashMovement, type AdvanceSplit } from './shared'
+import {
+  CASH_BOX_ROOTS,
+  ADVANCE_ROOTS,
+  OPERATIONAL_ADVANCE,
+  resolvePostingDescendants,
+  firstExistingCode,
+  type TrialBalanceResp,
+  type CashMovement,
+} from './shared'
 import { AdvanceCard } from './AdvanceCard'
 
 interface Movement extends CashMovement {
@@ -43,11 +51,22 @@ export function CashTab() {
     return a ? pickName(a, lang) : code || '—'
   }
 
-  // Each صندوق under النقود (18), except the banks header (183).
+  // Cash-box posting accounts only, resolved from whichever chart is loaded
+  // (181/182, or 1111). Banks are intentionally excluded — this page shows the
+  // physical cash boxes (الصندوق) for IQD and USD, nothing else.
+  const cashCodeSet = useMemo(
+    () => new Set(resolvePostingDescendants(CASH_BOX_ROOTS, accounts)),
+    [accounts],
+  )
+  const advanceCode = useMemo(
+    () => firstExistingCode(ADVANCE_ROOTS, new Set(accounts.map((a) => a.code))) ?? OPERATIONAL_ADVANCE,
+    [accounts],
+  )
+  const advanceCodeSet = useMemo(() => resolvePostingDescendants(ADVANCE_ROOTS, accounts), [accounts])
   const cashBoxes = useMemo(() => {
-    const isUsd = (a: Account) => a.code === CASH_BOX_USD || /\$|دولار|usd/i.test(`${a.name_ar} ${a.name_en}`)
+    const isUsd = (a: Account) => /\$|دولار|usd/i.test(`${a.name_ar} ${a.name_en}`)
     return accounts
-      .filter((a) => a.parent_code === CASH_PARENT && a.code !== BANKS_ACCOUNT && a.archived !== 1)
+      .filter((a) => cashCodeSet.has(a.code) && a.archived !== 1)
       .sort((a, b) => a.code.localeCompare(b.code))
       .map((a) => ({
         code: a.code,
@@ -57,15 +76,25 @@ export function CashTab() {
         usd: usdMap.get(a.code) ?? 0,
       }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accounts, iqdMap, usdMap, lang])
+  }, [accounts, cashCodeSet, iqdMap, usdMap, lang])
 
   // Each total counts only boxes of its own currency, so "إجمالي النقد (دينار)"
   // equals the dinar cash box(es) and excludes the dinar-equivalent of USD cash.
   const totalIqd = cashBoxes.filter((c) => c.currency === 'IQD').reduce((s, c) => s + c.iqd, 0)
   const totalUsd = cashBoxes.filter((c) => c.currency === 'USD').reduce((s, c) => s + c.usd, 0)
-  // Operational advance funded from CASH (split server-side by funding source).
-  const { data: advSplit } = useApi<AdvanceSplit>('/accounting/advance-split', companyId ? { company_id: companyId } : undefined)
-  const advance = advSplit?.cash ?? { iqd: 0, usd: 0 }
+  // Operational advance — its ACTUAL net balance (debit − credit) rolled up from
+  // the chart, so taking money out (a credit) reduces it immediately, exactly
+  // like the chart of accounts. (Previously this showed only the cash-funded
+  // slice from /advance-split, which never moved when money was spent.)
+  const advance = useMemo(() => {
+    let iqd = 0
+    let usd = 0
+    for (const c of advanceCodeSet) {
+      iqd += iqdMap.get(c) ?? 0
+      usd += usdMap.get(c) ?? 0
+    }
+    return { iqd, usd }
+  }, [advanceCodeSet, iqdMap, usdMap])
 
   const movements: Movement[] = useMemo(
     () => (mv?.rows ?? []).map((m) => ({ ...m, type: m.debit > 0 ? 'RECEIPT' : 'PAYMENT', amount: m.debit > 0 ? m.debit : m.credit })),
@@ -102,9 +131,32 @@ export function CashTab() {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <KpiCard label={t('accounting.cash.total_iqd')} value={formatCurrency(totalIqd, 'IQD', lang)} icon={<Wallet className="h-5 w-5" />} accent="primary" />
-        <KpiCard label={t('accounting.cash.total_usd')} value={formatCurrency(totalUsd, 'USD', lang)} icon={<Coins className="h-5 w-5" />} accent="success" />
-        <AdvanceCard iqd={advance.iqd} usd={advance.usd} lang={lang} t={t} />
+        {/* Total Cash = cash boxes (IQD + $) + the operational advance, kept per currency. */}
+        <KpiCard
+          label={t('accounting.cash.total')}
+          value={
+            <span className="flex flex-col leading-tight">
+              <span>{formatCurrency(totalIqd + advance.iqd, 'IQD', lang)}</span>
+              <span className="mt-0.5 text-base font-semibold text-emerald-600">{formatCurrency(totalUsd + advance.usd, 'USD', lang)}</span>
+            </span>
+          }
+          hint={t('accounting.cash.incl_advance')}
+          icon={<Wallet className="h-5 w-5" />}
+          accent="primary"
+        />
+        {/* Cash on hand = cash boxes only (excludes what is out as an advance). */}
+        <KpiCard
+          label={t('accounting.cash.on_hand')}
+          value={
+            <span className="flex flex-col leading-tight">
+              <span>{formatCurrency(totalIqd, 'IQD', lang)}</span>
+              <span className="mt-0.5 text-base font-semibold text-emerald-600">{formatCurrency(totalUsd, 'USD', lang)}</span>
+            </span>
+          }
+          icon={<Coins className="h-5 w-5" />}
+          accent="info"
+        />
+        <AdvanceCard code={advanceCode} iqd={advance.iqd} usd={advance.usd} lang={lang} t={t} />
       </div>
 
       <Card>
