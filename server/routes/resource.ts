@@ -35,6 +35,8 @@ const REGISTRY: Record<string, TableConfig> = {
   project_staff: { module: 'PROJECTS' },
   project_expenditures: { module: 'PROJECTS', search: ['description', 'paid_to', 'category', 'doc_number'] },
   project_diagrams: { module: 'PROJECTS', search: ['name_ar'] },
+  vehicles: { module: 'FLEET', search: ['plate_number', 'name_ar', 'name_en', 'code', 'driver_name', 'owner_name'], defaultSort: 'code' },
+  vehicle_costs: { module: 'FLEET', search: ['category', 'note'], defaultSort: 'date' },
   warehouses: { module: 'WAREHOUSE', search: ['name_ar', 'location'] },
   items: { module: 'WAREHOUSE', search: ['name_ar', 'name_en', 'code', 'category'] },
   stock: { module: 'WAREHOUSE' },
