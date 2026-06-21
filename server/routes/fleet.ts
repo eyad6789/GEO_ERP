@@ -306,7 +306,30 @@ fleetRouter.get('/fleet/costs', (req, res) => {
       )
       .all(...vehicleParams) as Array<{ month: string; iqd: number; usd: number }>
 
-    res.json({ totals, by_category, by_type, by_project, by_month })
+    // By vehicle (LEFT JOIN so every vehicle appears, even with no costs)
+    const by_vehicle = db
+      .prepare(
+        `SELECT
+           v.id, v.code, v.plate_number, v.name_ar, v.name_en, v.emoji, v.vehicle_type, v.project_id,
+           SUM(CASE WHEN vc.currency = 'IQD' THEN vc.amount ELSE 0 END) total_iqd,
+           SUM(CASE WHEN vc.currency = 'USD' THEN vc.amount ELSE 0 END) total_usd,
+           SUM(CASE WHEN vc.currency = 'IQD' AND vc.category = 'MAINTENANCE' THEN vc.amount ELSE 0 END) maint_iqd,
+           SUM(CASE WHEN vc.currency = 'USD' AND vc.category = 'MAINTENANCE' THEN vc.amount ELSE 0 END) maint_usd,
+           SUM(CASE WHEN vc.currency = 'IQD' AND vc.category = 'FUEL' THEN vc.amount ELSE 0 END) fuel_iqd,
+           SUM(CASE WHEN vc.currency = 'USD' AND vc.category = 'FUEL' THEN vc.amount ELSE 0 END) fuel_usd
+         FROM vehicles v
+         LEFT JOIN vehicle_costs vc ON vc.vehicle_id = v.id
+         WHERE ${vFilter}
+         GROUP BY v.id
+         ORDER BY total_iqd DESC`,
+      )
+      .all(...vehicleParams) as Array<{
+        id: string; code: string; plate_number: string; name_ar: string; name_en: string
+        emoji: string; vehicle_type: string; project_id: string | null
+        total_iqd: number; total_usd: number; maint_iqd: number; maint_usd: number; fuel_iqd: number; fuel_usd: number
+      }>
+
+    res.json({ totals, by_category, by_type, by_project, by_month, by_vehicle })
   } catch (e) {
     res.status(500).json({ error: (e as Error).message })
   }
