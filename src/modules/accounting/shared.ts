@@ -158,12 +158,61 @@ export const CASH_ACCOUNT_CODES = ['181', '182', '183'] // صندوق د.ع / ص
 export const AR_PARENT = '16' // المدينون (debtors / receivables)
 export const AP_PARENT = '26' // الدائنون (creditors / payables)
 
+// ---- Parties (Customers / Suppliers) source nodes --------------------------
+// The Parties tab lists the posting sub-accounts under these tree nodes:
+//   • Customers (العملاء) live under سلف المشاريع (164).
+//   • Suppliers (الموردون) are taken from المدينون (16) — all its posting leaves.
+// We resolve POSTING DESCENDANTS (not just direct children) so a node that is
+// itself a posting leaf still shows up, and a deeper prod chart expands fully.
+export const CUSTOMER_ROOTS = ['164'] // العملاء — سلف المشاريع
+export const SUPPLIER_ROOTS = ['16'] // الموردون — المدينون (all posting leaves)
+
 // Dedicated cash-box / advance accounts (Cash & Bank tab balance logic).
 export const CASH_BOX_IQD = '181' // صندوق د.ع
 export const CASH_BOX_USD = '182' // صندوق $
 export const BANKS_ACCOUNT = '183' // المصارف
 export const OPERATIONAL_ADVANCE = '16112' // السلف التشغيلية
 export const MAIN_CASH_BOX = '181' // treated as the primary box for current/actual
+
+// ---- Chart-agnostic cash / bank / advance resolution -----------------------
+// The chart of accounts differs by deployment: the demo uses the Iraqi Unified
+// codes (181/182 cash, 183 banks, 16112 advance) while production books use an
+// IFRS-style chart (1111 cash, 1112 banks, 1152 employee advance). We list the
+// CANDIDATE roots per concept and resolve whichever exist in the live tree, so
+// the cash page works regardless of which chart is loaded.
+export const CASH_BOX_ROOTS = ['181', '182', '1111'] // physical cash box(es)
+export const BANK_ROOTS = ['183', '1112'] // banks (header + sub-accounts, or the account itself)
+export const ADVANCE_ROOTS = ['16112', '1152'] // operational / employee advance
+
+/** Posting (leaf) account codes under any of the given roots, from the live tree. */
+export function resolvePostingDescendants(
+  roots: string[],
+  accounts: Array<{ code: string; parent_code: string | null; is_posting?: number }>,
+): string[] {
+  const kids = new Map<string, string[]>()
+  const posting = new Set<string>()
+  for (const a of accounts) {
+    if (a.is_posting === 1) posting.add(a.code)
+    if (a.parent_code) {
+      const list = kids.get(a.parent_code) ?? []
+      list.push(a.code)
+      kids.set(a.parent_code, list)
+    }
+  }
+  const out = new Set<string>()
+  const stack = [...roots]
+  while (stack.length) {
+    const c = stack.pop() as string
+    if (posting.has(c)) out.add(c)
+    for (const k of kids.get(c) ?? []) stack.push(k)
+  }
+  return [...out]
+}
+
+/** First candidate root that exists as an account (for links / defaults). */
+export function firstExistingCode(candidates: string[], codes: Set<string>): string | undefined {
+  return candidates.find((c) => codes.has(c))
+}
 
 export interface AdvanceSplit {
   cash: { iqd: number; usd: number }
@@ -206,9 +255,13 @@ export interface VoucherRow {
   line_count: number
 }
 
+// Classify by NET cash movement so an entry with cash on both sides (e.g. funding
+// an operational advance out of the cash box) reads as an internal journal, not a
+// phantom receipt or payment. Net money in → receipt, net money out → payment.
 export function classifyVoucher(r: { cash_debit: number; cash_credit: number }): VoucherType {
-  if (r.cash_debit > 0) return 'RECEIPT'
-  if (r.cash_credit > 0) return 'PAYMENT'
+  const net = Math.round(((r.cash_debit || 0) - (r.cash_credit || 0)) * 100)
+  if (net > 0) return 'RECEIPT'
+  if (net < 0) return 'PAYMENT'
   return 'JOURNAL'
 }
 

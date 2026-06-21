@@ -19,7 +19,14 @@ interface IncomingLine {
   project_id?: string | null
 }
 
-// POST /api/journal_entries — validates Σdebit === Σcredit, inserts atomically.
+// Dinar value of a line = amount × exchange rate (price). IQD lines have rate 1.
+// Used so multi-currency / tasarif entries balance on their IQD-equivalent.
+const lineRate = (l: IncomingLine) => {
+  const r = Number(l.price)
+  return r > 0 ? r : 1
+}
+
+// POST /api/journal_entries — validates Σ(debit×rate) === Σ(credit×rate), inserts atomically.
 // (Overrides the generic POST for the same resource, so the frontend uses the
 //  same /api/journal_entries path it lists from.)
 accountingRouter.post('/journal_entries', (req, res) => {
@@ -32,13 +39,17 @@ accountingRouter.post('/journal_entries', (req, res) => {
   const round = (n: number) => Math.round((Number(n) || 0) * 100) / 100
   const totalDebit = round(lines.reduce((s, l) => s + (Number(l.debit) || 0), 0))
   const totalCredit = round(lines.reduce((s, l) => s + (Number(l.credit) || 0), 0))
+  // Balance check is on the DINAR VALUE (amount × rate), so a tasarif entry
+  // ($100 debit vs 150,000 IQD credit) balances when the IQD values match.
+  const valDebit = round(lines.reduce((s, l) => s + (Number(l.debit) || 0) * lineRate(l), 0))
+  const valCredit = round(lines.reduce((s, l) => s + (Number(l.credit) || 0) * lineRate(l), 0))
 
-  if (totalDebit !== totalCredit) {
+  if (valDebit !== valCredit) {
     return res.status(400).json({
-      error: `القيد غير متوازن: مدين ${totalDebit} ≠ دائن ${totalCredit} / Entry not balanced`,
+      error: `القيد غير متوازن (بالقيمة بالدينار): مدين ${valDebit} ≠ دائن ${valCredit} / Entry not balanced by dinar value`,
     })
   }
-  if (totalDebit === 0) {
+  if (valDebit === 0) {
     return res.status(400).json({ error: 'قيمة القيد صفر / Entry total is zero' })
   }
 
@@ -126,8 +137,10 @@ accountingRouter.put('/journal_entries/:id', (req, res) => {
     if (lines.length < 2) return res.status(400).json({ error: 'يجب أن يحتوي القيد على سطرين على الأقل / Entry needs at least 2 lines' })
     totalDebit = round(lines.reduce((s, l) => s + (Number(l.debit) || 0), 0))
     totalCredit = round(lines.reduce((s, l) => s + (Number(l.credit) || 0), 0))
-    if (totalDebit !== totalCredit) return res.status(400).json({ error: `القيد غير متوازن: مدين ${totalDebit} ≠ دائن ${totalCredit} / Entry not balanced` })
-    if (totalDebit === 0) return res.status(400).json({ error: 'قيمة القيد صفر / Entry total is zero' })
+    const valDebit = round(lines.reduce((s, l) => s + (Number(l.debit) || 0) * lineRate(l), 0))
+    const valCredit = round(lines.reduce((s, l) => s + (Number(l.credit) || 0) * lineRate(l), 0))
+    if (valDebit !== valCredit) return res.status(400).json({ error: `القيد غير متوازن (بالقيمة بالدينار): مدين ${valDebit} ≠ دائن ${valCredit} / Entry not balanced by dinar value` })
+    if (valDebit === 0) return res.status(400).json({ error: 'قيمة القيد صفر / Entry total is zero' })
   }
 
   const companyId = (b.company_id as string) ?? (existing.company_id as string) ?? null
@@ -193,6 +206,35 @@ accountingRouter.put('/journal_entries/:id', (req, res) => {
       new_values: { status, total: totalDebit },
     })
     res.json(db.prepare('SELECT * FROM journal_entries WHERE id = ?').get(id))
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message })
+  }
+})
+
+// DELETE /api/journal_entries/:id — remove an entry and its lines atomically.
+// (Overrides the generic resource delete, which would orphan journal_lines since
+//  the schema has no ON DELETE CASCADE.)
+accountingRouter.delete('/journal_entries/:id', (req, res) => {
+  const id = req.params.id
+  const existing = db.prepare('SELECT * FROM journal_entries WHERE id = ?').get(id) as
+    | Record<string, unknown>
+    | undefined
+  if (!existing) return res.status(404).json({ error: 'Not found' })
+  try {
+    db.transaction(() => {
+      db.prepare('DELETE FROM journal_lines WHERE entry_id = ?').run(id)
+      db.prepare('DELETE FROM journal_entries WHERE id = ?').run(id)
+    })()
+    logEvent({
+      module: 'ACCOUNTING',
+      action: 'DELETE',
+      record_type: 'journal_entries',
+      record_id: id,
+      record_description: (existing.description as string) ?? 'قيد محاسبي',
+      company_id: (existing.company_id as string) ?? null,
+      old_values: { serial_number: existing.serial_number, total: existing.total_debit },
+    })
+    res.status(204).end()
   } catch (e) {
     res.status(500).json({ error: (e as Error).message })
   }
@@ -323,34 +365,61 @@ accountingRouter.delete('/banks/:id', (req, res) => {
   }
 })
 
-// GET /api/accounting/advance-split — السلف التشغيلية split by funding source.
-// For each entry touching the operational-advance subtree (16112 + descendants),
-// the net advance is attributed to CASH (entry also touches a cash box 181/182…)
-// or to BANK (entry also touches a bank account 183 + its sub-accounts).
-accountingRouter.get('/accounting/advance-split', (req, res) => {
-  const accounts = db.prepare('SELECT code, parent_code FROM accounts').all() as Array<{ code: string; parent_code: string | null }>
+// ---- Cash-equivalent account resolution (shared by movements & vouchers) ----
+// The chart of accounts differs between deployments: the demo uses the Iraqi
+// Unified codes (cash boxes 181/182, banks under 183, advance 16112) while the
+// production books use an IFRS-style chart (cash 1111, banks 1112, employee
+// advances 1152). So instead of hard-coding one scheme we list CANDIDATE roots
+// for each concept and resolve whichever actually exist in the live tree (by
+// posting descendants). This is why the old fixed list ['181','182','183'] —
+// which matched neither bank sub-accounts nor the production chart — mislabelled
+// every cash/bank/advance movement as a plain journal ("بدون نقد").
+const CASH_BOX_ROOTS = ['181', '182', '1111'] // physical cash box(es)
+const BANK_ROOTS = ['183', '1112'] // banks (header + sub-accounts, or the account itself)
+const ADVANCE_ROOTS = ['16112', '1152'] // operational / employee advance
+
+// All posting (leaf) account codes under the given roots, read from the live tree.
+function postingDescendants(roots: string[]): string[] {
+  const accounts = db.prepare('SELECT code, parent_code, is_posting FROM accounts').all() as Array<{
+    code: string
+    parent_code: string | null
+    is_posting: number
+  }>
   const kids = new Map<string, string[]>()
+  const posting = new Set<string>()
   for (const a of accounts) {
+    if (a.is_posting === 1) posting.add(a.code)
     if (a.parent_code) {
       const list = kids.get(a.parent_code) ?? []
       list.push(a.code)
       kids.set(a.parent_code, list)
     }
   }
-  const descend = (root: string): Set<string> => {
-    const out = new Set<string>([root])
-    const stack = [root]
-    while (stack.length) {
-      const c = stack.pop() as string
-      for (const k of kids.get(c) ?? []) if (!out.has(k)) { out.add(k); stack.push(k) }
-    }
-    return out
+  const out = new Set<string>()
+  const stack = [...roots]
+  while (stack.length) {
+    const c = stack.pop() as string
+    if (posting.has(c)) out.add(c)
+    for (const k of kids.get(c) ?? []) stack.push(k)
   }
+  return [...out]
+}
 
-  const advanceSet = descend('16112') // السلف التشغيلية + sub-accounts (e.g. أحمد)
-  const bankSet = descend('183') // المصارف + bank sub-accounts
-  const cashSet = new Set<string>()
-  for (const c of (kids.get('18') ?? []).filter((x) => x !== '183')) for (const d of descend(c)) cashSet.add(d)
+const cashBoxCodes = () => postingDescendants(CASH_BOX_ROOTS) // cash on hand only
+const bankCodes = () => postingDescendants(BANK_ROOTS) // banks only
+const cashBankCodes = () => postingDescendants([...CASH_BOX_ROOTS, ...BANK_ROOTS]) // cash + banks
+const advanceCodes = () => postingDescendants(ADVANCE_ROOTS)
+// Cash-equivalent set used to classify a voucher as receipt / payment / journal.
+const cashEquivCodes = () => [...new Set([...cashBankCodes(), ...advanceCodes()])]
+
+// GET /api/accounting/advance-split — operational/employee advance split by
+// funding source. For each entry touching the advance subtree, the net advance
+// is attributed to CASH (entry also touches a cash box) or BANK (entry also
+// touches a bank account). Account codes are resolved chart-agnostically.
+accountingRouter.get('/accounting/advance-split', (req, res) => {
+  const advanceSet = new Set(advanceCodes())
+  const bankSet = new Set(bankCodes())
+  const cashSet = new Set(cashBoxCodes())
 
   const where = ["je.status != 'CANCELLED'"]
   const params: unknown[] = []
@@ -396,38 +465,112 @@ accountingRouter.get('/accounting/advance-split', (req, res) => {
   res.json(acc)
 })
 
-// GET /api/accounting/cash-movements — receipts (debit to cash) & payments
-// (credit to cash) derived from journal lines touching the cash/bank accounts.
-const CASH_ACCOUNTS = ['181', '182', '183']
+// GET /api/accounting/cash-movements — one row per entry that nets a change in
+// cash (cash boxes + banks + the operational-advance subtree). Net debit →
+// receipt (money in), net credit → payment (money out). Pure internal moves
+// (e.g. funding an advance out of the box, or cash↔bank transfers) net to zero
+// and are skipped, so a single transfer never shows up as both a receipt and a
+// payment.
 accountingRouter.get('/accounting/cash-movements', (req, res) => {
-  const where = ["je.status != 'CANCELLED'", `jl.account_code IN (${CASH_ACCOUNTS.map(() => '?').join(',')})`]
-  const params: unknown[] = [...CASH_ACCOUNTS]
+  const cashCodes = cashEquivCodes()
+  if (cashCodes.length === 0) return res.json({ rows: [] })
+  const cashSet = new Set(cashCodes)
+  const placeholders = cashCodes.map(() => '?').join(',')
+
+  const where = ["je.status != 'CANCELLED'"]
+  const params: unknown[] = []
   if (req.query.company_id) {
     where.push('je.company_id = ?')
     params.push(req.query.company_id)
   }
   const limit = Math.min(Number(req.query.limit) || 300, 2000)
-  const rows = db
+
+  const lines = db
     .prepare(
       `SELECT je.id entry_id, je.date, je.serial_number, je.doc_number, je.description,
-              jl.account_code cash_account, jl.debit, jl.credit, je.company_id, je.project_id, je.currency,
-              (SELECT x.account_code FROM journal_lines x
-                 WHERE x.entry_id = je.id AND x.account_code != jl.account_code LIMIT 1) counter_account
-       FROM journal_lines jl
-       JOIN journal_entries je ON je.id = jl.entry_id
+              je.company_id, je.project_id, je.currency, jl.account_code, jl.debit, jl.credit
+       FROM journal_entries je
+       JOIN journal_lines jl ON jl.entry_id = je.id
        WHERE ${where.join(' AND ')}
-       ORDER BY je.date DESC, je.serial_number DESC
-       LIMIT ${limit}`,
+         AND je.id IN (SELECT entry_id FROM journal_lines WHERE account_code IN (${placeholders}))
+       ORDER BY je.date DESC, je.serial_number DESC`,
     )
-    .all(...params)
+    .all(...params, ...cashCodes) as Array<{
+    entry_id: string
+    date: string
+    serial_number: string
+    doc_number: string
+    description: string
+    company_id: string | null
+    project_id: string | null
+    currency: string
+    account_code: string
+    debit: number
+    credit: number
+  }>
+
+  interface Movement {
+    entry_id: string
+    date: string
+    serial_number: string
+    doc_number: string
+    description: string
+    cash_account: string
+    counter_account: string | null
+    debit: number
+    credit: number
+    company_id: string | null
+    project_id: string | null
+    currency: string
+  }
+  const byEntry = new Map<string, Movement & { net: number }>()
+  for (const l of lines) {
+    let m = byEntry.get(l.entry_id)
+    if (!m) {
+      m = {
+        entry_id: l.entry_id,
+        date: l.date,
+        serial_number: l.serial_number,
+        doc_number: l.doc_number,
+        description: l.description,
+        company_id: l.company_id,
+        project_id: l.project_id,
+        currency: l.currency,
+        cash_account: '',
+        counter_account: null,
+        debit: 0,
+        credit: 0,
+        net: 0,
+      }
+      byEntry.set(l.entry_id, m)
+    }
+    if (cashSet.has(l.account_code)) {
+      m.net += l.debit - l.credit
+      if (!m.cash_account) m.cash_account = l.account_code
+    } else if (!m.counter_account) {
+      m.counter_account = l.account_code
+    }
+  }
+
+  const rows: Movement[] = []
+  for (const m of byEntry.values()) {
+    if (Math.round(m.net * 100) === 0) continue // pure internal transfer
+    m.debit = m.net > 0 ? m.net : 0
+    m.credit = m.net < 0 ? -m.net : 0
+    delete (m as Partial<typeof m>).net
+    rows.push(m)
+    if (rows.length >= limit) break
+  }
   res.json({ rows })
 })
 
-// GET /api/accounting/vouchers — ALL entries classified by cash involvement:
-//   cash debited -> RECEIPT (قبض), cash credited -> PAYMENT (صرف),
-//   no cash line -> JOURNAL (قيد).
-const CASH_IN = CASH_ACCOUNTS.map((c) => `'${c}'`).join(',')
+// GET /api/accounting/vouchers — ALL entries classified by NET cash movement:
+//   net cash debit -> RECEIPT (قبض), net cash credit -> PAYMENT (صرف),
+//   no net cash change -> JOURNAL (قيد). "Cash" = cash boxes + bank sub-accounts
+//   + the operational-advance subtree (see cashEquivCodes). Account codes are our
+//   own numeric chart codes, so inlining them as quoted literals is injection-safe.
 accountingRouter.get('/accounting/vouchers', (req, res) => {
+  const CASH_IN = cashEquivCodes().map((c) => `'${c}'`).join(',') || "''"
   const where = ["je.status != 'CANCELLED'"]
   const params: unknown[] = []
   if (req.query.company_id) {
@@ -448,6 +591,12 @@ accountingRouter.get('/accounting/vouchers', (req, res) => {
     where.push('EXISTS (SELECT 1 FROM journal_lines x WHERE x.entry_id = je.id AND x.account_code = ?)')
     params.push(req.query.faccount)
   }
+  // Bank filter — match an entry touching the given bank GL account. Separate
+  // param from faccount so a bank + account filter can both be active.
+  if (req.query.fbank) {
+    where.push('EXISTS (SELECT 1 FROM journal_lines x WHERE x.entry_id = je.id AND x.account_code = ?)')
+    params.push(req.query.fbank)
+  }
   const limit = Math.min(Number(req.query.limit) || 600, 3000)
   const rows = db
     .prepare(
@@ -460,7 +609,7 @@ accountingRouter.get('/accounting/vouchers', (req, res) => {
               (SELECT COUNT(*) FROM journal_lines x WHERE x.entry_id=je.id) line_count
        FROM journal_entries je
        WHERE ${where.join(' AND ')}
-       ORDER BY je.date DESC, je.serial_number DESC
+       ORDER BY je.date DESC, je.created_at DESC, je.serial_number DESC
        LIMIT ${limit}`,
     )
     .all(...params)

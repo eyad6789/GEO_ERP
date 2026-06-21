@@ -9,7 +9,8 @@ import { useCompany } from '../../context/CompanyContext'
 import { apiPost } from '../../lib/api'
 import { formatCurrency, pickName } from '../../lib/format'
 import { CURRENCIES, type Account, type Company, type Project, type Currency } from '../../types'
-import { CASH_ACCOUNT_CODES } from './shared'
+import { CASH_BOX_ROOTS, BANK_ROOTS, resolvePostingDescendants, firstExistingCode } from './shared'
+import { DateField } from './DateField'
 
 type VoucherType = 'RECEIPT' | 'PAYMENT'
 
@@ -43,7 +44,7 @@ export function NewVoucherDialog({
   const [company, setCompany] = useState(companyId ?? '')
   const [projectId, setProjectId] = useState('')
   const [date, setDate] = useState(today)
-  const [cashAccount, setCashAccount] = useState('181')
+  const [cashAccount, setCashAccount] = useState('')
   const [counterAccount, setCounterAccount] = useState('')
   const [amount, setAmount] = useState('')
   const [party, setParty] = useState('')
@@ -52,27 +53,45 @@ export function NewVoucherDialog({
 
   const { data: projects } = useResource<Project>('projects', company ? { company_id: company } : undefined)
 
+  // Cash / bank posting accounts, resolved from whichever chart is loaded
+  // (181/182/183 in the demo, or 1111/1112 in the production IFRS chart) — never
+  // hardcode '181', which does not exist on the production chart.
+  const cashCodes = useMemo(() => resolvePostingDescendants([...CASH_BOX_ROOTS, ...BANK_ROOTS], accounts), [accounts])
+  const cashCodeSet = useMemo(() => new Set(cashCodes), [cashCodes])
+  const defaultCash = useMemo(
+    () => firstExistingCode([...CASH_BOX_ROOTS, ...BANK_ROOTS], cashCodeSet) ?? cashCodes[0] ?? '',
+    [cashCodes, cashCodeSet],
+  )
+
   // sync the toggle to the type chosen from the "new" menu each time it opens
   useEffect(() => {
     if (open) setType(defaultType)
   }, [open, defaultType])
+
+  // Default the cash box once the chart has loaded (or the dialog re-opens empty).
+  useEffect(() => {
+    if (open && !cashAccount && defaultCash) setCashAccount(defaultCash)
+  }, [open, cashAccount, defaultCash])
 
   const nameOf = (code: string) => {
     const a = accounts.find((x) => x.code === code)
     return a ? `${code} — ${pickName(a, lang)}` : code
   }
   const cashOptions = useMemo(
-    () => CASH_ACCOUNT_CODES.map((c) => ({ value: c, label: nameOf(c) })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [accounts, lang],
+    () =>
+      accounts
+        .filter((a) => cashCodeSet.has(a.code))
+        .sort((a, b) => a.code.localeCompare(b.code))
+        .map((a) => ({ value: a.code, label: `${a.code} — ${pickName(a, lang)}` })),
+    [accounts, cashCodeSet, lang],
   )
   const counterOptions = useMemo(
     () =>
       accounts
-        .filter((a) => a.is_posting === 1 && !CASH_ACCOUNT_CODES.includes(a.code))
+        .filter((a) => a.is_posting === 1 && !cashCodeSet.has(a.code))
         .sort((a, b) => a.code.localeCompare(b.code))
         .map((a) => ({ value: a.code, label: `${a.code} — ${pickName(a, lang)}` })),
-    [accounts, lang],
+    [accounts, cashCodeSet, lang],
   )
 
   // Smart autofill for the beneficiary/payer field: companies, projects and
@@ -82,10 +101,10 @@ export function NewVoucherDialog({
     companies.forEach((c) => set.add(pickName(c, lang)))
     projects.forEach((p) => set.add(pickName(p, lang)))
     accounts
-      .filter((a) => a.is_posting === 1 && !CASH_ACCOUNT_CODES.includes(a.code))
+      .filter((a) => a.is_posting === 1 && !cashCodeSet.has(a.code))
       .forEach((a) => set.add(pickName(a, lang)))
     return Array.from(set).filter(Boolean)
-  }, [companies, projects, accounts, lang])
+  }, [companies, projects, accounts, cashCodeSet, lang])
 
   // Selecting the counter account automatically categorises the voucher:
   // revenue / asset → receipt (money in); expense / liability → payment (out).
@@ -102,7 +121,7 @@ export function NewVoucherDialog({
     setCompany(companyId ?? '')
     setProjectId('')
     setDate(today)
-    setCashAccount('181')
+    setCashAccount(defaultCash)
     setCounterAccount('')
     setAmount('')
     setParty('')
@@ -259,7 +278,7 @@ export function NewVoucherDialog({
             </datalist>
           </Field>
           <Field label={t('accounting.new.date')} required className="sm:col-span-2">
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <DateField value={date} onChange={setDate} />
           </Field>
         </div>
 
