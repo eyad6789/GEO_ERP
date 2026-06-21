@@ -42,6 +42,15 @@ function migrate(): void {
   // The "unapproved" (DRAFT) concept is removed: every entry is approved.
   db.exec(`UPDATE journal_entries SET status = 'APPROVED' WHERE status = 'DRAFT'`)
 
+  // Fleet module: projects gained map coordinates; journal lines can be tagged
+  // with a vehicle (vehicle expenses → الآليات). Existing databases need these
+  // columns added — CREATE TABLE IF NOT EXISTS only helps brand-new databases.
+  const projCols = db.prepare(`PRAGMA table_info(projects)`).all() as Array<{ name: string }>
+  if (!projCols.some((c) => c.name === 'lat')) db.exec(`ALTER TABLE projects ADD COLUMN lat REAL`)
+  if (!projCols.some((c) => c.name === 'lng')) db.exec(`ALTER TABLE projects ADD COLUMN lng REAL`)
+  const jlCols = db.prepare(`PRAGMA table_info(journal_lines)`).all() as Array<{ name: string }>
+  if (!jlCols.some((c) => c.name === 'vehicle_id')) db.exec(`ALTER TABLE journal_lines ADD COLUMN vehicle_id TEXT`)
+
   // Banks ↔ chart of accounts: each bank links to a GL account under 183 المصارف.
   const bankCols = db.prepare(`PRAGMA table_info(banks)`).all() as Array<{ name: string }>
   if (bankCols.length) {

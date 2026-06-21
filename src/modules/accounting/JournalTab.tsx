@@ -158,11 +158,17 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
   const totals = useMemo(() => {
     let iqd = 0
     let usd = 0
+    let convertedIqd = 0 // IQD amounts + (USD amount × the entry's exchange rate)
     for (const e of rows) {
-      if (e.currency === 'USD') usd += e.amount || 0
-      else iqd += e.amount || 0
+      if (e.currency === 'USD') {
+        usd += e.amount || 0
+        convertedIqd += (e.amount || 0) * (e.exchange_rate && e.exchange_rate > 0 ? e.exchange_rate : 1)
+      } else {
+        iqd += e.amount || 0
+        convertedIqd += e.amount || 0
+      }
     }
-    return { iqd, usd, count: rows.length }
+    return { iqd, usd, convertedIqd, count: rows.length }
   }, [rows])
 
   // All entries remain editable through the journal-entry editor.
@@ -329,10 +335,11 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label={t('accounting.journal.title')} value={`${totals.count} ${t('accounting.journal.count')}`} icon={<BookOpen className="h-5 w-5" />} accent="primary" />
         <KpiCard label={t('accounting.journal.total_iqd')} value={formatCurrency(totals.iqd, 'IQD', lang)} accent="info" />
         <KpiCard label={t('accounting.journal.total_usd')} value={formatCurrency(totals.usd, 'USD', lang)} accent="success" />
+        <KpiCard label={t('accounting.journal.total_converted')} value={formatCurrency(totals.convertedIqd, 'IQD', lang)} hint={t('accounting.journal.total_converted_hint')} accent="warning" />
       </div>
 
       <ArabicTable

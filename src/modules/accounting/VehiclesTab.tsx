@@ -7,6 +7,9 @@ import { useApi } from '../../hooks/useResource'
 import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { formatCurrency, formatNumber, formatDate } from '../../lib/format'
+import { canEditAccounting } from './shared'
+import { NewEntryDialog } from './NewEntryDialog'
+import { EntryViewDialog } from './EntryViewDialog'
 
 interface Money {
   iqd: number
@@ -74,13 +77,24 @@ function Dual({ iqd, usd, lang }: { iqd: number; usd: number; lang: 'ar' | 'en' 
 export function VehiclesTab() {
   const t = useT()
   const { lang } = useLang()
-  const { companyId } = useCompany()
+  const { companyId, role } = useCompany()
+  const canEdit = canEditAccounting(role.key)
   const [selected, setSelected] = useState<VehicleRow | null>(null)
+  const [editEntryId, setEditEntryId] = useState<string | null>(null)
+  const [viewEntryId, setViewEntryId] = useState<string | null>(null)
 
-  const { data, loading } = useApi<SpendResp>(
+  const { data, loading, refetch } = useApi<SpendResp>(
     '/accounting/vehicle-spending',
     companyId ? { company_id: companyId } : undefined,
   )
+
+  // Open a journal entry from a vehicle's cost row: edit if allowed, else view.
+  // Close the vehicle dialog first so the journal editor is on top.
+  const openEntry = (entryId: string) => {
+    setSelected(null)
+    if (canEdit) setEditEntryId(entryId)
+    else setViewEntryId(entryId)
+  }
 
   const pct = (part: number, whole: number) => (whole > 0 ? (part / whole) * 100 : null)
   const pctLabel = (p: number | null, key: string) =>
@@ -267,7 +281,17 @@ export function VehiclesTab() {
         />
       </Card>
 
-      {selected && <VehicleDetailDialog vehicle={selected} onClose={() => setSelected(null)} />}
+      {selected && <VehicleDetailDialog vehicle={selected} onClose={() => setSelected(null)} onOpenEntry={openEntry} />}
+
+      {canEdit && (
+        <NewEntryDialog
+          open={editEntryId !== null}
+          editId={editEntryId}
+          onClose={() => setEditEntryId(null)}
+          onCreated={() => { setEditEntryId(null); refetch() }}
+        />
+      )}
+      <EntryViewDialog entryId={viewEntryId} onClose={() => setViewEntryId(null)} />
     </div>
   )
 }
@@ -275,10 +299,19 @@ export function VehiclesTab() {
 // ---------------------------------------------------------------------------
 // Vehicle detail dialog — full info + cost breakdown + recent costs.
 // ---------------------------------------------------------------------------
+interface CostRow {
+  category: string
+  amount: number
+  currency: string
+  date: string
+  note: string
+  entry_id: string | null
+  serial_number: string | null
+}
 interface DetailResp {
   vehicle: Record<string, string | number | null>
-  by_category: Array<{ category: string; iqd: number; usd: number }>
-  costs: Array<{ id: string; category: string; amount: number; currency: string; date: string; note: string }>
+  by_category: Array<{ category: string; iqd: number; usd: number; count: number }>
+  costs: CostRow[]
 }
 
 function Field({ icon, label, value }: { icon: JSX.Element; label: string; value: React.ReactNode }) {
@@ -293,16 +326,28 @@ function Field({ icon, label, value }: { icon: JSX.Element; label: string; value
   )
 }
 
-function VehicleDetailDialog({ vehicle, onClose }: { vehicle: VehicleRow; onClose: () => void }) {
+function VehicleDetailDialog({ vehicle, onClose, onOpenEntry }: { vehicle: VehicleRow; onClose: () => void; onOpenEntry: (entryId: string) => void }) {
   const t = useT()
   const { lang } = useLang()
+  const [catFilter, setCatFilter] = useState('')
   const { data, loading } = useApi<DetailResp>(`/accounting/vehicle-spending/${vehicle.id}`)
   const v = (data?.vehicle ?? {}) as Record<string, string | number | null>
   const name = lang === 'en' ? vehicle.name_en || vehicle.name_ar : vehicle.name_ar
 
-  const costColumns: Column<DetailResp['costs'][number]>[] = [
+  // Filter the cost rows by category (وقود / صيانة / ...).
+  const costs = useMemo(
+    () => (data?.costs ?? []).filter((c) => !catFilter || c.category === catFilter),
+    [data, catFilter],
+  )
+  const catChips = useMemo(
+    () => [{ value: '', label: t('accounting.vouchers.all') }, ...(data?.by_category ?? []).map((c) => ({ value: c.category, label: `${t(`accounting.vehicles.cat.${c.category}`)} (${c.count})` }))],
+    [data, t],
+  )
+
+  const costColumns: Column<CostRow>[] = [
     { key: 'date', header: t('accounting.vehicles.date'), accessor: (r) => r.date, render: (r) => formatDate(r.date, lang) },
     { key: 'category', header: t('accounting.vehicles.type'), render: (r) => t(`accounting.vehicles.cat.${r.category}`) },
+    { key: 'doc', header: t('accounting.journal.serial'), render: (r) => (r.serial_number ? <span className="font-mono text-xs text-primary">{r.serial_number}</span> : <span className="text-slate-300">—</span>) },
     { key: 'note', header: t('accounting.vehicles.note'), render: (r) => <span className="text-slate-500">{r.note || '—'}</span> },
     { key: 'amount', header: t('accounting.vehicles.spend'), align: 'end', accessor: (r) => r.amount, render: (r) => <span className="tabular-nums">{formatCurrency(r.amount, r.currency, lang)}</span> },
   ]
@@ -331,33 +376,65 @@ function VehicleDetailDialog({ vehicle, onClose }: { vehicle: VehicleRow; onClos
             <Field icon={<BadgeCheck className="h-4 w-4" />} label={t('accounting.vehicles.status')} value={t(`accounting.vehicles.st.${String(v.status ?? vehicle.status)}`)} />
           </div>
 
-          {/* cost by category */}
+          {/* cost by category — shows the IQD/USD total AND how many times (count),
+              e.g. how many fuel fills / maintenances. Click a card to filter below. */}
           {(data?.by_category.length ?? 0) > 0 && (
             <div>
               <p className="mb-2 text-sm font-semibold text-slate-600">{t('accounting.vehicles.by_category')}</p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {data!.by_category.map((c) => (
-                  <div key={c.category} className="rounded-xl border border-slate-100 px-3 py-2">
-                    <span className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-                      {CAT_ICON[c.category] ?? <Coins className="h-3.5 w-3.5" />}
-                      {t(`accounting.vehicles.cat.${c.category}`)}
+                  <button
+                    key={c.category}
+                    type="button"
+                    onClick={() => setCatFilter((cur) => (cur === c.category ? '' : c.category))}
+                    className={
+                      'rounded-xl border px-3 py-2 text-start transition ' +
+                      (catFilter === c.category ? 'border-primary bg-primary/5' : 'border-slate-100 hover:bg-slate-50')
+                    }
+                  >
+                    <span className="flex items-center justify-between gap-1.5 text-xs font-medium text-slate-500">
+                      <span className="flex items-center gap-1.5">
+                        {CAT_ICON[c.category] ?? <Coins className="h-3.5 w-3.5" />}
+                        {t(`accounting.vehicles.cat.${c.category}`)}
+                      </span>
+                      <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">×{c.count}</span>
                     </span>
                     <span className="mt-1 block text-sm font-semibold tabular-nums text-slate-800">{formatCurrency(c.iqd, 'IQD', lang)}</span>
                     {c.usd ? <span className="block text-[11px] tabular-nums text-emerald-600">{formatCurrency(c.usd, 'USD', lang)}</span> : null}
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* recent costs */}
+          {/* cost history — filter chips + clickable rows (journal-sourced rows open the entry) */}
           <div>
-            <p className="mb-2 text-sm font-semibold text-slate-600">{t('accounting.vehicles.recent_costs')}</p>
-            {(data?.costs.length ?? 0) > 0 ? (
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-slate-600">{t('accounting.vehicles.recent_costs')}</p>
+              {catChips.length > 1 && (
+                <div className="flex flex-wrap gap-1">
+                  {catChips.map((c) => (
+                    <button
+                      key={c.value || 'all'}
+                      type="button"
+                      onClick={() => setCatFilter(c.value)}
+                      className={
+                        'rounded-full px-2.5 py-1 text-[11px] font-medium transition ' +
+                        (catFilter === c.value ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')
+                      }
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {costs.length > 0 ? (
               <ArabicTable
                 columns={costColumns}
-                data={data!.costs}
-                rowKey={(r) => r.id}
+                data={costs}
+                rowKey={(r, i) => `${r.entry_id ?? 'vc'}-${i}`}
+                onRowClick={(r) => r.entry_id && onOpenEntry(r.entry_id)}
                 searchable={false}
                 pageSize={8}
                 emptyTitle={t('accounting.vehicles.no_costs')}

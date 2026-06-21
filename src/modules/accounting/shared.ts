@@ -116,6 +116,7 @@ export interface JournalEntryFull {
     project_id?: string | null
     currency?: string
     price?: number
+    vehicle_id?: string | null
   }>
 }
 
@@ -165,7 +166,7 @@ export const AP_PARENT = '26' // الدائنون (creditors / payables)
 // We resolve POSTING DESCENDANTS (not just direct children) so a node that is
 // itself a posting leaf still shows up, and a deeper prod chart expands fully.
 export const CUSTOMER_ROOTS = ['164'] // العملاء — سلف المشاريع
-export const SUPPLIER_ROOTS = ['16'] // الموردون — المدينون (all posting leaves)
+export const SUPPLIER_ROOTS = ['16114'] // الموردون — سلف المنتسبين (all posting leaves)
 
 // Dedicated cash-box / advance accounts (Cash & Bank tab balance logic).
 export const CASH_BOX_IQD = '181' // صندوق د.ع
@@ -183,6 +184,25 @@ export const MAIN_CASH_BOX = '181' // treated as the primary box for current/act
 export const CASH_BOX_ROOTS = ['181', '182', '1111'] // physical cash box(es)
 export const BANK_ROOTS = ['183', '1112'] // banks (header + sub-accounts, or the account itself)
 export const ADVANCE_ROOTS = ['16112', '1152'] // operational / employee advance
+
+// Expense accounts that belong to a vehicle/الآلية. When a journal line posts to
+// one of these (or a descendant), the entry asks which vehicle it is for, so the
+// car's cost history is built from real journal entries.
+//   351 الوقود (3511 بنزين / 3512 زيوت / 3513 كاز), 3202 صيانة الآلات الكبيرة,
+//   3203 صيانة وسائل النقل الصغيرة, 352 الخامات, 353 ماء وكهرباء, 3211 استئجار وسائل النقل
+export const VEHICLE_EXPENSE_ROOTS = ['351', '3202', '3203', '352', '353', '3211']
+
+// Map a vehicle expense account code to a cost category key (for grouping).
+export function vehicleCostCategory(code: string): string {
+  if (code === '351' || code.startsWith('351')) return 'FUEL'
+  if (code === '3202' || code === '3203') return 'MAINTENANCE'
+  if (code === '352' || code.startsWith('352')) return 'MATERIALS'
+  if (code === '3531') return 'WATER'
+  if (code === '3532') return 'ELECTRICITY'
+  if (code === '353' || code.startsWith('353')) return 'UTILITIES'
+  if (code === '3211') return 'RENT'
+  return 'OTHER'
+}
 
 /** Posting (leaf) account codes under any of the given roots, from the live tree. */
 export function resolvePostingDescendants(
@@ -248,6 +268,7 @@ export interface VoucherRow {
   company_id: string | null
   project_id: string | null
   currency: string
+  exchange_rate?: number
   cash_debit: number
   cash_credit: number
   cash_account: string | null
