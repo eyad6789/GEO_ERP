@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, MapPin, User, Calendar, Gauge, Building2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, MapPin, User, Calendar, Gauge, Building2, Truck } from 'lucide-react'
 import { StatusBadge } from '../../components/shared'
 import { useT, useLang } from '../../context/LangContext'
 import { formatDate, formatNumber, pickName } from '../../lib/format'
-import { regState, REG_CHIP, REG_LABEL_KEY, TYPE_EMOJI } from './fleetUtils'
+import { regState, REG_CHIP, REG_LABEL_KEY, TYPE_ICON } from './fleetUtils'
 import type { Vehicle } from '../../types'
 
 // ---------------------------------------------------------------------------
@@ -20,13 +20,27 @@ function DetailRow({ label, value, mono }: { label: string; value: string | null
   )
 }
 
-export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
+export function VehicleCard({
+  vehicle,
+  selected = false,
+  onSelect,
+}: {
+  vehicle: Vehicle
+  selected?: boolean
+  onSelect?: () => void
+}) {
   const t = useT()
   const { lang } = useLang()
   const [expanded, setExpanded] = useState(false)
 
+  // One tap both locates the vehicle on the map and toggles the detail panel.
+  const handleActivate = () => {
+    onSelect?.()
+    setExpanded((p) => !p)
+  }
+
   const rs = regState(vehicle.registration_expiry)
-  const emoji = vehicle.emoji || TYPE_EMOJI[vehicle.vehicle_type] || '🚛'
+  const TypeIcon = TYPE_ICON[vehicle.vehicle_type] ?? Truck
   const displayName = pickName(vehicle, lang)
 
   // Oil-change freshness hint
@@ -55,18 +69,23 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
 
   return (
     <div
-      className={`card group cursor-pointer transition-all duration-200 hover:shadow-card-hover ${expanded ? 'shadow-card-hover' : ''}`}
-      onClick={() => setExpanded((p) => !p)}
+      className={`card group cursor-pointer transition-all duration-200 hover:shadow-card-hover ${expanded ? 'shadow-card-hover' : ''} ${selected ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+      onClick={handleActivate}
       role="button"
       tabIndex={0}
       aria-expanded={expanded}
-      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setExpanded((p) => !p)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          handleActivate()
+        }
+      }}
     >
       {/* ── Top bar ── */}
       <div className="flex items-start gap-3 p-4">
-        {/* Emoji badge */}
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/8 text-xl leading-none select-none">
-          {emoji}
+        {/* Type icon badge */}
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/8 text-primary">
+          <TypeIcon className="h-5 w-5" />
         </div>
 
         {/* Main info */}

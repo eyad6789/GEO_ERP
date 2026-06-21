@@ -2,6 +2,11 @@
 // Shared Fleet helpers — used by every tab so behaviour stays consistent.
 // ============================================================================
 import type { VehicleType } from '../../types'
+import type { LucideIcon } from 'lucide-react'
+import {
+  Car, Truck, Cylinder, Shovel, Tractor, Construction, Weight,
+  Forklift, Disc, Container, Droplets, Cog,
+} from 'lucide-react'
 
 /** Registration-expiry alarm state (note 6.4). */
 export type RegState = 'expired' | 'soon' | 'ok' | 'none'
@@ -36,11 +41,11 @@ export const REG_LABEL_KEY: Record<RegState, string> = {
   none: 'fleet.reg.none',
 }
 
-/** Fallback emoji per vehicle type (vehicles carry their own `emoji`, this backs it up). */
-export const TYPE_EMOJI: Record<VehicleType, string> = {
-  CAR: '🚗', PICKUP: '🛻', MIXER: '🚚', EXCAVATOR: '⛏️', LOADER: '🔄', BULLDOZER: '🚜',
-  CRANE: '🏗️', DUMP_TRUCK: '🚛', LIFT: '🚜', ROLLER: '〰️', DUMPER: '🚜', TANKER: '🚛',
-  PUMP: '🔩', MISC: '🚜',
+/** Professional (lucide) icon per vehicle type — used in cards, chips, map markers. */
+export const TYPE_ICON: Record<VehicleType, LucideIcon> = {
+  CAR: Car, PICKUP: Truck, MIXER: Cylinder, EXCAVATOR: Shovel, LOADER: Tractor, BULLDOZER: Construction,
+  CRANE: Weight, DUMP_TRUCK: Truck, LIFT: Forklift, ROLLER: Disc, DUMPER: Truck, TANKER: Container,
+  PUMP: Droplets, MISC: Cog,
 }
 
 export const VEHICLE_TYPES: VehicleType[] = [
