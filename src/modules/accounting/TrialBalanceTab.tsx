@@ -1,11 +1,12 @@
-import { useMemo } from 'react'
-import { Scale, Check, AlertTriangle, Download } from 'lucide-react'
-import { Card, CardHeader, Button, LoadingState } from '../../components/ui'
+import { useMemo, useState } from 'react'
+import { Scale, Check, AlertTriangle, Download, X } from 'lucide-react'
+import { Card, CardHeader, Button, LoadingState, SearchSelect } from '../../components/ui'
 import { EmptyState } from '../../components/shared'
-import { useApi } from '../../hooks/useResource'
+import { useApi, useResource } from '../../hooks/useResource'
 import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
-import { formatCurrency, exportToCsv } from '../../lib/format'
+import { formatCurrency, exportToExcel, pickName } from '../../lib/format'
+import type { Company, Project } from '../../types'
 import { isBalanced, type TrialBalanceResp, type TrialBalanceRow } from './shared'
 import { FilterBar, type DateRange } from './FilterBar'
 
@@ -19,14 +20,31 @@ export function TrialBalanceTab({
   const t = useT()
   const { lang } = useLang()
   const { companyId } = useCompany()
+  const [companyFilter, setCompanyFilter] = useState('')
+  const [projectFilter, setProjectFilter] = useState('')
 
+  const { data: companies } = useResource<Company>('companies')
+  const { data: projects } = useResource<Project>('projects')
+
+  const companyOptions = useMemo(
+    () => [{ value: '', label: t('accounting.filter.all_companies') }, ...companies.map((c) => ({ value: c.id, label: pickName(c, lang) }))],
+    [companies, lang, t],
+  )
+  const projectOptions = useMemo(
+    () => [{ value: '', label: t('accounting.journal.all_projects') }, ...projects.map((p) => ({ value: p.id, label: pickName(p, lang) }))],
+    [projects, lang, t],
+  )
+
+  // Page-level company filter takes precedence over the global top-bar company.
   const params = useMemo(() => {
     const p: Record<string, unknown> = {}
-    if (companyId) p.company_id = companyId
+    const company = companyFilter || companyId
+    if (company) p.company_id = company
+    if (projectFilter) p.project_id = projectFilter
     if (range.from) p.from = range.from
     if (range.to) p.to = range.to
     return p
-  }, [companyId, range])
+  }, [companyId, companyFilter, projectFilter, range])
 
   const { data, loading } = useApi<TrialBalanceResp>('/reports/trial-balance', params)
   const rows = data?.rows ?? []
@@ -38,24 +56,48 @@ export function TrialBalanceTab({
   const name = (r: TrialBalanceRow) => (lang === 'en' ? r.name_en || r.name_ar : r.name_ar)
 
   const handleExport = () => {
-    exportToCsv(
+    const c = t('accounting.trial.code')
+    const n = t('accounting.trial.name')
+    const d = t('accounting.trial.debit')
+    const cr = t('accounting.trial.credit')
+    const b = t('accounting.trial.balance')
+    void exportToExcel(
       'trial_balance',
       rows.map((r) => ({
-        code: r.code,
-        name: name(r),
-        debit_iqd: r.total_debit,
-        credit_iqd: r.total_credit,
-        balance_iqd: r.balance,
-        debit_usd: r.debit_usd ?? 0,
-        credit_usd: r.credit_usd ?? 0,
-        balance_usd: r.balance_usd ?? 0,
+        [c]: r.code,
+        [n]: name(r),
+        [`${d} (IQD)`]: r.total_debit,
+        [`${cr} (IQD)`]: r.total_credit,
+        [`${b} (IQD)`]: r.balance,
+        [`${d} (USD)`]: r.debit_usd ?? 0,
+        [`${cr} (USD)`]: r.credit_usd ?? 0,
+        [`${b} (USD)`]: r.balance_usd ?? 0,
       })),
+      { sheetName: t('accounting.trial.title') },
     )
   }
 
   return (
     <div className="space-y-4">
       <FilterBar range={range} onChange={onRange} />
+
+      {/* Company / project filters — applied server-side (like the journal page) */}
+      <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="w-48 shrink-0"><SearchSelect value={companyFilter} onChange={setCompanyFilter} options={companyOptions} placeholder={t('accounting.filter.all_companies')} /></div>
+          <div className="w-48 shrink-0"><SearchSelect value={projectFilter} onChange={setProjectFilter} options={projectOptions} placeholder={t('accounting.journal.all_projects')} /></div>
+          {(companyFilter || projectFilter) && (
+            <button
+              onClick={() => { setCompanyFilter(''); setProjectFilter('') }}
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-danger"
+              title={t('accounting.journal.clear_filters')}
+            >
+              <X className="h-3.5 w-3.5" />
+              {t('accounting.journal.clear_filters')}
+            </button>
+          )}
+        </div>
+      </div>
 
       <Card>
         <CardHeader
@@ -121,38 +163,20 @@ export function TrialBalanceTab({
                     {t('accounting.trial.totals')}
                   </td>
                   <td className="px-4 py-3.5 text-end tabular-nums text-emerald-700">
-                    {formatCurrency(totals.debit, 'IQD', lang)}
+                    <span className="inline-flex flex-col items-end">
+                      <span>{formatCurrency(totals.debit, 'IQD', lang)}</span>
+                      {hasUsd ? <span className="text-[11px] font-semibold text-emerald-600">{formatCurrency(totals.debit_usd, 'USD', lang)}</span> : null}
+                    </span>
                   </td>
                   <td className="px-4 py-3.5 text-end tabular-nums text-sky-700">
-                    {formatCurrency(totals.credit, 'IQD', lang)}
+                    <span className="inline-flex flex-col items-end">
+                      <span>{formatCurrency(totals.credit, 'IQD', lang)}</span>
+                      {hasUsd ? <span className="text-[11px] font-semibold text-sky-600">{formatCurrency(totals.credit_usd, 'USD', lang)}</span> : null}
+                    </span>
                   </td>
                   <td className="px-4 py-3.5 text-end">
-                    {balanced ? (
-                      <span className="inline-flex items-center gap-1 text-emerald-700">
-                        <Check className="h-4 w-4" />
-                        {t('accounting.trial.balanced')}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-amber-700">
-                        <AlertTriangle className="h-4 w-4" />
-                        {t('accounting.trial.unbalanced')}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-                {hasUsd && (
-                  <tr className="border-t border-slate-200 bg-slate-50 font-semibold text-slate-700">
-                    <td className="px-4 py-3 text-emerald-700" colSpan={2}>
-                      {t('accounting.trial.totals')} ($)
-                    </td>
-                    <td className="px-4 py-3 text-end tabular-nums text-emerald-700">
-                      {formatCurrency(totals.debit_usd, 'USD', lang)}
-                    </td>
-                    <td className="px-4 py-3 text-end tabular-nums text-sky-700">
-                      {formatCurrency(totals.credit_usd, 'USD', lang)}
-                    </td>
-                    <td className="px-4 py-3 text-end">
-                      {balancedUsd ? (
+                    <span className="inline-flex flex-col items-end gap-0.5">
+                      {balanced ? (
                         <span className="inline-flex items-center gap-1 text-emerald-700">
                           <Check className="h-4 w-4" />
                           {t('accounting.trial.balanced')}
@@ -163,9 +187,22 @@ export function TrialBalanceTab({
                           {t('accounting.trial.unbalanced')}
                         </span>
                       )}
-                    </td>
-                  </tr>
-                )}
+                      {hasUsd ? (
+                        balancedUsd ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                            <Check className="h-3 w-3" />
+                            {t('accounting.trial.balanced')} ($)
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600">
+                            <AlertTriangle className="h-3 w-3" />
+                            {t('accounting.trial.unbalanced')} ($)
+                          </span>
+                        )
+                      ) : null}
+                    </span>
+                  </td>
+                </tr>
               </tfoot>
             </table>
           </div>

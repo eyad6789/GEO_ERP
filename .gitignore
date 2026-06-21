@@ -13,3 +13,6 @@ npm-debug.log*
 
 # scratch notebook screenshots
 Pasted image*.png
+
+# Off-server snapshots of the live production DB (real business data — never commit)
+backups/
