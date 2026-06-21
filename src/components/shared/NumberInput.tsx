@@ -14,6 +14,18 @@ export function formatThousands(raw: string): string {
   return (neg ? '-' : '') + grouped + decimal
 }
 
+// Convert Eastern-Arabic (٠-٩) and Persian (۰-۹) digits to ASCII, and the
+// Arabic decimal mark (٫) to a dot. An Arabic keyboard / locale produces these,
+// and the validation regex below only understands ASCII digits — without this,
+// typing a number while the app is in Arabic silently does nothing.
+function normalizeDigits(s: string): string {
+  return s
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/٫/g, '.') // Arabic decimal separator
+    .replace(/٬/g, '') // Arabic thousands separator
+}
+
 // Strip separators back to a canonical numeric string for state.
 function unformat(display: string): string {
   return display.replace(/,/g, '')
@@ -34,7 +46,7 @@ export interface NumberInputProps
 export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(
   ({ value, onValueChange, className, inputMode = 'decimal', placeholder = '0', ...props }, ref) => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const raw = unformat(e.target.value)
+      const raw = unformat(normalizeDigits(e.target.value))
       // Allow only digits, one dot, optional leading minus.
       if (raw === '' || /^-?\d*\.?\d*$/.test(raw)) onValueChange(raw)
     }

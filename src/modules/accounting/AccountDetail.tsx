@@ -394,6 +394,16 @@ export default function AccountDetail() {
                   {ledgerTotals.cUsd !== 0 && <span className="text-[11px] text-sky-600">{formatCurrency(ledgerTotals.cUsd, 'USD', lang)}</span>}
                 </span>
               </span>
+              {/* Net balance = total debit − total credit (collects مدين and دائن). */}
+              <span className="flex items-center gap-2 border-s border-slate-300 ps-8">
+                <span className="font-semibold text-slate-600">{t('accounting.account.net_balance')}:</span>
+                <span className="inline-flex flex-col items-end tabular-nums">
+                  <span className="font-bold text-primary">{formatCurrency(ledgerTotals.dIqd - ledgerTotals.cIqd, 'IQD', lang)}</span>
+                  {(ledgerTotals.dUsd - ledgerTotals.cUsd) !== 0 && (
+                    <span className="text-[11px] text-primary/80">{formatCurrency(ledgerTotals.dUsd - ledgerTotals.cUsd, 'USD', lang)}</span>
+                  )}
+                </span>
+              </span>
             </div>
           )}
         </Card>

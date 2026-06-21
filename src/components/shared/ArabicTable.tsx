@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { ArrowUpDown, ArrowUp, ArrowDown, Search, Download } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { useT } from '../../context/LangContext'
-import { exportToCsv } from '../../lib/format'
+import { exportToExcel } from '../../lib/format'
 import { Button } from '../ui/Button'
 import { LoadingState } from '../ui/Spinner'
 import { EmptyState } from './EmptyState'
@@ -103,12 +103,22 @@ export function ArabicTable<T>({
   }
 
   const handleExport = () => {
+    // Drop purely-decorative columns (e.g. the chevron/go cell): no accessor and
+    // a blank header. Use each kept column's visible (localized) header as the
+    // Excel title where it is plain text.
+    const cols = columns.filter(
+      (c) => c.accessor || (typeof c.header === 'string' && c.header.trim() !== ''),
+    )
+    const headers: Record<string, string> = {}
+    for (const col of cols) {
+      if (typeof col.header === 'string' && col.header.trim()) headers[col.key] = col.header
+    }
     const rows = sorted.map((row) => {
       const obj: Record<string, unknown> = {}
-      for (const col of columns) obj[String(col.key)] = rawValue(row, col)
+      for (const col of cols) obj[String(col.key)] = rawValue(row, col)
       return obj
     })
-    exportToCsv(exportName ?? 'export', rows)
+    void exportToExcel(exportName ?? 'export', rows, { headers })
   }
 
   const alignCls = (a?: 'start' | 'center' | 'end') =>
