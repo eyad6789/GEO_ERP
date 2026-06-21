@@ -81,6 +81,10 @@ registerStrings({
   'accounting.cash.total_iqd': { ar: 'إجمالي النقد (دينار)', en: 'Total Cash (IQD)' },
   'accounting.cash.total_usd': { ar: 'إجمالي النقد (دولار)', en: 'Total Cash (USD)' },
   'accounting.cash.current_balance': { ar: 'الرصيد الحالي', en: 'Current Balance' },
+  'accounting.cash.on_hand_iqd': { ar: 'النقد في الصناديق (دينار)', en: 'Cash on Hand (IQD)' },
+  'accounting.cash.on_hand_usd': { ar: 'النقد في الصناديق (دولار)', en: 'Cash on Hand (USD)' },
+  'accounting.cash.advance_iqd': { ar: 'السلفة التشغيلية (دينار)', en: 'Operational Advance (IQD)' },
+  'accounting.cash.advance_usd': { ar: 'السلفة التشغيلية (دولار)', en: 'Operational Advance (USD)' },
   'accounting.cash.actual_balance': { ar: 'الرصيد الفعلي', en: 'Actual Balance' },
   'accounting.cash.advance': { ar: 'السلفة التشغيلية', en: 'Operational Advance' },
   'accounting.cash.main_actual': { ar: 'الرصيد الفعلي للصناديق', en: 'Cash — Actual' },
@@ -390,6 +394,7 @@ registerStrings({
 
   // Trial balance
   'accounting.trial.title': { ar: 'ميزان المراجعة', en: 'Trial Balance' },
+  'accounting.trial.open_account': { ar: 'اضغط لفتح كشف الحساب وقيوده', en: 'Click to open the account ledger and its entries' },
   'accounting.trial.subtitle': {
     ar: 'أرصدة الحسابات المدينة والدائنة',
     en: 'Debit and credit balances by account',
