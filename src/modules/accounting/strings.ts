@@ -179,6 +179,9 @@ registerStrings({
   'accounting.vehicles.cat.WATER': { ar: 'ماء', en: 'Water' },
   'accounting.vehicles.cat.ELECTRICITY': { ar: 'كهرباء', en: 'Electricity' },
   'accounting.vehicles.cat.MATERIALS': { ar: 'خامات', en: 'Materials' },
+  'accounting.vehicles.cat.UTILITIES': { ar: 'ماء وكهرباء', en: 'Utilities' },
+  'accounting.vehicles.cat.RENT': { ar: 'إيجار', en: 'Rent' },
+  'accounting.vehicles.cat.OTHER': { ar: 'أخرى', en: 'Other' },
   // Vehicle list + detail
   'accounting.vehicles.list_title': { ar: 'الآليات', en: 'Vehicles' },
   'accounting.vehicles.list_sub': { ar: 'اضغط على أي آلية لعرض تفاصيلها ومصاريفها', en: 'Click any vehicle to see its details and costs' },

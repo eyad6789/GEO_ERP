@@ -23,7 +23,10 @@ const projectIds = (db.prepare(`SELECT id FROM projects`).all() as Array<{ id: s
 const fallbackCompany = companyIds[0] ?? null
 
 const HEAVY = new Set(['EXCAVATOR', 'LOADER', 'BULLDOZER', 'CRANE', 'DUMP_TRUCK', 'MIXER', 'ROLLER', 'DUMPER', 'TANKER', 'PUMP', 'LIFT'])
-const CASH = { IQD: '181', USD: '182' }
+// Vehicle expenses are credited to «الاستحقاقيات» (accrued liabilities, 22) — NOT
+// cash — so the cash boxes never go negative; the books still balance (expense↑,
+// liability↑). Real cash payments can later be recorded against this liability.
+const ACCRUED = '22'
 const FUEL = '3511' // بنزين
 const MATERIALS = '3526' // خامات أخرى
 const maintAcct = (type: string) => (HEAVY.has(type) ? '3202' : '3203') // صيانة آلات كبيرة / وسائل نقل
@@ -53,7 +56,7 @@ function postCost(serial: number, vehId: string, company: string | null, project
   const rate = currency === 'USD' ? 1500 : 1
   insEntry.run({ id, serial_number: `VSEED-${pad(serial, 5)}`, doc_number: `VSEED-${pad(serial, 5)}`, company_id: company, project_id: project, date, description: `${CAT_LABEL[category]} — ${label}`, currency, exchange_rate: rate, status: 'APPROVED', total_debit: amount, total_credit: amount, created_at: nowISO() })
   insLine.run({ id: genId('jl'), entry_id: id, account_code: acct, company_id: company, project_id: project, description: `${CAT_LABEL[category]} — ${label}`, currency, price: rate, value: amount * rate, debit: amount, credit: 0, vehicle_id: vehId })
-  insLine.run({ id: genId('jl'), entry_id: id, account_code: CASH[currency], company_id: company, project_id: project, description: `${CAT_LABEL[category]} — ${label}`, currency, price: rate, value: amount * rate, debit: 0, credit: amount, vehicle_id: null })
+  insLine.run({ id: genId('jl'), entry_id: id, account_code: ACCRUED, company_id: company, project_id: project, description: `${CAT_LABEL[category]} — ${label}`, currency, price: rate, value: amount * rate, debit: 0, credit: amount, vehicle_id: null })
 }
 
 const run = db.transaction(() => {

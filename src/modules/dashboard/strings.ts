@@ -23,6 +23,8 @@ registerStrings({
   'dashboard.kpi.revenue_hint': { ar: 'الإيرادات المحققة', en: 'Realized revenue' },
   'dashboard.kpi.contracts': { ar: 'قيمة العقود', en: 'Contracts Value' },
   'dashboard.kpi.contracts_hint': { ar: 'إجمالي قيمة العقود', en: 'Total contract value' },
+  'dashboard.kpi.fleet_spend': { ar: 'مصاريف الآليات', en: 'Fleet Spend' },
+  'dashboard.kpi.fleet_spend_hint': { ar: 'إجمالي ما صُرف على الآليات', en: 'Total spent on vehicles' },
 
   // Alerts
   'dashboard.alerts.title': { ar: 'تنبيهات تحتاج إجراء', en: 'Alerts Needing Action' },
