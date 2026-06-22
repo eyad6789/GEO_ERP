@@ -17,10 +17,11 @@ import { useResource, useApi } from '../../hooks/useResource'
 import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { formatCurrency, formatDate, pickName } from '../../lib/format'
-import type { Account, AccountType } from '../../types'
+import type { Account, AccountType, Vehicle } from '../../types'
 import { ACCOUNT_TYPE_COLOR, canEditAccounting, type TrialBalanceRow, type TrialBalanceResp, type GeneralLedgerResp, type LedgerRow } from './shared'
 import { NewEntryDialog } from './NewEntryDialog'
 import { EntryViewDialog } from './EntryViewDialog'
+import { VehicleAccountPanel } from './VehicleAccountPanel'
 
 interface Rollup {
   iqd: number // balance converted to IQD
@@ -71,9 +72,13 @@ export default function AccountDetail() {
   const [viewId, setViewId] = useState<string | null>(null)
 
   const { data: accounts, loading } = useResource<Account>('accounts')
+  const { data: vehicles } = useResource<Vehicle>('vehicles')
   const { data: trialResp, refetch: refetchTrial } = useApi<TrialBalanceResp>('/reports/trial-balance', companyId ? { company_id: companyId } : undefined)
 
   const account = useMemo(() => accounts.find((a) => a.code === code), [accounts, code])
+  // If this account is a vehicle's asset account (under اليات), show its specs +
+  // spending instead of an empty ledger.
+  const vehicle = useMemo(() => vehicles.find((v) => v.account_code === code), [vehicles, code])
   const children = useMemo(
     () => accounts.filter((a) => a.parent_code === code).sort((a, b) => a.code.localeCompare(b.code)),
     [accounts, code],
@@ -354,8 +359,16 @@ export default function AccountDetail() {
         </div>
       )}
 
-      {/* Ledger (for posting accounts) */}
-      {isPosting && (
+      {/* Vehicle account → specs + spending (instead of an empty ledger). */}
+      {vehicle && (
+        <VehicleAccountPanel
+          vehicleId={vehicle.id}
+          onOpenEntry={(id) => (canEdit ? setEditId(id) : setViewId(id))}
+        />
+      )}
+
+      {/* Ledger (for posting accounts that aren't a vehicle account) */}
+      {isPosting && !vehicle && (
         <Card className="overflow-hidden">
           <CardHeader
             title={t('accounting.account.ledger')}

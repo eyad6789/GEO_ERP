@@ -523,6 +523,7 @@ export interface Vehicle {
   lat: number | null
   lng: number | null
   notes: string
+  account_code?: string | null // linked asset account under اليات (5)
   created_at?: string
 }
 
