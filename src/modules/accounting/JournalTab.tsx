@@ -24,7 +24,17 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
   const canEdit = canEditAccounting(role.key)
   const [entryDialog, setEntryDialog] = useState<{ open: boolean; editId: string | null }>({ open: false, editId: null })
   const [viewId, setViewId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<Filter>('ALL')
+  // Multi-select type filter: an empty set = show all. Pick any combination of
+  // قبض / صرف / قيد at the same time.
+  const [types, setTypes] = useState<Set<VoucherType>>(new Set())
+  const toggleType = (key: 'ALL' | VoucherType) => {
+    if (key === 'ALL') return setTypes(new Set())
+    setTypes((prev) => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
+  }
   const [query, setQuery] = useState('')
   const [companyFilter, setCompanyFilter] = useState('')
   const [projectFilter, setProjectFilter] = useState('')
@@ -139,7 +149,7 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
     return allRows.filter((e) => {
       if (range.from && e.date < range.from) return false
       if (range.to && e.date > range.to) return false
-      if (filter !== 'ALL' && e.type !== filter) return false
+      if (types.size > 0 && !types.has(e.type)) return false
       if (q) {
         // Search by document number (رقم المستند), the displayed serial, AND the
         // description / البيان — so typing a party name (e.g. محمد) finds every
@@ -150,7 +160,7 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
       return true
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allRows, range, filter, query, nameMap])
+  }, [allRows, range, types, query, nameMap])
 
   // Totals are kept STRICTLY per currency — IQD and USD are never summed into one
   // figure (an entry's amount is in its own currency). Every entry balances, so
@@ -289,20 +299,25 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
       {/* One toolbar: category pills · search · filters */}
       <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Segmented category pills */}
+          {/* Category pills — multi-select: pick any combination of قبض / صرف / قيد
+              at once. "All" clears the selection. */}
           <div className="flex shrink-0 gap-1 rounded-lg bg-slate-100 p-1">
-            {pills.map((p) => (
-              <button
-                key={p.key}
-                onClick={() => setFilter(p.key)}
-                className={
-                  'rounded-md px-3 py-1.5 text-sm font-medium transition ' +
-                  (filter === p.key ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700')
-                }
-              >
-                {p.label}
-              </button>
-            ))}
+            {pills.map((p) => {
+              const active = p.key === 'ALL' ? types.size === 0 : types.has(p.key as VoucherType)
+              return (
+                <button
+                  key={p.key}
+                  onClick={() => toggleType(p.key)}
+                  aria-pressed={active}
+                  className={
+                    'rounded-md px-3 py-1.5 text-sm font-medium transition ' +
+                    (active ? 'bg-white text-primary shadow-sm ring-1 ring-primary/20' : 'text-slate-500 hover:text-slate-700')
+                  }
+                >
+                  {p.label}
+                </button>
+              )
+            })}
           </div>
 
           {/* Search (grows to fill) */}
