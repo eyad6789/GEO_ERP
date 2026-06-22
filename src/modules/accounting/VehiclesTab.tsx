@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Truck, Coins, CalendarDays, CalendarRange, Fuel, Wrench, Package, ShoppingCart, User, BadgeCheck, MapPin, Hash } from 'lucide-react'
+import { Truck, Coins, CalendarDays, CalendarRange, Fuel, Wrench, Package, ShoppingCart } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardHeader, LoadingState, Dialog, Badge } from '../../components/ui'
 import { KpiCard, ChartCard, EmptyState, ArabicTable, type Column } from '../../components/shared'
@@ -314,24 +314,11 @@ interface DetailResp {
   costs: CostRow[]
 }
 
-function Field({ icon, label, value }: { icon: JSX.Element; label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 px-3 py-2.5">
-      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">{icon}</span>
-      <span className="flex min-w-0 flex-col">
-        <span className="text-[11px] font-medium text-slate-400">{label}</span>
-        <span className="truncate text-sm font-medium text-slate-700">{value || '—'}</span>
-      </span>
-    </div>
-  )
-}
-
 function VehicleDetailDialog({ vehicle, onClose, onOpenEntry }: { vehicle: VehicleRow; onClose: () => void; onOpenEntry: (entryId: string) => void }) {
   const t = useT()
   const { lang } = useLang()
   const [catFilter, setCatFilter] = useState('')
   const { data, loading } = useApi<DetailResp>(`/accounting/vehicle-spending/${vehicle.id}`)
-  const v = (data?.vehicle ?? {}) as Record<string, string | number | null>
   const name = lang === 'en' ? vehicle.name_en || vehicle.name_ar : vehicle.name_ar
 
   // Filter the cost rows by category (وقود / صيانة / ...).
@@ -364,17 +351,8 @@ function VehicleDetailDialog({ vehicle, onClose, onOpenEntry }: { vehicle: Vehic
             <Dual iqd={vehicle.iqd} usd={vehicle.usd} lang={lang} />
           </div>
 
-          {/* details grid */}
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            <Field icon={<Hash className="h-4 w-4" />} label={t('accounting.vehicles.plate')} value={String(v.plate_number ?? vehicle.plate_number ?? '')} />
-            <Field icon={<User className="h-4 w-4" />} label={t('accounting.vehicles.driver')} value={String(v.driver_name ?? vehicle.driver_name ?? '')} />
-            <Field icon={<BadgeCheck className="h-4 w-4" />} label={t('accounting.vehicles.owner')} value={String(v.owner_name ?? vehicle.owner_name ?? '')} />
-            <Field icon={<Truck className="h-4 w-4" />} label={t('accounting.vehicles.type')} value={String(v.vehicle_type ?? vehicle.vehicle_type ?? '')} />
-            <Field icon={<CalendarDays className="h-4 w-4" />} label={t('accounting.vehicles.model_year')} value={v.model_year ? String(v.model_year) : ''} />
-            <Field icon={<CalendarRange className="h-4 w-4" />} label={t('accounting.vehicles.reg_expiry')} value={v.registration_expiry ? formatDate(String(v.registration_expiry), lang) : ''} />
-            <Field icon={<MapPin className="h-4 w-4" />} label={t('accounting.vehicles.location')} value={String(v.location ?? vehicle.location ?? '')} />
-            <Field icon={<BadgeCheck className="h-4 w-4" />} label={t('accounting.vehicles.status')} value={t(`accounting.vehicles.st.${String(v.status ?? vehicle.status)}`)} />
-          </div>
+          {/* Accounting view: no vehicle specs (plate/owner/type/…) — the accountant
+              only needs the money. Just totals + cost breakdown + cost history. */}
 
           {/* cost by category — shows the IQD/USD total AND how many times (count),
               e.g. how many fuel fills / maintenances. Click a card to filter below. */}
