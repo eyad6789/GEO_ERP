@@ -6,7 +6,7 @@
 // It only touches: vehicles, vehicle_costs (cleared), and the journal entries it
 // itself created (serial 'VSEED-…'). Companies/projects/accounts and any other
 // journal entries are left alone. Run: npm run seed:fleet
-import { db } from '../db/connection.js'
+import { db, ensureVehicleAccounts } from '../db/connection.js'
 import { genId, nowISO } from '../lib/ids.js'
 import { FLEET_ROWS } from './fleetData.js'
 
@@ -63,6 +63,7 @@ const run = db.transaction(() => {
   const delEntry = db.prepare('DELETE FROM journal_entries WHERE id = ?')
   for (const e of seeded) { delLines.run(e.id); delEntry.run(e.id) }
   db.prepare('DELETE FROM vehicle_costs').run()
+  db.prepare(`DELETE FROM accounts WHERE parent_code = '5'`).run() // auto-generated vehicle accounts
   db.prepare('DELETE FROM vehicles').run()
 
   let serial = 0
@@ -109,5 +110,7 @@ const run = db.transaction(() => {
 })
 
 const entries = run()
+ensureVehicleAccounts() // create an asset account under اليات (5) for each vehicle
 const vCount = (db.prepare('SELECT COUNT(*) c FROM vehicles').get() as { c: number }).c
-console.log(`✓ fleet seed: ${vCount} vehicles, ${entries} cost journal entries (each opens its journal; companies/accounts untouched)`)
+const acctCount = (db.prepare("SELECT COUNT(*) c FROM accounts WHERE parent_code = '5'").get() as { c: number }).c
+console.log(`✓ fleet seed: ${vCount} vehicles, ${entries} cost journal entries, ${acctCount} vehicle accounts under اليات`)
