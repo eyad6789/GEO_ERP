@@ -5,9 +5,40 @@
 //   2) the legacy/demo vehicle_costs table (so existing data still shows)
 // IQD and USD are ALWAYS kept separate — never summed together.
 import { Router, type Request } from 'express'
-import { db } from '../db/connection.js'
+import { db, ensureVehicleAccounts } from '../db/connection.js'
+import { genId, nowISO } from '../lib/ids.js'
+import { logEvent } from '../lib/eventLog.js'
 
 export const vehicleAccountingRouter = Router()
+
+// POST /api/vehicles — override the generic create so a new vehicle immediately
+// gets its asset account under «اليات» (5) and the link, no server restart needed.
+vehicleAccountingRouter.post('/vehicles', (req, res) => {
+  try {
+    const body = (req.body ?? {}) as Record<string, unknown>
+    const cols = (db.prepare(`PRAGMA table_info(vehicles)`).all() as Array<{ name: string }>).map((c) => c.name)
+    const data: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(body)) if (cols.includes(k)) data[k] = v
+    if (!data.id) data.id = genId('veh')
+    if (cols.includes('created_at') && !data.created_at) data.created_at = nowISO()
+    const keys = Object.keys(data)
+    if (!keys.length) return res.status(400).json({ error: 'No valid columns' })
+    db.prepare(`INSERT INTO vehicles (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`).run(...keys.map((k) => data[k]))
+    ensureVehicleAccounts() // create + link the 5xxx asset account for this vehicle
+    logEvent({
+      module: 'FLEET',
+      action: 'CREATE',
+      record_type: 'vehicles',
+      record_id: String(data.id),
+      record_description: String(data.name_ar ?? data.code ?? 'مركبة'),
+      company_id: (data.company_id as string) ?? null,
+      new_values: data,
+    })
+    res.status(201).json(db.prepare(`SELECT * FROM vehicles WHERE id = ?`).get(data.id))
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message })
+  }
+})
 
 // Unified cost stream (journal lines tagged to a vehicle  ∪  vehicle_costs).
 // account_code → category mirrors vehicleCostCategory() on the client.
@@ -32,9 +63,6 @@ const COSTS_SRC = `(
   FROM journal_lines jl
   JOIN journal_entries je ON je.id = jl.entry_id
   WHERE jl.vehicle_id IS NOT NULL AND je.status != 'CANCELLED' AND jl.debit > 0
-  UNION ALL
-  SELECT vc.vehicle_id, vc.date, vc.currency, vc.amount, NULL, NULL, vc.note, vc.category
-  FROM vehicle_costs vc
 )`
 
 const SUMS = `SUM(CASE WHEN c.currency='USD' THEN 0 ELSE c.amount END) iqd,
@@ -91,7 +119,7 @@ vehicleAccountingRouter.get('/accounting/vehicle-spending', (req, res) => {
       .prepare(
         `SELECT v.id, v.code, v.name_ar, v.name_en, v.plate_number, v.driver_name,
                 v.owner_name, v.vehicle_type, v.status, v.model_year,
-                v.registration_expiry, v.location,
+                v.registration_expiry, v.location, v.account_code,
                 COALESCE(SUM(CASE WHEN c.currency='USD' THEN 0 ELSE c.amount END),0) iqd,
                 COALESCE(SUM(CASE WHEN c.currency='USD' THEN c.amount ELSE 0 END),0) usd
          FROM vehicles v

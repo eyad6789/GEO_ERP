@@ -2,6 +2,7 @@ import { AlertTriangle } from 'lucide-react'
 import { useApi } from '../../hooks/useResource'
 import { LoadingState } from '../../components/ui'
 import { useT } from '../../context/LangContext'
+import { useCompany } from '../../context/CompanyContext'
 import type { DashboardData } from '../../types'
 import { HeroHeader } from './HeroHeader'
 import { KpiGrid } from './KpiGrid'
@@ -11,7 +12,9 @@ import { ActivityFeed } from './ActivityFeed'
 
 export function DashboardPage() {
   const t = useT()
-  const { data, loading, error } = useApi<DashboardData>('/dashboard')
+  const { companyId } = useCompany()
+  // Dashboard follows the top-bar company filter (empty = whole group).
+  const { data, loading, error } = useApi<DashboardData>('/dashboard', companyId ? { company_id: companyId } : undefined)
 
   if (loading) {
     return (
