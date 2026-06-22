@@ -191,7 +191,7 @@ registerStrings({
   'accounting.vehicles.model_year': { ar: 'سنة الصنع', en: 'Model Year' },
   'accounting.vehicles.reg_expiry': { ar: 'انتهاء التسجيل', en: 'Registration Expiry' },
   'accounting.vehicles.location': { ar: 'الموقع', en: 'Location' },
-  'accounting.vehicles.detail_title': { ar: 'تفاصيل الآلية', en: 'Vehicle Details' },
+  'accounting.vehicles.detail_title': { ar: 'مصاريف الآلية', en: 'Vehicle Costs' },
   'accounting.vehicles.recent_costs': { ar: 'آخر المصاريف', en: 'Recent Costs' },
   'accounting.vehicles.date': { ar: 'التاريخ', en: 'Date' },
   'accounting.vehicles.note': { ar: 'ملاحظة', en: 'Note' },
