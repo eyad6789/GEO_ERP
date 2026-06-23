@@ -16,6 +16,7 @@ import {
   Area,
   ResponsiveContainer,
 } from 'recharts'
+import { useState, useMemo } from 'react'
 import {
   Lock,
   DollarSign,
@@ -24,6 +25,8 @@ import {
   BarChart3,
   TrendingUp,
   FolderOpen,
+  Truck,
+  Search,
 } from 'lucide-react'
 import { useT, useLang } from '../../../context/LangContext'
 import { useApi } from '../../../hooks/useResource'
@@ -36,9 +39,26 @@ import {
 } from '../../../components/shared'
 import type { Column } from '../../../components/shared'
 import { LoadingState } from '../../../components/ui/Spinner'
+import { Input } from '../../../components/ui/Input'
 import { formatCurrency, formatCompact, pickName } from '../../../lib/format'
 import type { FleetCosts, VehicleCostCategory } from '../../../types'
-import type { Lang } from '../../../i18n/strings'
+import { registerStrings, type Lang } from '../../../i18n/strings'
+import { ToggleControl, TypeChips, type GroupMode } from '../FleetFilters'
+import { FinanceVehicleCard } from '../FinanceVehicleCard'
+
+// Per-vehicle cost table strings (colocated, mirroring MapTab/VehiclesTab pattern).
+registerStrings({
+  'fleet.acc.by_vehicle.title': { ar: 'التكاليف حسب الآلية', en: 'Costs by Vehicle' },
+  'fleet.acc.by_vehicle.subtitle': { ar: 'إجمالي التكاليف والصيانة والوقود لكل آلية', en: 'Total, maintenance & fuel cost per vehicle' },
+  'fleet.acc.col.vehicle': { ar: 'الآلية', en: 'Vehicle' },
+  'fleet.acc.col.total_iqd': { ar: 'الإجمالي (د.ع)', en: 'Total (IQD)' },
+  'fleet.acc.col.total_usd': { ar: 'الإجمالي ($)', en: 'Total (USD)' },
+  'fleet.acc.col.maint_iqd': { ar: 'الصيانة (د.ع)', en: 'Maintenance (IQD)' },
+  'fleet.acc.col.maint_usd': { ar: 'الصيانة ($)', en: 'Maintenance (USD)' },
+  'fleet.acc.col.fuel_iqd': { ar: 'الوقود (د.ع)', en: 'Fuel (IQD)' },
+  'fleet.acc.col.fuel_usd': { ar: 'الوقود ($)', en: 'Fuel (USD)' },
+  'fleet.acc.search_vehicle': { ar: 'بحث عن آلية بالرقم أو الاسم...', en: 'Search by plate or name...' },
+})
 
 // ---- Chart tooltip helpers -------------------------------------------------
 const AXIS_STYLE = { fontSize: 11, fill: '#64748b' }
@@ -174,6 +194,53 @@ export function AccountingTab() {
       ),
     },
   ]
+
+  // ---- Per-vehicle register: search + group toggle + type chips ------------
+  // (mirrors the Vehicles-tab register structure on the finance data)
+  const [vehSearch, setVehSearch] = useState('')
+  const [groupMode, setGroupMode] = useState<GroupMode>('by_type')
+  const [selectedType, setSelectedType] = useState<string>('ALL')
+
+  const byVehicle = costs?.by_vehicle ?? []
+
+  const vehFiltered = useMemo(() => {
+    const q = vehSearch.trim().toLowerCase()
+    if (!q) return byVehicle
+    return byVehicle.filter((v) =>
+      v.plate_number.toLowerCase().includes(q) ||
+      v.name_ar.toLowerCase().includes(q) ||
+      v.name_en.toLowerCase().includes(q) ||
+      v.code.toLowerCase().includes(q),
+    )
+  }, [byVehicle, vehSearch])
+
+  const vehTypeCounts = useMemo(() => {
+    const m: Record<string, number> = {}
+    vehFiltered.forEach((v) => { m[v.vehicle_type] = (m[v.vehicle_type] ?? 0) + 1 })
+    return m
+  }, [vehFiltered])
+
+  const vehDisplayed = useMemo(() => {
+    if (groupMode !== 'by_type' || selectedType === 'ALL') return vehFiltered
+    return vehFiltered.filter((v) => v.vehicle_type === selectedType)
+  }, [vehFiltered, groupMode, selectedType])
+
+  const vehProjectGroups = useMemo(() => {
+    if (groupMode !== 'by_project') return [] as Array<[string | null, FleetCosts['by_vehicle']]>
+    const m = new Map<string | null, FleetCosts['by_vehicle']>()
+    vehFiltered.forEach((v) => {
+      const key = v.project_id ?? null
+      if (!m.has(key)) m.set(key, [])
+      m.get(key)!.push(v)
+    })
+    return [...m.entries()].sort(([a], [b]) => (a === null ? 1 : b === null ? -1 : 0))
+  }, [vehFiltered, groupMode])
+
+  const vehProjectName = useMemo(() => {
+    const m: Record<string, string> = {}
+    ;(costs?.by_project ?? []).forEach((p) => { if (p.project_id) m[p.project_id] = p.name_ar })
+    return m
+  }, [costs])
 
   // ---- By-type chart data (bar chart; IQD & USD separate bars) -------------
   const byTypeData = (costs?.by_type ?? []).map((row) => ({
@@ -457,6 +524,80 @@ export function AccountingTab() {
             emptyTitle={t('fleet.empty')}
             emptyHint={t('fleet.empty_hint')}
           />
+
+          {/* ---- Per-vehicle register (search + group + chips + cards) -------- */}
+          <div className="space-y-4 pt-2">
+            {/* Section header + search */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Truck className="h-4 w-4 shrink-0 text-primary" />
+                <div>
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    {t('fleet.acc.by_vehicle.title')}
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold tabular-nums text-primary">
+                      {formatCompact(vehFiltered.length, l)} {t('fleet.inventory.count')}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400">{t('fleet.acc.by_vehicle.subtitle')}</p>
+                </div>
+              </div>
+              <div className="relative">
+                <Search className="absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <Input
+                  value={vehSearch}
+                  onChange={(e) => setVehSearch(e.target.value)}
+                  placeholder={t('fleet.acc.search_vehicle')}
+                  className="ps-8 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Group toggle */}
+            <ToggleControl value={groupMode} onChange={(m) => { setGroupMode(m); setSelectedType('ALL') }} />
+
+            {/* Type chips (by_type mode) */}
+            {groupMode === 'by_type' && (
+              <TypeChips counts={vehTypeCounts} selected={selectedType} onSelect={setSelectedType} />
+            )}
+
+            {/* Card grid */}
+            {groupMode === 'by_type' ? (
+              vehDisplayed.length === 0 ? (
+                <EmptyState title={t('fleet.empty')} hint={t('fleet.empty_hint')} />
+              ) : (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {vehDisplayed.map((v) => (
+                    <FinanceVehicleCard key={v.id} vehicle={v} />
+                  ))}
+                </div>
+              )
+            ) : vehProjectGroups.length === 0 ? (
+              <EmptyState title={t('fleet.empty')} hint={t('fleet.empty_hint')} />
+            ) : (
+              <div className="space-y-6">
+                {vehProjectGroups.map(([projectId, groupVehicles]) => {
+                  const groupName = projectId ? (vehProjectName[projectId] ?? t('fleet.card.no_project')) : t('fleet.card.no_project')
+                  return (
+                    <div key={projectId ?? '__unassigned__'}>
+                      <div className="mb-3 flex items-center gap-2">
+                        <FolderOpen className="h-4 w-4 text-accent" />
+                        <h4 className="text-sm font-semibold text-slate-700">{groupName}</h4>
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs tabular-nums text-slate-500">
+                          {formatCompact(groupVehicles.length, l)}
+                        </span>
+                        <div className="h-px flex-1 bg-slate-100" />
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        {groupVehicles.map((v) => (
+                          <FinanceVehicleCard key={v.id} vehicle={v} />
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>

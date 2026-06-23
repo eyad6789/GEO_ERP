@@ -567,4 +567,11 @@ export interface FleetCosts {
   by_type: Array<{ vehicle_type: VehicleType; name_en: string; iqd: number; usd: number }>
   by_project: Array<{ project_id: ID | null; name_ar: string; iqd: number; usd: number; vehicles: number }>
   by_month: Array<{ month: string; iqd: number; usd: number }>
+  by_vehicle: Array<{
+    id: ID; code: string; plate_number: string; name_ar: string; name_en: string
+    emoji: string; vehicle_type: VehicleType; project_id: ID | null
+    total_iqd: number; total_usd: number
+    maint_iqd: number; maint_usd: number
+    fuel_iqd: number; fuel_usd: number
+  }>
 }
