@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import {
   Truck,
   CheckCircle2,
@@ -6,7 +6,6 @@ import {
   Wrench,
   Plus,
   Search,
-  LayoutGrid,
   FolderOpen,
   MapPin,
   PieChart as PieIcon,
@@ -36,9 +35,10 @@ import { Input } from '../../../components/ui/Input'
 import { useT, useLang } from '../../../context/LangContext'
 import { useApi, useResource } from '../../../hooks/useResource'
 import { formatNumber, pickName } from '../../../lib/format'
-import { VEHICLE_TYPES, STATUS_COLOR, TYPE_EMOJI } from '../fleetUtils'
+import { STATUS_COLOR } from '../fleetUtils'
 import type { FleetSummary, FleetMapData, Vehicle } from '../../../types'
 import { VehicleCard } from '../VehicleCard'
+import { ToggleControl, TypeChips, type GroupMode } from '../FleetFilters'
 import { AddVehicleDialog } from '../AddVehicleDialog'
 import { LeafletMap } from '../LeafletMap'
 import { registerStrings } from '../../../i18n/strings'
@@ -66,94 +66,6 @@ function CountTooltip({ active, payload, label, suffix }: any) {
 }
 
 // ──────────────────────────────────────────────
-// Toggle segmented control
-// ──────────────────────────────────────────────
-type GroupMode = 'by_type' | 'by_project'
-
-function ToggleControl({
-  value,
-  onChange,
-}: {
-  value: GroupMode
-  onChange: (v: GroupMode) => void
-}) {
-  const t = useT()
-  return (
-    <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
-      {(['by_type', 'by_project'] as GroupMode[]).map((mode) => (
-        <button
-          key={mode}
-          onClick={() => onChange(mode)}
-          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
-            value === mode
-              ? 'bg-white text-primary shadow-sm'
-              : 'text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          {mode === 'by_type' ? (
-            <LayoutGrid className="h-3.5 w-3.5" />
-          ) : (
-            <FolderOpen className="h-3.5 w-3.5" />
-          )}
-          {t(`fleet.toggle.${mode}`)}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-// ──────────────────────────────────────────────
-// Type filter chips (used in by_type mode)
-// ──────────────────────────────────────────────
-function TypeChips({
-  counts,
-  selected,
-  onSelect,
-}: {
-  counts: Record<string, number>
-  selected: string
-  onSelect: (t: string) => void
-}) {
-  const t = useT()
-  const totalCount = Object.values(counts).reduce((a, b) => a + b, 0)
-
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      <button
-        onClick={() => onSelect('ALL')}
-        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-          selected === 'ALL'
-            ? 'bg-primary text-white'
-            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-        }`}
-      >
-        {t('fleet.filter.all')}
-        <span className={`rounded-full px-1.5 py-0.5 text-xs ${selected === 'ALL' ? 'bg-white/20 text-white' : 'bg-white text-slate-500'}`}>
-          {totalCount}
-        </span>
-      </button>
-      {VEHICLE_TYPES.filter((k) => (counts[k] ?? 0) > 0).map((k) => (
-        <button
-          key={k}
-          onClick={() => onSelect(k)}
-          className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-            selected === k
-              ? 'bg-primary text-white'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          <span>{TYPE_EMOJI[k as keyof typeof TYPE_EMOJI]}</span>
-          {t(`fleet.type.${k}`)}
-          <span className={`rounded-full px-1.5 py-0.5 text-xs ${selected === k ? 'bg-white/20 text-white' : 'bg-white text-slate-500'}`}>
-            {counts[k]}
-          </span>
-        </button>
-      ))}
-    </div>
-  )
-}
-
-// ──────────────────────────────────────────────
 // Main tab
 // ──────────────────────────────────────────────
 export function VehiclesTab() {
@@ -168,6 +80,16 @@ export function VehiclesTab() {
   const [selectedType, setSelectedType] = useState<string>('ALL')
   const [search, setSearch] = useState('')
   const [addOpen, setAddOpen] = useState(false)
+
+  // Vehicle selected from the list → drives the mini-map (fly/highlight) and the card ring.
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const mapCardRef = useRef<HTMLDivElement | null>(null)
+
+  // Bring the map into view when a vehicle is picked (skip the initial null state).
+  useEffect(() => {
+    if (selectedId === null) return
+    mapCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [selectedId])
 
   // ── derived data ──────────────────────────────
   const filtered = useMemo(() => {
@@ -377,7 +299,7 @@ export function VehiclesTab() {
       </div>
 
       {/* ── Mini-map card ── */}
-      <div className="card overflow-hidden">
+      <div ref={mapCardRef} className="card overflow-hidden">
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-primary" />
@@ -387,11 +309,11 @@ export function VehiclesTab() {
         </div>
         <div className="p-0">
           {loadingMap ? (
-            <div className="flex h-[300px] items-center justify-center">
+            <div className="flex h-[600px] items-center justify-center">
               <Spinner className="h-8 w-8" />
             </div>
           ) : (
-            <LeafletMap data={mapData} height={300} compact />
+            <LeafletMap data={mapData} height={600} compact selectedVehicleId={selectedId} />
           )}
         </div>
       </div>
@@ -455,7 +377,12 @@ export function VehiclesTab() {
       ) : groupMode === 'by_type' ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {displayedVehicles.map((v) => (
-            <VehicleCard key={v.id} vehicle={v} />
+            <VehicleCard
+              key={v.id}
+              vehicle={v}
+              selected={v.id === selectedId}
+              onSelect={() => setSelectedId(v.id)}
+            />
           ))}
         </div>
       ) : (
@@ -480,7 +407,12 @@ export function VehiclesTab() {
                   </div>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {groupVehicles.map((v) => (
-                      <VehicleCard key={v.id} vehicle={v} />
+                      <VehicleCard
+                        key={v.id}
+                        vehicle={v}
+                        selected={v.id === selectedId}
+                        onSelect={() => setSelectedId(v.id)}
+                      />
                     ))}
                   </div>
                 </div>
