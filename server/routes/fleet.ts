@@ -10,6 +10,21 @@ function num(v: unknown): number {
   return typeof v === 'number' ? v : Number(v) || 0
 }
 
+// Vehicle costs now come from REAL journal lines tagged with a vehicle_id (the
+// single source of truth), not the legacy vehicle_costs table. Exposed with the
+// same columns (vehicle_id, currency, amount, date, category) so the existing
+// cost queries below work by swapping the FROM source. Category is mapped to the
+// fleet's vocabulary (FUEL / MAINTENANCE / PARTS) so the Fleet UI stays intact.
+const COST_SRC = `(
+  SELECT jl.vehicle_id AS vehicle_id, jl.currency AS currency, jl.debit AS amount, je.date AS date,
+    CASE WHEN jl.account_code LIKE '351%'        THEN 'FUEL'
+         WHEN jl.account_code IN ('3202','3203') THEN 'MAINTENANCE'
+         WHEN jl.account_code LIKE '352%'        THEN 'PARTS'
+         ELSE 'MAINTENANCE' END AS category
+  FROM journal_lines jl JOIN journal_entries je ON je.id = jl.entry_id
+  WHERE jl.vehicle_id IS NOT NULL AND je.status != 'CANCELLED' AND jl.debit > 0
+)`
+
 // ---- Optional query-param filters for costs/summary -------------------------
 function buildVehicleFilter(req: Request): { where: string; params: unknown[] } {
   const where: string[] = ['1=1']
@@ -234,7 +249,7 @@ fleetRouter.get('/fleet/costs', (req, res) => {
         `SELECT
            SUM(CASE WHEN vc.currency = 'IQD' THEN vc.amount ELSE 0 END) iqd,
            SUM(CASE WHEN vc.currency = 'USD' THEN vc.amount ELSE 0 END) usd
-         FROM vehicle_costs vc
+         FROM ${COST_SRC} vc
          JOIN vehicles v ON v.id = vc.vehicle_id
          WHERE ${vFilter}`,
       )
@@ -249,7 +264,7 @@ fleetRouter.get('/fleet/costs', (req, res) => {
            vc.category,
            SUM(CASE WHEN vc.currency = 'IQD' THEN vc.amount ELSE 0 END) iqd,
            SUM(CASE WHEN vc.currency = 'USD' THEN vc.amount ELSE 0 END) usd
-         FROM vehicle_costs vc
+         FROM ${COST_SRC} vc
          JOIN vehicles v ON v.id = vc.vehicle_id
          WHERE ${vFilter}
          GROUP BY vc.category
@@ -265,7 +280,7 @@ fleetRouter.get('/fleet/costs', (req, res) => {
            v.name_en,
            SUM(CASE WHEN vc.currency = 'IQD' THEN vc.amount ELSE 0 END) iqd,
            SUM(CASE WHEN vc.currency = 'USD' THEN vc.amount ELSE 0 END) usd
-         FROM vehicle_costs vc
+         FROM ${COST_SRC} vc
          JOIN vehicles v ON v.id = vc.vehicle_id
          WHERE ${vFilter}
          GROUP BY v.vehicle_type, v.name_en
@@ -282,7 +297,7 @@ fleetRouter.get('/fleet/costs', (req, res) => {
            SUM(CASE WHEN vc.currency = 'IQD' THEN vc.amount ELSE 0 END) iqd,
            SUM(CASE WHEN vc.currency = 'USD' THEN vc.amount ELSE 0 END) usd,
            COUNT(DISTINCT v.id) vehicles
-         FROM vehicle_costs vc
+         FROM ${COST_SRC} vc
          JOIN vehicles v ON v.id = vc.vehicle_id
          LEFT JOIN projects p ON p.id = v.project_id
          WHERE ${vFilter}
@@ -298,7 +313,7 @@ fleetRouter.get('/fleet/costs', (req, res) => {
            strftime('%Y-%m', vc.date) month,
            SUM(CASE WHEN vc.currency = 'IQD' THEN vc.amount ELSE 0 END) iqd,
            SUM(CASE WHEN vc.currency = 'USD' THEN vc.amount ELSE 0 END) usd
-         FROM vehicle_costs vc
+         FROM ${COST_SRC} vc
          JOIN vehicles v ON v.id = vc.vehicle_id
          WHERE ${vFilter} AND vc.date IS NOT NULL
          GROUP BY month

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { PackageX, CalendarClock, FileWarning, ChevronLeft, ChevronRight } from 'lucide-react'
+import { PackageX, CalendarClock, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useT, useLang } from '../../context/LangContext'
 import { formatNumber } from '../../lib/format'
 import type { DashboardData } from '../../types'
@@ -94,14 +94,6 @@ export function AlertsRow({ alerts }: { alerts: DashboardData['alerts'] }) {
         count={alerts.pending_leaves}
         hint={t('dashboard.alerts.pending_leaves_hint')}
         accent="warning"
-      />
-      <AlertCard
-        to="/accounting"
-        icon={<FileWarning className="h-6 w-6" />}
-        label={t('dashboard.alerts.draft_entries')}
-        count={alerts.draft_entries}
-        hint={t('dashboard.alerts.draft_entries_hint')}
-        accent="info"
       />
     </div>
   )

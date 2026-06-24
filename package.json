@@ -6,6 +6,7 @@
   "description": "GEO ERP System — Arabic-first demo ERP for a construction/engineering group",
   "scripts": {
     "seed": "tsx server/seed/seed.ts",
+    "seed:fleet": "tsx server/seed/seedFleetOnly.ts",
     "server": "tsx watch server/index.ts",
     "client": "vite",
     "dev": "concurrently -n api,web -c blue,green \"npm:server\" \"npm:client\"",

@@ -17,6 +17,7 @@ interface IncomingLine {
   credit?: number
   company_id?: string | null
   project_id?: string | null
+  vehicle_id?: string | null
 }
 
 // Dinar value of a line = amount × exchange rate (price). IQD lines have rate 1.
@@ -63,8 +64,8 @@ accountingRouter.post('/journal_entries', (req, res) => {
     VALUES (@id,@serial_number,@doc_number,@company_id,@project_id,@date,@description,@currency,@exchange_rate,@status,@total_debit,@total_credit,@created_at)
   `)
   const insertLine = db.prepare(`
-    INSERT INTO journal_lines (id, entry_id, account_code, company_id, project_id, description, currency, price, value, debit, credit)
-    VALUES (@id,@entry_id,@account_code,@company_id,@project_id,@description,@currency,@price,@value,@debit,@credit)
+    INSERT INTO journal_lines (id, entry_id, account_code, company_id, project_id, description, currency, price, value, debit, credit, vehicle_id)
+    VALUES (@id,@entry_id,@account_code,@company_id,@project_id,@description,@currency,@price,@value,@debit,@credit,@vehicle_id)
   `)
 
   const tx = db.transaction(() => {
@@ -96,6 +97,7 @@ accountingRouter.post('/journal_entries', (req, res) => {
         value: Number(l.value) || Number(l.debit) || Number(l.credit) || 0,
         debit: Number(l.debit) || 0,
         credit: Number(l.credit) || 0,
+        vehicle_id: l.vehicle_id ?? null,
       })
     }
   })
@@ -150,8 +152,8 @@ accountingRouter.put('/journal_entries/:id', (req, res) => {
   const status = (b.status as string) ?? (existing.status as string) ?? 'APPROVED'
 
   const insertLine = db.prepare(`
-    INSERT INTO journal_lines (id, entry_id, account_code, company_id, project_id, description, currency, price, value, debit, credit)
-    VALUES (@id,@entry_id,@account_code,@company_id,@project_id,@description,@currency,@price,@value,@debit,@credit)
+    INSERT INTO journal_lines (id, entry_id, account_code, company_id, project_id, description, currency, price, value, debit, credit, vehicle_id)
+    VALUES (@id,@entry_id,@account_code,@company_id,@project_id,@description,@currency,@price,@value,@debit,@credit,@vehicle_id)
   `)
 
   const tx = db.transaction(() => {
@@ -188,6 +190,7 @@ accountingRouter.put('/journal_entries/:id', (req, res) => {
           value: Number(l.value) || Number(l.debit) || Number(l.credit) || 0,
           debit: Number(l.debit) || 0,
           credit: Number(l.credit) || 0,
+          vehicle_id: l.vehicle_id ?? null,
         })
       }
     }
@@ -601,7 +604,7 @@ accountingRouter.get('/accounting/vouchers', (req, res) => {
   const rows = db
     .prepare(
       `SELECT je.id entry_id, je.date, je.serial_number, je.doc_number, je.description,
-              je.total_debit amount, je.company_id, je.project_id, je.currency, je.status,
+              je.total_debit amount, je.company_id, je.project_id, je.currency, je.status, je.exchange_rate,
               (SELECT COALESCE(SUM(x.debit),0) FROM journal_lines x WHERE x.entry_id=je.id AND x.account_code IN (${CASH_IN})) cash_debit,
               (SELECT COALESCE(SUM(x.credit),0) FROM journal_lines x WHERE x.entry_id=je.id AND x.account_code IN (${CASH_IN})) cash_credit,
               (SELECT x.account_code FROM journal_lines x WHERE x.entry_id=je.id AND x.account_code IN (${CASH_IN}) LIMIT 1) cash_account,
