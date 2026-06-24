@@ -1,4 +1,6 @@
 // GET /api/dashboard — cross-module aggregate KPIs for the dashboard module.
+// Honors an optional ?company_id= filter so the dashboard matches the company
+// selected in the top bar (otherwise it shows the consolidated group).
 import { Router } from 'express'
 import { db } from '../db/connection.js'
 
@@ -8,18 +10,25 @@ function num(v: unknown): number {
   return typeof v === 'number' ? v : Number(v) || 0
 }
 
-dashboardRouter.get('/dashboard', (_req, res) => {
+dashboardRouter.get('/dashboard', (req, res) => {
   try {
+    const companyId = (req.query.company_id as string) || ''
+    // Clauses + params for the two filtering styles used below.
+    const jlCo = companyId ? 'AND jl.company_id = ?' : '' // journal lines
+    const jlP = companyId ? [companyId] : []
+    const coWhere = companyId ? 'WHERE company_id = ?' : '' // plain tables
+    const coP = companyId ? [companyId] : []
+
     const count = (sql: string, ...p: unknown[]) =>
       num((db.prepare(sql).get(...p) as { c: number } | undefined)?.c)
 
     const counts = {
       companies: count('SELECT COUNT(*) c FROM companies'),
-      projects: count('SELECT COUNT(*) c FROM projects'),
-      active_projects: count("SELECT COUNT(*) c FROM projects WHERE status = 'ACTIVE'"),
-      employees: count("SELECT COUNT(*) c FROM employees WHERE status = 'ACTIVE'"),
+      projects: count(`SELECT COUNT(*) c FROM projects ${coWhere}`, ...coP),
+      active_projects: count(`SELECT COUNT(*) c FROM projects WHERE status = 'ACTIVE'${companyId ? ' AND company_id = ?' : ''}`, ...coP),
+      employees: count(`SELECT COUNT(*) c FROM employees WHERE status = 'ACTIVE'${companyId ? ' AND company_id = ?' : ''}`, ...coP),
       items: count('SELECT COUNT(*) c FROM items'),
-      journal_entries: count('SELECT COUNT(*) c FROM journal_entries'),
+      journal_entries: count(`SELECT COUNT(*) c FROM journal_entries je ${companyId ? 'WHERE je.company_id = ?' : ''}`, ...coP),
     }
 
     // Finance from journal lines joined to account type. IQD and USD are kept
@@ -38,13 +47,23 @@ dashboardRouter.get('/dashboard', (_req, res) => {
          FROM journal_lines jl
          JOIN accounts a ON a.code = jl.account_code
          JOIN journal_entries je ON je.id = jl.entry_id
-         WHERE je.status != 'CANCELLED'`,
+         WHERE je.status != 'CANCELLED' ${jlCo}`,
       )
-      .get() as Record<string, number>
+      .get(...jlP) as Record<string, number>
 
     const contractTotal = num(
-      (db.prepare('SELECT SUM(contract_value) s FROM projects').get() as { s: number } | undefined)?.s,
+      (db.prepare(`SELECT SUM(contract_value) s FROM projects ${coWhere}`).get(...coP) as { s: number } | undefined)?.s,
     )
+
+    // Fleet (الآليات) spend = vehicle-tagged expense lines, per currency.
+    const fleetRow = db
+      .prepare(
+        `SELECT SUM(CASE WHEN jl.currency!='USD' THEN jl.debit ELSE 0 END) iqd,
+                SUM(CASE WHEN jl.currency='USD' THEN jl.debit ELSE 0 END) usd
+         FROM journal_lines jl JOIN journal_entries je ON je.id = jl.entry_id
+         WHERE je.status != 'CANCELLED' AND jl.vehicle_id IS NOT NULL AND jl.debit > 0 ${jlCo}`,
+      )
+      .get(...jlP) as { iqd: number; usd: number } | undefined
 
     const finance = {
       total_revenue: num(fin?.revenue),
@@ -58,6 +77,8 @@ dashboardRouter.get('/dashboard', (_req, res) => {
       net_profit_usd: num(fin?.revenue_usd) - num(fin?.expense_usd),
       total_assets_usd: num(fin?.assets_usd),
       total_liabilities_usd: num(fin?.liabilities_usd),
+      fleet_spend_iqd: num(fleetRow?.iqd),
+      fleet_spend_usd: num(fleetRow?.usd),
     }
 
     // Low stock: items whose total stock across warehouses is at/under min.
@@ -72,12 +93,11 @@ dashboardRouter.get('/dashboard', (_req, res) => {
     const alerts = {
       low_stock: lowStock,
       pending_leaves: count("SELECT COUNT(*) c FROM leave_requests WHERE status = 'PENDING'"),
-      draft_entries: count("SELECT COUNT(*) c FROM journal_entries WHERE status = 'DRAFT'"),
     }
 
     const projects_by_status = db
-      .prepare('SELECT status, COUNT(*) count FROM projects GROUP BY status')
-      .all() as Array<{ status: string; count: number }>
+      .prepare(`SELECT status, COUNT(*) count FROM projects ${coWhere} GROUP BY status`)
+      .all(...coP) as Array<{ status: string; count: number }>
 
     // Monthly chart is IQD-only (the reporting currency) so it never mixes
     // currencies; USD activity is shown separately on the accounting screens.
@@ -89,22 +109,23 @@ dashboardRouter.get('/dashboard', (_req, res) => {
          FROM journal_lines jl
          JOIN accounts a ON a.code = jl.account_code
          JOIN journal_entries je ON je.id = jl.entry_id
-         WHERE je.status != 'CANCELLED' AND je.date IS NOT NULL AND jl.currency != 'USD'
+         WHERE je.status != 'CANCELLED' AND je.date IS NOT NULL AND jl.currency != 'USD' ${jlCo}
          GROUP BY month ORDER BY month DESC LIMIT 8`,
       )
-      .all() as Array<{ month: string; revenue: number; expense: number }>
+      .all(...jlP) as Array<{ month: string; revenue: number; expense: number }>
 
     const employees_by_company = db
       .prepare(
         `SELECT c.name_ar company, COUNT(e.id) count
          FROM companies c LEFT JOIN employees e ON e.company_id = c.id
+         ${companyId ? 'WHERE c.id = ?' : ''}
          GROUP BY c.id HAVING count > 0 ORDER BY count DESC LIMIT 12`,
       )
-      .all() as Array<{ company: string; count: number }>
+      .all(...coP) as Array<{ company: string; count: number }>
 
     const recent_logs = db
-      .prepare('SELECT * FROM event_logs ORDER BY timestamp DESC LIMIT 12')
-      .all()
+      .prepare(`SELECT * FROM event_logs ${companyId ? 'WHERE company_id = ?' : ''} ORDER BY timestamp DESC LIMIT 12`)
+      .all(...coP)
 
     res.json({
       counts,

@@ -42,6 +42,28 @@ function migrate(): void {
   // The "unapproved" (DRAFT) concept is removed: every entry is approved.
   db.exec(`UPDATE journal_entries SET status = 'APPROVED' WHERE status = 'DRAFT'`)
 
+  // Fleet module: projects gained map coordinates; journal lines can be tagged
+  // with a vehicle (vehicle expenses → الآليات). Existing databases need these
+  // columns added — CREATE TABLE IF NOT EXISTS only helps brand-new databases.
+  const projCols = db.prepare(`PRAGMA table_info(projects)`).all() as Array<{ name: string }>
+  if (!projCols.some((c) => c.name === 'lat')) db.exec(`ALTER TABLE projects ADD COLUMN lat REAL`)
+  if (!projCols.some((c) => c.name === 'lng')) db.exec(`ALTER TABLE projects ADD COLUMN lng REAL`)
+  const jlCols = db.prepare(`PRAGMA table_info(journal_lines)`).all() as Array<{ name: string }>
+  if (!jlCols.some((c) => c.name === 'vehicle_id')) db.exec(`ALTER TABLE journal_lines ADD COLUMN vehicle_id TEXT`)
+
+  // الآليات (Fleet) asset group: normalize the Arabic-digit code ٥ → 5 so the
+  // generated child codes (5001, 5002, …) sort/work properly.
+  if (db.prepare(`SELECT 1 FROM accounts WHERE code = '٥'`).get()) {
+    if (!db.prepare(`SELECT 1 FROM accounts WHERE code = '5'`).get()) {
+      db.exec(`UPDATE accounts SET code = '5' WHERE code = '٥'`)
+      db.exec(`UPDATE accounts SET parent_code = '5' WHERE parent_code = '٥'`)
+    }
+  }
+  // Each vehicle links to its own asset account under اليات.
+  const vCols = db.prepare(`PRAGMA table_info(vehicles)`).all() as Array<{ name: string }>
+  if (vCols.length && !vCols.some((c) => c.name === 'account_code')) db.exec(`ALTER TABLE vehicles ADD COLUMN account_code TEXT`)
+  ensureVehicleAccounts()
+
   // Banks ↔ chart of accounts: each bank links to a GL account under 183 المصارف.
   const bankCols = db.prepare(`PRAGMA table_info(banks)`).all() as Array<{ name: string }>
   if (bankCols.length) {
@@ -76,6 +98,40 @@ function migrate(): void {
       }
     }
   }
+}
+
+// Create a posting ASSET account under «اليات» (code 5) for every vehicle that
+// doesn't have one yet, and link it via vehicles.account_code. Idempotent —
+// safe to call on boot and after seeding new vehicles. Skips if the اليات root
+// is absent. Additive only (never deletes accounts).
+export function ensureVehicleAccounts(): void {
+  const root = db.prepare(`SELECT code, level FROM accounts WHERE code = '5'`).get() as { code: string; level: number } | undefined
+  if (!root) return
+  const hasVehicles = db.prepare(`SELECT name FROM pragma_table_info('vehicles') WHERE name = 'account_code'`).get()
+  if (!hasVehicles) return
+  const vehicles = db.prepare(`SELECT id, code, name_ar, name_en, plate_number, account_code FROM vehicles`).all() as Array<{ id: string; code: string; name_ar: string; name_en: string; plate_number: string; account_code: string | null }>
+  const exists = db.prepare(`SELECT 1 FROM accounts WHERE code = ?`)
+  const insAcct = db.prepare(
+    `INSERT INTO accounts (code, name_ar, name_en, type, normal_balance, parent_code, level, is_posting, archived)
+     VALUES (?, ?, ?, 'ASSET', 'DEBIT', '5', ?, 1, 0)`,
+  )
+  const linkVeh = db.prepare(`UPDATE vehicles SET account_code = ? WHERE id = ?`)
+  let n = (db.prepare(`SELECT COUNT(*) c FROM accounts WHERE parent_code = '5'`).get() as { c: number }).c
+  const tx = db.transaction(() => {
+    for (const v of vehicles) {
+      if (v.account_code && exists.get(v.account_code)) continue
+      n++
+      let code = `5${String(n).padStart(3, '0')}`
+      while (exists.get(code)) {
+        n++
+        code = `5${String(n).padStart(3, '0')}`
+      }
+      const label = `${v.code} — ${v.name_ar}${v.plate_number ? ' (' + v.plate_number + ')' : ''}`
+      insAcct.run(code, label, v.name_en ?? '', (root.level ?? 1) + 1)
+      linkVeh.run(code, v.id)
+    }
+  })
+  tx()
 }
 
 // Ensure tables exist whenever the connection is imported (server boot, seed).

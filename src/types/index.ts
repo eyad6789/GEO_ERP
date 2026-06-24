@@ -480,11 +480,12 @@ export interface DashboardData {
     net_profit_usd: number
     total_assets_usd: number
     total_liabilities_usd: number
+    fleet_spend_iqd: number
+    fleet_spend_usd: number
   }
   alerts: {
     low_stock: number
     pending_leaves: number
-    draft_entries: number
   }
   projects_by_status: Array<{ status: ProjectStatus; count: number }>
   revenue_expense_by_month: Array<{ month: string; revenue: number; expense: number }>
@@ -523,6 +524,7 @@ export interface Vehicle {
   lat: number | null
   lng: number | null
   notes: string
+  account_code?: string | null // linked asset account under اليات (5)
   created_at?: string
 }
 

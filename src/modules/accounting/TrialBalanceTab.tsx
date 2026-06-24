@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Scale, Check, AlertTriangle, Download, X } from 'lucide-react'
 import { Card, CardHeader, Button, LoadingState, SearchSelect } from '../../components/ui'
 import { EmptyState } from '../../components/shared'
@@ -6,8 +7,8 @@ import { useApi, useResource } from '../../hooks/useResource'
 import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { formatCurrency, exportToExcel, pickName } from '../../lib/format'
-import type { Company, Project } from '../../types'
-import { isBalanced, type TrialBalanceResp, type TrialBalanceRow } from './shared'
+import type { Account, Company, Project } from '../../types'
+import { isBalanced, resolvePostingDescendants, type TrialBalanceResp, type TrialBalanceRow } from './shared'
 import { FilterBar, type DateRange } from './FilterBar'
 
 export function TrialBalanceTab({
@@ -20,11 +21,14 @@ export function TrialBalanceTab({
   const t = useT()
   const { lang } = useLang()
   const { companyId } = useCompany()
+  const navigate = useNavigate()
   const [companyFilter, setCompanyFilter] = useState('')
   const [projectFilter, setProjectFilter] = useState('')
+  const [accountFilter, setAccountFilter] = useState('')
 
   const { data: companies } = useResource<Company>('companies')
   const { data: projects } = useResource<Project>('projects')
+  const { data: accounts } = useResource<Account>('accounts')
 
   const companyOptions = useMemo(
     () => [{ value: '', label: t('accounting.filter.all_companies') }, ...companies.map((c) => ({ value: c.id, label: pickName(c, lang) }))],
@@ -33,6 +37,15 @@ export function TrialBalanceTab({
   const projectOptions = useMemo(
     () => [{ value: '', label: t('accounting.journal.all_projects') }, ...projects.map((p) => ({ value: p.id, label: pickName(p, lang) }))],
     [projects, lang, t],
+  )
+  // All accounts (headers + posting) so you can filter the trial balance to a
+  // single account OR a whole subtree (e.g. pick «32 المستلزمات الخدمية»).
+  const accountOptions = useMemo(
+    () => [
+      { value: '', label: t('accounting.journal.all_accounts') },
+      ...accounts.slice().sort((a, b) => a.code.localeCompare(b.code)).map((a) => ({ value: a.code, label: `${a.code} — ${pickName(a, lang)}` })),
+    ],
+    [accounts, lang, t],
   )
 
   // Page-level company filter takes precedence over the global top-bar company.
@@ -48,7 +61,34 @@ export function TrialBalanceTab({
 
   const { data, loading } = useApi<TrialBalanceResp>('/reports/trial-balance', params)
   const rows = data?.rows ?? []
-  const totals = data?.totals ?? { debit: 0, credit: 0, debit_usd: 0, credit_usd: 0 }
+
+  // Account/subtree filter (client-side): keep only rows whose code is the
+  // selected account or one of its posting descendants.
+  const subtreeCodes = useMemo(() => {
+    if (!accountFilter) return null
+    const set = new Set(resolvePostingDescendants([accountFilter], accounts))
+    set.add(accountFilter)
+    return set
+  }, [accountFilter, accounts])
+  const displayRows = useMemo(
+    () => (subtreeCodes ? rows.filter((r) => subtreeCodes.has(r.code)) : rows),
+    [rows, subtreeCodes],
+  )
+
+  // Totals follow what's shown, so filtering recomputes them.
+  const totals = useMemo(
+    () =>
+      displayRows.reduce(
+        (a, r) => ({
+          debit: a.debit + (r.total_debit || 0),
+          credit: a.credit + (r.total_credit || 0),
+          debit_usd: a.debit_usd + (r.debit_usd || 0),
+          credit_usd: a.credit_usd + (r.credit_usd || 0),
+        }),
+        { debit: 0, credit: 0, debit_usd: 0, credit_usd: 0 },
+      ),
+    [displayRows],
+  )
   const balanced = isBalanced(totals.debit, totals.credit)
   const balancedUsd = isBalanced(totals.debit_usd, totals.credit_usd)
   const hasUsd = totals.debit_usd !== 0 || totals.credit_usd !== 0
@@ -63,7 +103,7 @@ export function TrialBalanceTab({
     const b = t('accounting.trial.balance')
     void exportToExcel(
       'trial_balance',
-      rows.map((r) => ({
+      displayRows.map((r) => ({
         [c]: r.code,
         [n]: name(r),
         [`${d} (IQD)`]: r.total_debit,
@@ -86,9 +126,10 @@ export function TrialBalanceTab({
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="w-48 shrink-0"><SearchSelect value={companyFilter} onChange={setCompanyFilter} options={companyOptions} placeholder={t('accounting.filter.all_companies')} /></div>
           <div className="w-48 shrink-0"><SearchSelect value={projectFilter} onChange={setProjectFilter} options={projectOptions} placeholder={t('accounting.journal.all_projects')} /></div>
-          {(companyFilter || projectFilter) && (
+          <div className="w-56 shrink-0"><SearchSelect value={accountFilter} onChange={setAccountFilter} options={accountOptions} placeholder={t('accounting.journal.all_accounts')} /></div>
+          {(companyFilter || projectFilter || accountFilter) && (
             <button
-              onClick={() => { setCompanyFilter(''); setProjectFilter('') }}
+              onClick={() => { setCompanyFilter(''); setProjectFilter(''); setAccountFilter('') }}
               className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-danger"
               title={t('accounting.journal.clear_filters')}
             >
@@ -107,7 +148,7 @@ export function TrialBalanceTab({
           action={
             <div className="flex items-center gap-2">
               <BalancedPill balanced={balanced} t={t} />
-              <Button variant="outline" size="sm" onClick={handleExport} disabled={!rows.length}>
+              <Button variant="outline" size="sm" onClick={handleExport} disabled={!displayRows.length}>
                 <Download className="h-4 w-4" />
                 {t('common.export')}
               </Button>
@@ -117,7 +158,7 @@ export function TrialBalanceTab({
 
         {loading ? (
           <LoadingState label={t('common.loading')} />
-        ) : rows.length === 0 ? (
+        ) : displayRows.length === 0 ? (
           <EmptyState title={t('accounting.trial.empty')} hint={t('common.empty_hint')} />
         ) : (
           <div className="overflow-x-auto">
@@ -132,8 +173,13 @@ export function TrialBalanceTab({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {rows.map((r) => (
-                  <tr key={r.code} className="hover:bg-primary/5">
+                {displayRows.map((r) => (
+                  <tr
+                    key={r.code}
+                    className="cursor-pointer hover:bg-primary/5"
+                    onClick={() => navigate(`/accounting/accounts/${r.code}`)}
+                    title={t('accounting.trial.open_account')}
+                  >
                     <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{r.code}</td>
                     <td className="px-4 py-2.5 text-slate-700">{name(r)}</td>
                     <td className="px-4 py-2.5 text-end tabular-nums text-emerald-700">

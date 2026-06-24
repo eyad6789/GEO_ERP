@@ -346,7 +346,8 @@ CREATE TABLE IF NOT EXISTS journal_lines (
   price REAL DEFAULT 0,
   value REAL DEFAULT 0,
   debit REAL DEFAULT 0,
-  credit REAL DEFAULT 0
+  credit REAL DEFAULT 0,
+  vehicle_id TEXT            -- FK -> vehicles.id; set when this line is a vehicle expense
 );
 
 -- ---- Banks (cash & bank management; dual-currency balances) -----------------
