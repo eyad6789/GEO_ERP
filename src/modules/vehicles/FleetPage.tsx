@@ -3,12 +3,17 @@ import { Truck, Banknote, Map as MapIcon, Archive } from 'lucide-react'
 import { PageHeader } from '../../components/shared'
 import { Tabs, type TabItem } from '../../components/ui'
 import { useT } from '../../context/LangContext'
+import { FEATURES } from '../../config/features'
 import { VehiclesTab } from './tabs/VehiclesTab'
 import { AccountingTab } from './tabs/AccountingTab'
 import { MapTab } from './tabs/MapTab'
 import { ArchiveTab } from './tabs/ArchiveTab'
+import { MapComingSoon } from './MapComingSoon'
 
-// Fleet shell: header + four tabs. Each tab owns its own data fetching.
+// Fleet shell: header + tabs. Each tab owns its own data fetching.
+// The Map tab stays visible, but while FEATURES.fleetMap is off it shows a
+// "قريباً / coming soon" placeholder instead of the real map — no map code is
+// removed, so Joseph keeps working. Flip FEATURES.fleetMap to show the real map.
 export function FleetPage() {
   const t = useT()
   const [tab, setTab] = useState('vehicles')
@@ -30,7 +35,7 @@ export function FleetPage() {
       <Tabs tabs={tabs} value={tab} onChange={setTab} className="mb-6" />
       {tab === 'vehicles' && <VehiclesTab />}
       {tab === 'accounting' && <AccountingTab />}
-      {tab === 'map' && <MapTab />}
+      {tab === 'map' && (FEATURES.fleetMap ? <MapTab /> : <MapComingSoon />)}
       {tab === 'archive' && <ArchiveTab />}
     </div>
   )
