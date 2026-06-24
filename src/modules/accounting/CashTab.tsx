@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Wallet, Coins, Plus, ArrowDownToLine, ArrowUpFromLine, Banknote } from 'lucide-react'
+import { Wallet, Coins, Plus, ArrowDownToLine, ArrowUpFromLine, Banknote, HandCoins } from 'lucide-react'
 import { Card, CardHeader, Badge } from '../../components/ui'
 import { ArabicTable, KpiCard, type Column } from '../../components/shared'
 import { useApi, useResource } from '../../hooks/useResource'
@@ -17,7 +17,6 @@ import {
   type TrialBalanceResp,
   type CashMovement,
 } from './shared'
-import { AdvanceCard } from './AdvanceCard'
 
 interface Movement extends CashMovement {
   type: 'RECEIPT' | 'PAYMENT'
@@ -130,33 +129,49 @@ export function CashTab() {
 
   return (
     <div className="space-y-5">
+      {/* Cash summary — three IQD boxes (top) with matching USD boxes below, so
+          dinar and dollar each get the same three cards (total / on-hand / advance). */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {/* Total Cash = cash boxes (IQD + $) + the operational advance, kept per currency. */}
         <KpiCard
-          label={t('accounting.cash.total')}
-          value={
-            <span className="flex flex-col leading-tight">
-              <span>{formatCurrency(totalIqd + advance.iqd, 'IQD', lang)}</span>
-              <span className="mt-0.5 text-base font-semibold text-emerald-600">{formatCurrency(totalUsd + advance.usd, 'USD', lang)}</span>
-            </span>
-          }
+          label={t('accounting.cash.total_iqd')}
+          value={formatCurrency(totalIqd + advance.iqd, 'IQD', lang)}
           hint={t('accounting.cash.incl_advance')}
           icon={<Wallet className="h-5 w-5" />}
           accent="primary"
         />
-        {/* Cash on hand = cash boxes only (excludes what is out as an advance). */}
         <KpiCard
-          label={t('accounting.cash.on_hand')}
-          value={
-            <span className="flex flex-col leading-tight">
-              <span>{formatCurrency(totalIqd, 'IQD', lang)}</span>
-              <span className="mt-0.5 text-base font-semibold text-emerald-600">{formatCurrency(totalUsd, 'USD', lang)}</span>
-            </span>
-          }
+          label={t('accounting.cash.on_hand_iqd')}
+          value={formatCurrency(totalIqd, 'IQD', lang)}
           icon={<Coins className="h-5 w-5" />}
           accent="info"
         />
-        <AdvanceCard code={advanceCode} iqd={advance.iqd} usd={advance.usd} lang={lang} t={t} />
+        <KpiCard
+          label={t('accounting.cash.advance_iqd')}
+          value={formatCurrency(advance.iqd, 'IQD', lang)}
+          icon={<HandCoins className="h-5 w-5" />}
+          accent="warning"
+        />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <KpiCard
+          label={t('accounting.cash.total_usd')}
+          value={formatCurrency(totalUsd + advance.usd, 'USD', lang)}
+          hint={t('accounting.cash.incl_advance')}
+          icon={<Wallet className="h-5 w-5" />}
+          accent="success"
+        />
+        <KpiCard
+          label={t('accounting.cash.on_hand_usd')}
+          value={formatCurrency(totalUsd, 'USD', lang)}
+          icon={<Coins className="h-5 w-5" />}
+          accent="success"
+        />
+        <KpiCard
+          label={t('accounting.cash.advance_usd')}
+          value={formatCurrency(advance.usd, 'USD', lang)}
+          icon={<HandCoins className="h-5 w-5" />}
+          accent="success"
+        />
       </div>
 
       <Card>

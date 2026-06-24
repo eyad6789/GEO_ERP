@@ -74,6 +74,18 @@ export function ChartTab() {
     '/reports/trial-balance',
     companyId ? { company_id: companyId } : undefined,
   )
+  // Vehicle accounts (under «اليات») carry no GL postings — their spend lives on
+  // expense accounts tagged with the vehicle. Overlay that spend so the chart's
+  // balance column shows each vehicle's (and اليات's) real spend instead of 0.
+  const { data: vspend } = useApi<{ by_vehicle: Array<{ account_code: string | null; iqd: number; usd: number }> }>(
+    '/accounting/vehicle-spending',
+    companyId ? { company_id: companyId } : undefined,
+  )
+  const spendByAcct = useMemo(() => {
+    const m = new Map<string, { iqd: number; usd: number }>()
+    for (const v of vspend?.by_vehicle ?? []) if (v.account_code) m.set(v.account_code, { iqd: v.iqd, usd: v.usd })
+    return m
+  }, [vspend])
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [query, setQuery] = useState('')
   const [addOpen, setAddOpen] = useState(false)
@@ -97,6 +109,11 @@ export function ChartTab() {
       ownIqd.set(r.code, r.balance_iqd ?? r.balance)
       ownUsd.set(r.code, r.balance_usd ?? 0)
     }
+    // Overlay vehicle spend onto each vehicle's asset account (no GL postings).
+    for (const [code, sp] of spendByAcct) {
+      ownIqd.set(code, sp.iqd)
+      ownUsd.set(code, sp.usd)
+    }
     const iqd = new Map<string, number>()
     const usd = new Map<string, number>()
     const calc = (node: AccountNode): { i: number; u: number } => {
@@ -113,7 +130,7 @@ export function ChartTab() {
     }
     tree.forEach(calc)
     return { iqd, usd }
-  }, [tree, trial])
+  }, [tree, trial, spendByAcct])
 
   const postingCount = data.filter((a) => a.is_posting === 1).length
 

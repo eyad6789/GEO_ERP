@@ -8,8 +8,8 @@ import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { apiPost, apiPut, apiDelete } from '../../lib/api'
 import { formatCurrency, pickName } from '../../lib/format'
-import { type Account, type Company, type Project, type Currency } from '../../types'
-import { isBalanced, type JournalEntryFull } from './shared'
+import { type Account, type Company, type Project, type Vehicle, type Currency } from '../../types'
+import { isBalanced, resolvePostingDescendants, VEHICLE_EXPENSE_ROOTS, type JournalEntryFull } from './shared'
 import { DateField } from './DateField'
 
 interface LineState {
@@ -22,6 +22,7 @@ interface LineState {
   description: string
   currency: Currency
   price: string // سعر العملة (per-line rate)
+  vehicle_id: string // set when the line posts to a vehicle-expense account
 }
 
 const CONVERTIBLE: Currency[] = ['IQD', 'USD']
@@ -48,6 +49,7 @@ const blankLine = (company: string): LineState => ({
   description: '',
   currency: 'IQD',
   price: '1',
+  vehicle_id: '',
 })
 
 const MIN_ROWS = 10
@@ -73,6 +75,7 @@ export function NewEntryDialog({
   const { data: companies } = useResource<Company>('companies')
   const { data: projects } = useResource<Project>('projects')
   const { data: accounts } = useResource<Account>('accounts')
+  const { data: vehicles } = useResource<Vehicle>('vehicles')
   const { data: editEntry } = useApi<JournalEntryFull>(
     open && editId ? `/journal_entries/${editId}/full` : null,
   )
@@ -111,6 +114,18 @@ export function NewEntryDialog({
       ...list.map((p, i) => ({ value: p.id, label: `${i + 2} — ${pickName(p, lang)}` })),
     ]
   }
+
+  // Vehicle-expense accounts → which lines need a vehicle picker, and the vehicle
+  // options to pick from. When a line's account is one of these, posting it asks
+  // which الآلية it belongs to so the car's costs come from real journal entries.
+  const vehicleExpenseCodes = useMemo(() => new Set(resolvePostingDescendants(VEHICLE_EXPENSE_ROOTS, accounts)), [accounts])
+  const vehicleOptions = useMemo(
+    () => vehicles.slice().sort((a, b) => a.code.localeCompare(b.code)).map((v) => ({ value: v.id, label: `${v.code} — ${pickName(v, lang)}` })),
+    [vehicles, lang],
+  )
+  // The vehicle column is hidden entirely until at least one line uses a
+  // vehicle-expense account (بنزين/صيانة/…); then it appears for the whole grid.
+  const showVehicleCol = lines.some((l) => vehicleExpenseCodes.has(l.account_code))
 
   // First cash/bank account — used to pre-fill the cash line for قبض / صرف.
   const defaultCashAccount = useMemo(
@@ -169,6 +184,7 @@ export function NewEntryDialog({
         description: l.description ?? '',
         currency: ((l.currency as Currency) || (editEntry.currency as Currency) || 'IQD'),
         price: l.price && l.price !== 1 ? String(l.price) : editEntry.exchange_rate && editEntry.exchange_rate !== 1 ? String(editEntry.exchange_rate) : '',
+        vehicle_id: l.vehicle_id ?? '',
       }))
       while (mapped.length < MIN_ROWS) mapped.push(blankLine(editEntry.company_id ?? companyId ?? ''))
       setLines(mapped)
@@ -254,6 +270,8 @@ export function NewEntryDialog({
         price: num(rateFor(l.currency, l.price)) || 1,
         debit: num(l.debit),
         credit: num(l.credit),
+        // Only keep a vehicle tag if the account is actually a vehicle expense.
+        vehicle_id: vehicleExpenseCodes.has(l.account_code) ? l.vehicle_id || null : null,
       })),
     }
 
@@ -358,6 +376,7 @@ export function NewEntryDialog({
                   <th className="px-2 py-2.5 text-start">{t('common.company')}</th>
                   <th className="px-2 py-2.5 text-start">{t('common.project')}</th>
                   <th className="px-2 py-2.5 text-start">{t('accounting.new.line_account')}</th>
+                  {showVehicleCol && <th className="w-40 px-2 py-2.5 text-start">{t('accounting.new.line_vehicle')}</th>}
                   <th className="w-28 px-2 py-2.5 text-start">{t('accounting.new.line_debit')}</th>
                   <th className="w-28 px-2 py-2.5 text-start">{t('accounting.new.line_credit')}</th>
                   <th className="px-2 py-2.5 text-start">{t('common.description')}</th>
@@ -388,11 +407,27 @@ export function NewEntryDialog({
                     <td className="px-2 py-2">
                       <SearchSelect
                         value={line.account_code}
-                        onChange={(v) => updateLine(line.uid, { account_code: v })}
+                        onChange={(v) => updateLine(line.uid, { account_code: v, vehicle_id: vehicleExpenseCodes.has(v) ? line.vehicle_id : '' })}
                         options={accountOptions}
                         placeholder={t('accounting.new.line_account_ph')}
                       />
                     </td>
+                    {/* Vehicle column appears only once a line uses a vehicle-expense
+                        account; the picker itself shows only on those lines. */}
+                    {showVehicleCol && (
+                      <td className="px-2 py-2">
+                        {vehicleExpenseCodes.has(line.account_code) ? (
+                          <SearchSelect
+                            value={line.vehicle_id}
+                            onChange={(v) => updateLine(line.uid, { vehicle_id: v })}
+                            options={vehicleOptions}
+                            placeholder={t('accounting.new.line_vehicle_ph')}
+                          />
+                        ) : (
+                          <span className="block px-2 py-2 text-xs text-slate-300">—</span>
+                        )}
+                      </td>
+                    )}
                     <td className="px-2 py-2">
                       <NumberInput
                         className="text-start tabular-nums"
@@ -458,7 +493,7 @@ export function NewEntryDialog({
               </tbody>
               <tfoot className="bg-slate-50 font-semibold text-slate-700">
                 <tr>
-                  <td className="px-2 py-2.5 text-end" colSpan={3}>{t('common.total')}</td>
+                  <td className="px-2 py-2.5 text-end" colSpan={showVehicleCol ? 4 : 3}>{t('common.total')}</td>
                   <td className="px-2 py-2.5 tabular-nums text-emerald-700">{formatCurrency(totalDebit, 'IQD', lang)}</td>
                   <td className="px-2 py-2.5 tabular-nums text-sky-700">{formatCurrency(totalCredit, 'IQD', lang)}</td>
                   <td colSpan={4} />

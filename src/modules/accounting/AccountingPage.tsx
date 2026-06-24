@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Calculator, BookOpen, ListTree, Scale, ReceiptText, Users, Wallet, Landmark, Lock } from 'lucide-react'
+import { Calculator, BookOpen, ListTree, Scale, ReceiptText, Users, Wallet, Landmark, Truck, Lock } from 'lucide-react'
 import { PageHeader } from '../../components/shared'
 import { Tabs, Badge } from '../../components/ui'
 import { useT } from '../../context/LangContext'
@@ -12,11 +12,12 @@ import { VouchersTab } from './VouchersTab'
 import { PartiesTab } from './PartiesTab'
 import { CashTab } from './CashTab'
 import { BankTab } from './BankTab'
+import { VehiclesTab } from './VehiclesTab'
 import { canEditAccounting } from './shared'
 import type { DateRange } from './FilterBar'
 
-type TabKey = 'journal' | 'chart' | 'trial' | 'vouchers' | 'parties' | 'cash' | 'bank'
-const TAB_KEYS: TabKey[] = ['journal', 'chart', 'trial', 'vouchers', 'parties', 'cash', 'bank']
+type TabKey = 'journal' | 'chart' | 'trial' | 'vouchers' | 'parties' | 'cash' | 'bank' | 'vehicles'
+const TAB_KEYS: TabKey[] = ['journal', 'chart', 'trial', 'vouchers', 'parties', 'cash', 'bank', 'vehicles']
 
 const defaultRange = (): DateRange => {
   // Format from LOCAL date parts. Using toISOString() here would convert local
@@ -57,6 +58,7 @@ export default function AccountingPage() {
     { key: 'parties', label: t('accounting.tab.parties'), icon: <Users className="h-4 w-4" /> },
     { key: 'cash', label: t('accounting.tab.cash'), icon: <Wallet className="h-4 w-4" /> },
     { key: 'bank', label: t('accounting.tab.bank'), icon: <Landmark className="h-4 w-4" /> },
+    { key: 'vehicles', label: t('accounting.tab.vehicles'), icon: <Truck className="h-4 w-4" /> },
   ]
 
   return (
@@ -96,6 +98,7 @@ export default function AccountingPage() {
       {tab === 'parties' && <PartiesTab />}
       {tab === 'cash' && <CashTab />}
       {tab === 'bank' && <BankTab />}
+      {tab === 'vehicles' && <VehiclesTab />}
     </div>
   )
 }
