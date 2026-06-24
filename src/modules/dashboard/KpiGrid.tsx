@@ -1,4 +1,4 @@
-import { Building2, FolderKanban, Users, TrendingUp, Banknote, FileSignature } from 'lucide-react'
+import { Building2, FolderKanban, Users, TrendingUp, Banknote, FileSignature, Truck } from 'lucide-react'
 import { KpiCard } from '../../components/shared'
 import { useT, useLang } from '../../context/LangContext'
 import { formatCurrency, formatNumber } from '../../lib/format'
@@ -64,6 +64,13 @@ export function KpiGrid({ data }: { data: DashboardData }) {
         hint={t('dashboard.kpi.contracts_hint')}
         icon={<FileSignature className="h-5 w-5" />}
         accent="primary"
+      />
+      <KpiCard
+        label={t('dashboard.kpi.fleet_spend')}
+        value={withUsd(finance.fleet_spend_iqd ?? 0, finance.fleet_spend_usd ?? 0)}
+        hint={t('dashboard.kpi.fleet_spend_hint')}
+        icon={<Truck className="h-5 w-5" />}
+        accent="warning"
       />
     </div>
   )
