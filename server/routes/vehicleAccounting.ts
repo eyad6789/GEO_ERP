@@ -79,6 +79,10 @@ function vehicleFilter(req: Request): { where: string; params: unknown[] } {
     where.push('v.project_id = ?')
     params.push(req.query.project_id)
   }
+  if (req.query.vehicle_id) {
+    where.push('v.id = ?')
+    params.push(req.query.vehicle_id)
+  }
   return { where: where.join(' AND '), params }
 }
 

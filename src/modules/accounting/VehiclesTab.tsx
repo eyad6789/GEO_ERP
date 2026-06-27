@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
-import { Truck, Coins, CalendarDays, CalendarRange, Fuel, Wrench, Package, ShoppingCart } from 'lucide-react'
+import { Truck, Coins, CalendarDays, CalendarRange, Fuel, Wrench, Package, ShoppingCart, Filter, X } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { Card, CardHeader, LoadingState, Dialog, Badge } from '../../components/ui'
+import { Card, CardHeader, LoadingState, Dialog, Badge, SearchSelect } from '../../components/ui'
 import { KpiCard, ChartCard, EmptyState, ArabicTable, type Column } from '../../components/shared'
-import { useApi } from '../../hooks/useResource'
+import { useApi, useResource } from '../../hooks/useResource'
 import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
-import { formatCurrency, formatNumber, formatDate } from '../../lib/format'
+import { formatCurrency, formatNumber, formatDate, pickName } from '../../lib/format'
+import type { Company, Project, Vehicle } from '../../types'
 import { canEditAccounting } from './shared'
 import { NewEntryDialog } from './NewEntryDialog'
 import { EntryViewDialog } from './EntryViewDialog'
@@ -83,10 +84,53 @@ export function VehiclesTab() {
   const [editEntryId, setEditEntryId] = useState<string | null>(null)
   const [viewEntryId, setViewEntryId] = useState<string | null>(null)
 
-  const { data, loading, refetch } = useApi<SpendResp>(
-    '/accounting/vehicle-spending',
-    companyId ? { company_id: companyId } : undefined,
+  // Filters — same idea as the journal: narrow the vehicle spending by company,
+  // by project, and by an individual vehicle (car). Empty = no constraint.
+  const [companyFilter, setCompanyFilter] = useState('')
+  const [projectFilter, setProjectFilter] = useState('')
+  const [vehicleFilter, setVehicleFilter] = useState('')
+
+  // Full dropdown sources (independent of the filtered result).
+  const { data: companies } = useResource<Company>('companies')
+  const { data: projects } = useResource<Project>('projects')
+  const { data: vehicles } = useResource<Vehicle>('vehicles')
+
+  // An explicit company pick overrides the global top-bar company; project and
+  // vehicle filters narrow further. All three are applied server-side.
+  const params = useMemo(() => {
+    const p: Record<string, unknown> = {}
+    const company = companyFilter || companyId
+    if (company) p.company_id = company
+    if (projectFilter) p.project_id = projectFilter
+    if (vehicleFilter) p.vehicle_id = vehicleFilter
+    return Object.keys(p).length ? p : undefined
+  }, [companyId, companyFilter, projectFilter, vehicleFilter])
+
+  const { data, loading, refetch } = useApi<SpendResp>('/accounting/vehicle-spending', params)
+
+  // Option lists cascade: a chosen company limits the projects and cars on
+  // offer; a chosen project limits the cars — so the filters stay coherent.
+  const companyOptions = useMemo(
+    () => [{ value: '', label: t('accounting.filter.all_companies') }, ...companies.map((c) => ({ value: c.id, label: pickName(c, lang) }))],
+    [companies, lang, t],
   )
+  const projectOptions = useMemo(() => {
+    const co = companyFilter || companyId
+    const list = co ? projects.filter((p) => p.company_id === co) : projects
+    return [{ value: '', label: t('accounting.journal.all_projects') }, ...list.map((p) => ({ value: p.id, label: pickName(p, lang) }))]
+  }, [projects, companyFilter, companyId, lang, t])
+  const vehicleOptions = useMemo(() => {
+    const co = companyFilter || companyId
+    const list = vehicles.filter((v) => (!co || v.company_id === co) && (!projectFilter || v.project_id === projectFilter))
+    return [{ value: '', label: t('accounting.vehicles.all_vehicles') }, ...list.map((v) => ({ value: v.id, label: `${v.code} — ${pickName(v, lang)}` }))]
+  }, [vehicles, companyFilter, companyId, projectFilter, lang, t])
+
+  // Changing a parent filter clears the dependent ones so a stale project/car
+  // that doesn't belong to the new company/project can't linger.
+  const onCompany = (v: string) => { setCompanyFilter(v); setProjectFilter(''); setVehicleFilter('') }
+  const onProject = (v: string) => { setProjectFilter(v); setVehicleFilter('') }
+  const hasFilter = Boolean(companyFilter || projectFilter || vehicleFilter)
+  const clearFilters = () => { setCompanyFilter(''); setProjectFilter(''); setVehicleFilter('') }
 
   // Open a journal entry from a vehicle's cost row: edit if allowed, else view.
   // Close the vehicle dialog first so the journal editor is on top.
@@ -104,15 +148,6 @@ export function VehiclesTab() {
     () => (data?.by_month ?? []).map((m) => ({ label: m.month, iqd: m.iqd })),
     [data],
   )
-
-  if (loading) return <LoadingState label={t('common.loading')} />
-  if (!data || data.by_vehicle.length === 0) {
-    return (
-      <Card>
-        <EmptyState title={t('accounting.vehicles.empty')} hint={t('common.empty_hint')} />
-      </Card>
-    )
-  }
 
   const vehicleColumns: Column<VehicleRow>[] = [
     {
@@ -161,6 +196,41 @@ export function VehiclesTab() {
 
   return (
     <div className="space-y-5">
+      {/* Filter toolbar — by company / project / vehicle (car). Always visible so
+          filters can be changed or cleared even when the result is empty. */}
+      <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="flex h-9 shrink-0 items-center gap-2 rounded-lg bg-primary/10 px-3 text-sm font-medium text-primary">
+            <Filter className="h-4 w-4" />
+            {t('accounting.vehicles.filter_by')}
+          </span>
+          <div className="w-44 shrink-0"><SearchSelect value={companyFilter} onChange={onCompany} options={companyOptions} placeholder={t('accounting.filter.all_companies')} /></div>
+          <div className="w-44 shrink-0"><SearchSelect value={projectFilter} onChange={onProject} options={projectOptions} placeholder={t('accounting.journal.all_projects')} /></div>
+          <div className="w-52 shrink-0"><SearchSelect value={vehicleFilter} onChange={setVehicleFilter} options={vehicleOptions} placeholder={t('accounting.vehicles.all_vehicles')} /></div>
+          {hasFilter && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-danger"
+              title={t('accounting.journal.clear_filters')}
+            >
+              <X className="h-3.5 w-3.5" />
+              {t('accounting.journal.clear_filters')}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {loading ? (
+        <LoadingState label={t('common.loading')} />
+      ) : !data || data.by_vehicle.length === 0 ? (
+        <Card>
+          <EmptyState
+            title={t('accounting.vehicles.empty')}
+            hint={hasFilter ? t('accounting.vehicles.filter_empty') : t('common.empty_hint')}
+          />
+        </Card>
+      ) : (
+        <>
       {/* Headline KPIs — total, this month, this year (each per currency) */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <KpiCard
@@ -280,6 +350,8 @@ export function VehiclesTab() {
           emptyTitle={t('accounting.vehicles.empty')}
         />
       </Card>
+        </>
+      )}
 
       {selected && <VehicleDetailDialog vehicle={selected} onClose={() => setSelected(null)} onOpenEntry={openEntry} />}
 

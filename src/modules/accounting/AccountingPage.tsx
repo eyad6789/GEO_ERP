@@ -88,7 +88,7 @@ export default function AccountingPage() {
       )}
 
       <div className="mb-5 no-print">
-        <Tabs tabs={tabs} value={tab} onChange={(k) => setTab(k as TabKey)} variant="underline" />
+        <Tabs tabs={tabs} value={tab} onChange={(k) => setTab(k as TabKey)} variant="underline" wrap />
       </div>
 
       {tab === 'journal' && <JournalTab range={range} onRange={setRange} />}
