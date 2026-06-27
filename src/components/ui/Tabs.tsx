@@ -14,9 +14,11 @@ export interface TabsProps {
   onChange: (key: string) => void
   className?: string
   variant?: 'underline' | 'pills'
+  /** underline variant: wrap tabs onto a new line instead of scrolling horizontally. */
+  wrap?: boolean
 }
 
-export function Tabs({ tabs, value, onChange, className, variant = 'underline' }: TabsProps) {
+export function Tabs({ tabs, value, onChange, className, variant = 'underline', wrap = false }: TabsProps) {
   if (variant === 'pills') {
     return (
       <div className={cn('flex flex-wrap gap-1.5 rounded-lg bg-slate-100 p-1', className)}>
@@ -41,7 +43,13 @@ export function Tabs({ tabs, value, onChange, className, variant = 'underline' }
   }
 
   return (
-    <div className={cn('flex gap-1 overflow-x-auto border-b border-slate-200 scrollbar-none', className)}>
+    <div
+      className={cn(
+        'flex gap-1 border-b border-slate-200',
+        wrap ? 'flex-wrap' : 'overflow-x-auto scrollbar-none',
+        className,
+      )}
+    >
       {tabs.map((tab) => (
         <button
           key={tab.key}

@@ -6,5 +6,5 @@
 //   placeholder instead of the real map — nothing is removed. Set to `true` to
 //   show the real map once it's ready.
 export const FEATURES = {
-  fleetMap: false,
+  fleetMap: true,
 }

@@ -182,6 +182,10 @@ registerStrings({
   'accounting.vehicles.cat.UTILITIES': { ar: 'ماء وكهرباء', en: 'Utilities' },
   'accounting.vehicles.cat.RENT': { ar: 'إيجار', en: 'Rent' },
   'accounting.vehicles.cat.OTHER': { ar: 'أخرى', en: 'Other' },
+  // Vehicle spending filters (by company / project / car)
+  'accounting.vehicles.filter_by': { ar: 'تصفية حسب', en: 'Filter by' },
+  'accounting.vehicles.all_vehicles': { ar: 'كل الآليات', en: 'All vehicles' },
+  'accounting.vehicles.filter_empty': { ar: 'لا توجد نتائج مطابقة للفلاتر المحددة', en: 'No results match the selected filters' },
   // Vehicle list + detail
   'accounting.vehicles.list_title': { ar: 'الآليات', en: 'Vehicles' },
   'accounting.vehicles.list_sub': { ar: 'اضغط على أي آلية لعرض تفاصيلها ومصاريفها', en: 'Click any vehicle to see its details and costs' },
