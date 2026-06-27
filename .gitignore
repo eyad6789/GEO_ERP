@@ -7,6 +7,10 @@ server/data/*.db
 server/data/*.db-journal
 server/data/*.db-wal
 server/data/*.db-shm
+server/data/*.bak*
+
+# Source images dropped in the repo root (logos etc.) — keep the built asset in public/, not the source
+WhatsApp Image*
 .vscode/*
 !.vscode/extensions.json
 npm-debug.log*

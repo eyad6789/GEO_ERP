@@ -24,7 +24,7 @@ export function translate(key: string, lang: Lang): string {
 
 // ---- Common / shared strings ----------------------------------------------
 registerStrings({
-  'app.title': { ar: 'al-qabas E.G. ERP', en: 'al-qabas E.G. ERP' },
+  'app.title': { ar: 'Alkebis GEO_ERP System', en: 'Alkebis GEO_ERP System' },
   'app.subtitle': { ar: 'مجموعة القبس الهندسية', en: 'Al-Qabas Engineering Group' },
 
   // Navigation
