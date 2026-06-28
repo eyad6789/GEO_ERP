@@ -13,7 +13,21 @@ export function printJournalEntry(
   accMap: Record<string, Account>,
   lang: 'ar' | 'en',
 ) {
-  const currency = entry.currency || 'IQD'
+  // Currency is per line (tasarif entries mix currencies). Each line prints in
+  // its own currency; the total uses that currency if all lines match, else the
+  // balanced dinar value (Σ amount × rate).
+  const lineCur = (l: { currency?: string }) => l.currency || entry.currency || 'IQD'
+  const curSet = new Set(entry.lines.map((l) => l.currency || entry.currency || 'IQD'))
+  const singleCurrency = curSet.size === 1 ? [...curSet][0] : null
+  let dinarDebit = 0
+  let dinarCredit = 0
+  for (const l of entry.lines) {
+    const r = l.price && l.price > 0 ? l.price : 1
+    dinarDebit += (l.debit || 0) * r
+    dinarCredit += (l.credit || 0) * r
+  }
+  const totalDebitStr = singleCurrency ? formatCurrency(entry.total_debit, singleCurrency, lang) : formatCurrency(dinarDebit, 'IQD', lang)
+  const totalCreditStr = singleCurrency ? formatCurrency(entry.total_credit, singleCurrency, lang) : formatCurrency(dinarCredit, 'IQD', lang)
   const ar = lang === 'ar'
   const L = ar
     ? { title: 'سند قيد', serial: 'الرقم التسلسلي', doc: 'رقم المستند', date: 'التاريخ', desc: 'البيان', account: 'الحساب', debit: 'مدين', credit: 'دائن', total: 'الإجمالي', system: 'Alkebis GEO_ERP System', prepared: 'المحاسب', approved: 'المدير المالي' }
@@ -24,8 +38,8 @@ export function printJournalEntry(
       (l) => `<tr>
         <td>${escapeHtml(l.account_code)} — ${escapeHtml(accMap[l.account_code] ? pickName(accMap[l.account_code], lang) : '')}</td>
         <td>${escapeHtml(l.description || '')}</td>
-        <td class="num">${l.debit ? escapeHtml(formatCurrency(l.debit, currency, lang)) : ''}</td>
-        <td class="num">${l.credit ? escapeHtml(formatCurrency(l.credit, currency, lang)) : ''}</td>
+        <td class="num">${l.debit ? escapeHtml(formatCurrency(l.debit, lineCur(l), lang)) : ''}</td>
+        <td class="num">${l.credit ? escapeHtml(formatCurrency(l.credit, lineCur(l), lang)) : ''}</td>
       </tr>`,
     )
     .join('')
@@ -68,7 +82,7 @@ export function printJournalEntry(
   <table>
     <thead><tr><th>${escapeHtml(L.account)}</th><th>${escapeHtml(L.desc)}</th><th class="num">${escapeHtml(L.debit)}</th><th class="num">${escapeHtml(L.credit)}</th></tr></thead>
     <tbody>${rows}</tbody>
-    <tfoot><tr><td colspan="2">${escapeHtml(L.total)}</td><td class="num">${escapeHtml(formatCurrency(entry.total_debit, currency, lang))}</td><td class="num">${escapeHtml(formatCurrency(entry.total_credit, currency, lang))}</td></tr></tfoot>
+    <tfoot><tr><td colspan="2">${escapeHtml(L.total)}</td><td class="num">${escapeHtml(totalDebitStr)}</td><td class="num">${escapeHtml(totalCreditStr)}</td></tr></tfoot>
   </table>
   <div class="sigs">
     <div class="sig"><div class="line"></div>${escapeHtml(L.prepared)}</div>

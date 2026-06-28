@@ -28,7 +28,24 @@ export function EntryViewDialog({
     return m
   }, [accounts])
 
-  const currency = data?.currency || 'IQD'
+  // Currency is PER LINE (tasarif entries mix currencies). Each line shows its
+  // own currency; the footer total uses that currency when all lines match,
+  // otherwise the balanced dinar value (Σ amount × rate).
+  const lineCur = (l: { currency?: string }): 'IQD' | 'USD' =>
+    (l.currency as 'IQD' | 'USD') || (data?.currency as 'IQD' | 'USD') || 'IQD'
+  const singleCurrency = useMemo(() => {
+    const set = new Set((data?.lines ?? []).map((l) => l.currency || data?.currency || 'IQD'))
+    return set.size === 1 ? ([...set][0] as 'IQD' | 'USD') : null
+  }, [data])
+  const dinarTotals = useMemo(() => {
+    let d = 0, c = 0
+    for (const l of data?.lines ?? []) {
+      const r = l.price && l.price > 0 ? l.price : 1
+      d += (l.debit || 0) * r
+      c += (l.credit || 0) * r
+    }
+    return { d, c }
+  }, [data])
 
   return (
     <Dialog
@@ -102,10 +119,10 @@ export function EntryViewDialog({
                       </td>
                       <td className="px-4 py-2.5 text-slate-500">{l.description || '—'}</td>
                       <td className="px-4 py-2.5 text-end tabular-nums text-emerald-700">
-                        {l.debit ? formatCurrency(l.debit, currency, lang) : '—'}
+                        {l.debit ? formatCurrency(l.debit, lineCur(l), lang) : '—'}
                       </td>
                       <td className="px-4 py-2.5 text-end tabular-nums text-sky-700">
-                        {l.credit ? formatCurrency(l.credit, currency, lang) : '—'}
+                        {l.credit ? formatCurrency(l.credit, lineCur(l), lang) : '—'}
                       </td>
                     </tr>
                   ))}
@@ -116,10 +133,10 @@ export function EntryViewDialog({
                       {t('common.total')}
                     </td>
                     <td className="px-4 py-2.5 text-end tabular-nums text-emerald-700">
-                      {formatCurrency(data.total_debit, currency, lang)}
+                      {singleCurrency ? formatCurrency(data.total_debit, singleCurrency, lang) : formatCurrency(dinarTotals.d, 'IQD', lang)}
                     </td>
                     <td className="px-4 py-2.5 text-end tabular-nums text-sky-700">
-                      {formatCurrency(data.total_credit, currency, lang)}
+                      {singleCurrency ? formatCurrency(data.total_credit, singleCurrency, lang) : formatCurrency(dinarTotals.c, 'IQD', lang)}
                     </td>
                   </tr>
                 </tfoot>

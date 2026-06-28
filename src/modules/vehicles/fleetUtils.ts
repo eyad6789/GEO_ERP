@@ -8,6 +8,15 @@ import {
   Forklift, Disc, Container, Droplets, Cog,
 } from 'lucide-react'
 
+/**
+ * Fleet edit permission: only the Fleet Manager (مدير الآليات) and Super Admin
+ * may add / edit / delete vehicles and move them on the map. Everyone else has
+ * read-only access (they can view all the details but change nothing).
+ */
+export function canEditFleet(roleKey: string): boolean {
+  return roleKey === 'super_admin' || roleKey === 'fleet_manager'
+}
+
 /** Registration-expiry alarm state (note 6.4). */
 export type RegState = 'expired' | 'soon' | 'ok' | 'none'
 
@@ -59,4 +68,5 @@ export const STATUS_COLOR: Record<string, string> = {
   MAINTENANCE: '#f39c12',
   INACTIVE: '#64748b',
   RETIRED: '#94a3b8',
+  SOLD: '#0ea5e9',
 }

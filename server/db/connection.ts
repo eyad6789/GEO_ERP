@@ -62,6 +62,37 @@ function migrate(): void {
   // Each vehicle links to its own asset account under اليات.
   const vCols = db.prepare(`PRAGMA table_info(vehicles)`).all() as Array<{ name: string }>
   if (vCols.length && !vCols.some((c) => c.name === 'account_code')) db.exec(`ALTER TABLE vehicles ADD COLUMN account_code TEXT`)
+  // Fleet-manager fields: acquisition / sale costs + vehicle & driver license info.
+  // Added idempotently so existing databases gain the columns without a reseed.
+  if (vCols.length) {
+    const vHas = (n: string) => vCols.some((c) => c.name === n)
+    const addVCol = (n: string, type: string) => { if (!vHas(n)) db.exec(`ALTER TABLE vehicles ADD COLUMN ${n} ${type}`) }
+    addVCol('acquisition_cost', 'REAL')          // how much we paid to get the car
+    addVCol('acquisition_currency', 'TEXT')
+    addVCol('acquisition_date', 'TEXT')
+    addVCol('sale_price', 'REAL')                // how much we sold it for
+    addVCol('sale_currency', 'TEXT')
+    addVCol('sale_date', 'TEXT')
+    addVCol('vehicle_license_no', 'TEXT')        // car registration / license
+    addVCol('vehicle_license_expiry', 'TEXT')
+    addVCol('driver_phone', 'TEXT')
+    addVCol('driver_id_no', 'TEXT')              // driver national ID
+    addVCol('driver_address', 'TEXT')
+    addVCol('driver_license_no', 'TEXT')
+    addVCol('driver_license_expiry', 'TEXT')
+  }
+  // Per-vehicle / per-driver document archive (license & registration scans).
+  db.exec(`CREATE TABLE IF NOT EXISTS vehicle_documents (
+    id TEXT PRIMARY KEY,
+    vehicle_id TEXT,
+    doc_type TEXT,
+    title TEXT,
+    file_name TEXT,
+    mime TEXT,
+    size INTEGER,
+    expiry TEXT,
+    created_at TEXT
+  )`)
   ensureVehicleAccounts()
 
   // Banks ↔ chart of accounts: each bank links to a GL account under 183 المصارف.

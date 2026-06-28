@@ -9,7 +9,7 @@ import { useCompany } from '../../context/CompanyContext'
 import { apiPost, apiPut, apiDelete } from '../../lib/api'
 import { formatCurrency, pickName } from '../../lib/format'
 import { type Account, type Company, type Project, type Vehicle, type Currency } from '../../types'
-import { isBalanced, type JournalEntryFull } from './shared'
+import { isBalanced, resolvePostingDescendants, CASH_BOX_ROOTS, type JournalEntryFull } from './shared'
 import { DateField } from './DateField'
 import { printJournalEntry } from './printEntry'
 
@@ -136,14 +136,15 @@ export function NewEntryDialog({
   // vehicle-expense account (بنزين/صيانة/…); then it appears for the whole grid.
   const showVehicleCol = lines.some((l) => vehicleExpenseCodes.has(l.account_code))
 
-  // First cash/bank account — used to pre-fill the cash line for قبض / صرف.
-  const defaultCashAccount = useMemo(
-    () =>
-      accounts
-        .filter((a) => a.is_posting === 1 && (a.parent_code === '18' || a.parent_code === '183'))
-        .sort((a, b) => a.code.localeCompare(b.code))[0]?.code ?? '',
-    [accounts],
-  )
+  // First cash box — used to pre-fill the cash line for a receipt (قبض).
+  // Resolved from CASH_BOX_ROOTS so it works on any chart (Iraqi demo OR the
+  // production IFRS chart), instead of hard-coding the demo codes 18/183.
+  const defaultCashAccount = useMemo(() => {
+    const cashCodes = new Set(resolvePostingDescendants(CASH_BOX_ROOTS, accounts))
+    return accounts
+      .filter((a) => a.is_posting === 1 && cashCodes.has(a.code))
+      .sort((a, b) => a.code.localeCompare(b.code))[0]?.code ?? ''
+  }, [accounts])
 
   // Switching to a voucher type pre-fills the first line's cash account.
   const changeMode = (m: 'JOURNAL' | 'RECEIPT' | 'PAYMENT') => {
