@@ -83,12 +83,15 @@ export function VouchersTab() {
     })
   }, [rows, filter, query, range])
 
+  // KPI cards are IQD figures and follow the VISIBLE (filtered) rows. USD cash
+  // lines are excluded so a dollar amount never gets summed into the dinar total.
   const totals = useMemo(() => {
-    const inflow = rows.filter((r) => r.type === 'RECEIPT').reduce((s, r) => s + r.cash_debit, 0)
-    const outflow = rows.filter((r) => r.type === 'PAYMENT').reduce((s, r) => s + r.cash_credit, 0)
-    const journals = rows.filter((r) => r.type === 'JOURNAL').length
+    const iqd = filtered.filter((r) => r.currency !== 'USD')
+    const inflow = iqd.filter((r) => r.type === 'RECEIPT').reduce((s, r) => s + r.cash_debit, 0)
+    const outflow = iqd.filter((r) => r.type === 'PAYMENT').reduce((s, r) => s + r.cash_credit, 0)
+    const journals = filtered.filter((r) => r.type === 'JOURNAL').length
     return { inflow, outflow, net: inflow - outflow, journals }
-  }, [rows])
+  }, [filtered])
 
   const typeBadge = (type: VoucherType) => {
     if (type === 'RECEIPT')

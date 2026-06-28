@@ -22,7 +22,7 @@ import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { apiGet } from '../../lib/api'
 import { pickName, formatCurrency } from '../../lib/format'
-import type { Account, AccountType, Bank } from '../../types'
+import type { Account, AccountType } from '../../types'
 import { ACCOUNT_TYPE_COLOR, ACCOUNT_TYPE_DOT, canEditAccounting, type TrialBalanceResp } from './shared'
 import { NewAccountDialog } from './NewAccountDialog'
 
@@ -74,26 +74,11 @@ export function ChartTab() {
     '/reports/trial-balance',
     companyId ? { company_id: companyId } : undefined,
   )
-  // Vehicle accounts (under «اليات») carry no GL postings — their spend lives on
-  // expense accounts tagged with the vehicle. Overlay that spend so the chart's
-  // balance column shows each vehicle's (and اليات's) real spend instead of 0.
-  const { data: vspend } = useApi<{ by_vehicle: Array<{ account_code: string | null; iqd: number; usd: number }> }>(
-    '/accounting/vehicle-spending',
-    companyId ? { company_id: companyId } : undefined,
-  )
-  const spendByAcct = useMemo(() => {
-    const m = new Map<string, { iqd: number; usd: number }>()
-    for (const v of vspend?.by_vehicle ?? []) if (v.account_code) m.set(v.account_code, { iqd: v.iqd, usd: v.usd })
-    return m
-  }, [vspend])
-  // Bank balances live on the banks table (not journal-posted). Overlay each
-  // bank's balance onto its GL account (18301/2/3) so the tree shows the money.
-  const { data: banks } = useResource<Bank>('banks')
-  const bankByAcct = useMemo(() => {
-    const m = new Map<string, { iqd: number; usd: number }>()
-    for (const b of banks) if (b.account_code) m.set(b.account_code, { iqd: b.balance_iqd || 0, usd: b.balance_usd || 0 })
-    return m
-  }, [banks])
+  // The chart tree is the single source of truth: every balance comes straight
+  // from real journal postings (the trial balance). No display overlays — money
+  // shows up here only once it is posted as a real journal entry, and the tree
+  // then feeds every other page. (Vehicle spend lives on its expense accounts;
+  // the per-car view is in the الآليات tab.)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [query, setQuery] = useState('')
   const [addOpen, setAddOpen] = useState(false)
@@ -117,18 +102,6 @@ export function ChartTab() {
       ownIqd.set(r.code, r.balance_iqd ?? r.balance)
       ownUsd.set(r.code, r.balance_usd ?? 0)
     }
-    // Overlay vehicle spend onto each vehicle's asset account (no GL postings).
-    for (const [code, sp] of spendByAcct) {
-      ownIqd.set(code, sp.iqd)
-      ownUsd.set(code, sp.usd)
-    }
-    // Overlay each bank's balance onto its GL account (18301/2/3) — the balances
-    // live on the banks table, not in journal postings, so the tree would
-    // otherwise show 0. Roll-up then carries them up to المصارف → النقود.
-    for (const [code, bal] of bankByAcct) {
-      ownIqd.set(code, bal.iqd)
-      ownUsd.set(code, bal.usd)
-    }
     const iqd = new Map<string, number>()
     const usd = new Map<string, number>()
     const calc = (node: AccountNode): { i: number; u: number } => {
@@ -145,7 +118,7 @@ export function ChartTab() {
     }
     tree.forEach(calc)
     return { iqd, usd }
-  }, [tree, trial, spendByAcct, bankByAcct])
+  }, [tree, trial])
 
   const postingCount = data.filter((a) => a.is_posting === 1).length
 
