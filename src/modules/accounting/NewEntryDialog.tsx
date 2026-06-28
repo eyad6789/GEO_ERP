@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Plus, Trash2, Check, AlertTriangle, BookOpen, Pencil } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Plus, Trash2, Check, AlertTriangle, BookOpen, Pencil, Printer } from 'lucide-react'
 import { Dialog, Button, Field, Input, SearchSelect, useToast } from '../../components/ui'
 import { NumberInput } from '../../components/shared'
 import { useResource, useApi } from '../../hooks/useResource'
@@ -9,8 +9,9 @@ import { useCompany } from '../../context/CompanyContext'
 import { apiPost, apiPut, apiDelete } from '../../lib/api'
 import { formatCurrency, pickName } from '../../lib/format'
 import { type Account, type Company, type Project, type Vehicle, type Currency } from '../../types'
-import { isBalanced, resolvePostingDescendants, VEHICLE_EXPENSE_ROOTS, type JournalEntryFull } from './shared'
+import { isBalanced, type JournalEntryFull } from './shared'
 import { DateField } from './DateField'
+import { printJournalEntry } from './printEntry'
 
 interface LineState {
   uid: number
@@ -103,6 +104,11 @@ export function NewEntryDialog({
         .map((a) => ({ value: a.code, label: `${a.code} — ${lang === 'en' ? a.name_en || a.name_ar : a.name_ar}` })),
     [accounts, lang],
   )
+  const accMap = useMemo(() => {
+    const m: Record<string, Account> = {}
+    for (const a of accounts) m[a.code] = a
+    return m
+  }, [accounts])
   // Project options scoped to the line's company. "عام / General" (value '' →
   // no specific project) is always first, and every option carries a quick-entry
   // digit in its label — like the currency field — so you can Tab into the field,
@@ -115,10 +121,13 @@ export function NewEntryDialog({
     ]
   }
 
-  // Vehicle-expense accounts → which lines need a vehicle picker, and the vehicle
-  // options to pick from. When a line's account is one of these, posting it asks
-  // which الآلية it belongs to so the car's costs come from real journal entries.
-  const vehicleExpenseCodes = useMemo(() => new Set(resolvePostingDescendants(VEHICLE_EXPENSE_ROOTS, accounts)), [accounts])
+  // A car can be tagged on ANY expense line (not just fuel/maintenance), so the
+  // manager can record spending on a vehicle through any expense account and it
+  // still posts to that car's real costs. The picker shows on every expense line.
+  const vehicleExpenseCodes = useMemo(
+    () => new Set(accounts.filter((a) => a.type === 'EXPENSE' && a.is_posting === 1).map((a) => a.code)),
+    [accounts],
+  )
   const vehicleOptions = useMemo(
     () => vehicles.slice().sort((a, b) => a.code.localeCompare(b.code)).map((v) => ({ value: v.id, label: `${v.code} — ${pickName(v, lang)}` })),
     [vehicles, lang],
@@ -139,7 +148,9 @@ export function NewEntryDialog({
   // Switching to a voucher type pre-fills the first line's cash account.
   const changeMode = (m: 'JOURNAL' | 'RECEIPT' | 'PAYMENT') => {
     setMode(m)
-    if (m !== 'JOURNAL' && defaultCashAccount) {
+    // Only a receipt (قبض) pre-fills the cash box on the first line. For a
+    // payment (صرف) the accountant picks the account themselves.
+    if (m === 'RECEIPT' && defaultCashAccount) {
       setLines((ls) => ls.map((l, i) => (i === 0 && !l.account_code ? { ...l, account_code: defaultCashAccount } : l)))
     }
   }
@@ -203,6 +214,8 @@ export function NewEntryDialog({
   // Keyboard: F5 saves the entry (without reloading the page), Escape exits
   // without saving. Everything else falls through to the grid navigation.
   const onFormKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    // F5 saves; Escape exits. Ctrl/Cmd+S is handled at the document level (see
+    // the keydown effect below) so it fires regardless of which field has focus.
     if (e.key === 'F5') {
       e.preventDefault()
       if (!submitting && !deleting && canSubmit) handleSubmit()
@@ -290,6 +303,23 @@ export function NewEntryDialog({
     }
   }
 
+  // Ctrl/Cmd+S saves from anywhere in the dialog. Captured at the document level
+  // (capture phase) with preventDefault so the browser's "Save page" never opens.
+  // A ref holds the latest save so a single listener always sees current state.
+  const saveRef = useRef<() => void>(() => {})
+  saveRef.current = () => { if (!submitting && !deleting && canSubmit) handleSubmit() }
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        saveRef.current()
+      }
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
+  }, [open])
+
   return (
     <Dialog
       open={open}
@@ -310,6 +340,12 @@ export function NewEntryDialog({
               <Button variant="outline" onClick={handleDelete} disabled={submitting || deleting} className="text-danger hover:bg-red-50">
                 <Trash2 className="h-4 w-4" />
                 {deleting ? t('accounting.edit.deleting') : t('accounting.edit.delete')}
+              </Button>
+            )}
+            {isEdit && editEntry && (
+              <Button variant="outline" onClick={() => printJournalEntry(editEntry, accMap, lang)} disabled={submitting || deleting}>
+                <Printer className="h-4 w-4" />
+                {t('accounting.entry.print')}
               </Button>
             )}
             <Button variant="outline" onClick={handleClose} disabled={submitting || deleting}>

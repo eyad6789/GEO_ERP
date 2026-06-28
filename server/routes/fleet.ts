@@ -333,7 +333,7 @@ fleetRouter.get('/fleet/costs', (req, res) => {
            SUM(CASE WHEN vc.currency = 'IQD' AND vc.category = 'FUEL' THEN vc.amount ELSE 0 END) fuel_iqd,
            SUM(CASE WHEN vc.currency = 'USD' AND vc.category = 'FUEL' THEN vc.amount ELSE 0 END) fuel_usd
          FROM vehicles v
-         LEFT JOIN vehicle_costs vc ON vc.vehicle_id = v.id
+         LEFT JOIN ${COST_SRC} vc ON vc.vehicle_id = v.id
          WHERE ${vFilter}
          GROUP BY v.id
          ORDER BY total_iqd DESC`,
