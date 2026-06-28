@@ -7,11 +7,13 @@ import { MapPin, Activity, Layers, Truck } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { useApi } from '../../../hooks/useResource'
 import { useT, useLang } from '../../../context/LangContext'
-import { Spinner } from '../../../components/ui'
+import { useCompany } from '../../../context/CompanyContext'
+import { Spinner, useToast } from '../../../components/ui'
 import { KpiCard } from '../../../components/shared/KpiCard'
 import { Card, CardHeader } from '../../../components/ui/Card'
 import { LeafletMap } from '../LeafletMap'
-import { STATUS_COLOR } from '../fleetUtils'
+import { STATUS_COLOR, canEditFleet } from '../fleetUtils'
+import { apiPut } from '../../../lib/api'
 import type { FleetMapData } from '../../../types'
 import { registerStrings } from '../../../i18n/strings'
 
@@ -27,6 +29,8 @@ registerStrings({
   'fleet.map.legend.title': { ar: 'دليل الخريطة', en: 'Map Legend' },
   'fleet.map.legend.hq': { ar: 'المقر الرئيسي', en: 'Headquarters' },
   'fleet.map.no_data': { ar: 'لا توجد بيانات خريطة', en: 'No map data available' },
+  'fleet.map.drag_hint': { ar: 'اسحب أي آلية على الخريطة لتغيير موقعها', en: 'Drag any vehicle on the map to relocate it' },
+  'fleet.map.moved': { ar: 'تم تحديث موقع الآلية', en: 'Vehicle location updated' },
 })
 
 // Legend colours
@@ -39,7 +43,22 @@ const PROJECT_KIND_COLOR: Record<string, string> = {
 export function MapTab() {
   const t = useT()
   const { lang } = useLang()
-  const { data, loading } = useApi<FleetMapData>('/fleet/map')
+  const { role } = useCompany()
+  const toast = useToast()
+  const canEdit = canEditFleet(role.key)
+  const { data, loading, refetch } = useApi<FleetMapData>('/fleet/map')
+
+  // Fleet Manager: persist a dragged vehicle's new position. We update the local
+  // map data in place (so the count/markers stay correct) without a full reload.
+  const onVehicleMove = async (id: string, lat: number, lng: number) => {
+    try {
+      await apiPut(`/vehicles/${id}`, { lat, lng })
+      toast.success(t('fleet.map.moved'))
+    } catch (e) {
+      toast.error((e as Error)?.message || t('common.error'))
+      refetch() // on failure, reload to snap the marker back to the saved position
+    }
+  }
 
   // ── Derived KPIs ──────────────────────────────────────────────────────────
   const vehicles = data?.vehicles ?? []
@@ -149,10 +168,16 @@ export function MapTab() {
           }
         />
 
+        {canEdit && (
+          <div className="border-b border-slate-100 bg-primary/5 px-5 py-2 text-xs font-medium text-primary">
+            {t('fleet.map.drag_hint')}
+          </div>
+        )}
+
         {/* Map container — direction:ltr so Leaflet tile layout is unaffected by RTL */}
         <div className="p-0" style={{ direction: 'ltr' }}>
           {data ? (
-            <LeafletMap data={data} height={500} />
+            <LeafletMap data={data} height={500} editable={canEdit} onVehicleMove={onVehicleMove} />
           ) : (
             <div className="flex items-center justify-center py-20 text-slate-400 text-sm">
               {t('fleet.map.no_data')}

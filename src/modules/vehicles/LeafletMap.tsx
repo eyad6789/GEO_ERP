@@ -24,6 +24,10 @@ export interface LeafletMapProps {
   className?: string
   /** When set, the map flies to this vehicle, opens its popup, and highlights its marker. */
   selectedVehicleId?: string | null
+  /** Fleet Manager only: makes vehicle markers draggable to relocate the car. */
+  editable?: boolean
+  /** Called after a vehicle marker is dragged to a new position. */
+  onVehicleMove?: (vehicleId: string, lat: number, lng: number) => void
 }
 
 // Project-kind colours aligned with the app theme:
@@ -76,8 +80,11 @@ const KIND_SVG_POPUP: Record<string, string> = {}
   KIND_SVG_POPUP[k] = iconSvg(KIND_ICON[k], 13, KIND_COLOR[k] ?? '#1a5f7a', 2.25)
 })
 
-export function LeafletMap({ data, height = 400, compact = false, className, selectedVehicleId }: LeafletMapProps): JSX.Element {
+export function LeafletMap({ data, height = 400, compact = false, className, selectedVehicleId, editable = false, onVehicleMove }: LeafletMapProps): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null)
+  // Latest move callback, kept in a ref so the build effect needn't depend on it.
+  const onMoveRef = useRef(onVehicleMove)
+  onMoveRef.current = onVehicleMove
   // Keep a stable ref to the map instance so we can destroy/re-init on data changes
   const mapRef = useRef<unknown>(null)
   // Registry of vehicle markers (id → Leaflet marker) populated by the build effect,
@@ -292,9 +299,18 @@ export function LeafletMap({ data, height = 400, compact = false, className, sel
           </div>
         `
 
-        const marker = L.marker([v.lat, v.lng], { icon: normalIcon })
+        const marker = L.marker([v.lat, v.lng], { icon: normalIcon, draggable: editable })
           .bindPopup(L.popup({ maxWidth: 260 }).setContent(popupHtml))
           .addTo(map)
+
+        // Fleet Manager: dragging the marker relocates the vehicle. We persist via
+        // the callback but do NOT rebuild the map, so the view/zoom stays put.
+        if (editable) {
+          marker.on('dragend', () => {
+            const p = marker.getLatLng()
+            onMoveRef.current?.(v.id, p.lat, p.lng)
+          })
+        }
 
         // Stash icon variants on the marker and register it for the selection effect.
         marker._normalIcon = normalIcon
@@ -316,7 +332,7 @@ export function LeafletMap({ data, height = 400, compact = false, className, sel
     }
     // Re-init when data or lang changes (markers need re-rendering for bilingual labels)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, lang, compact])
+  }, [data, lang, compact, editable])
 
   // ── Selection: fly to + open popup + highlight the chosen vehicle ──────────
   // Declared AFTER the build effect so that, on a `data` change, the build body
