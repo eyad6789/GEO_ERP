@@ -8,7 +8,7 @@ import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { formatCurrency, pickName } from '../../lib/format'
 import type { Account } from '../../types'
-import { CUSTOMER_ROOTS, SUPPLIER_ROOTS, resolvePostingDescendants, type TrialBalanceResp } from './shared'
+import { CUSTOMER_ROOTS, SUPPLIER_ROOTS, CONTRACTOR_ROOTS, resolvePostingDescendants, type TrialBalanceResp } from './shared'
 
 interface PartyRow {
   code: string
@@ -34,6 +34,7 @@ export function PartiesTab() {
   // Posting leaves under each configured node (chart-agnostic via the tree).
   const customerCodes = useMemo(() => new Set(resolvePostingDescendants(CUSTOMER_ROOTS, accounts)), [accounts])
   const supplierCodes = useMemo(() => new Set(resolvePostingDescendants(SUPPLIER_ROOTS, accounts)), [accounts])
+  const contractorCodes = useMemo(() => new Set(resolvePostingDescendants(CONTRACTOR_ROOTS, accounts)), [accounts])
 
   // Customers (العملاء) = debit-normal, balance positive. Suppliers (الموردون)
   // here come from the debtors tree, so they read as debit-normal too.
@@ -52,6 +53,15 @@ export function PartiesTab() {
         .map((a) => ({ code: a.code, name: pickName(a, lang), balance: balanceMap.get(a.code) ?? 0 }))
         .sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance)),
     [accounts, supplierCodes, balanceMap, lang],
+  )
+
+  const contractors: PartyRow[] = useMemo(
+    () =>
+      accounts
+        .filter((a) => contractorCodes.has(a.code))
+        .map((a) => ({ code: a.code, name: pickName(a, lang), balance: balanceMap.get(a.code) ?? 0 }))
+        .sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance)),
+    [accounts, contractorCodes, balanceMap, lang],
   )
 
   const totalAR = receivables.reduce((s, r) => s + r.balance, 0)
@@ -97,6 +107,19 @@ export function PartiesTab() {
           <ArabicTable
             columns={columns('text-amber-700')}
             data={payables}
+            loading={loading}
+            rowKey={(r) => r.code}
+            onRowClick={(r) => navigate(`/accounting/accounts/${r.code}`)}
+            searchable={false}
+            pageSize={20}
+            emptyTitle={t('accounting.parties.empty')}
+          />
+        </Card>
+        <Card className="overflow-hidden">
+          <CardHeader title={t('accounting.parties.contractors')} icon={<Truck className="h-5 w-5" />} />
+          <ArabicTable
+            columns={columns('text-violet-700')}
+            data={contractors}
             loading={loading}
             rowKey={(r) => r.code}
             onRowClick={(r) => navigate(`/accounting/accounts/${r.code}`)}
