@@ -38,6 +38,7 @@ import { formatNumber, pickName } from '../../../lib/format'
 import { STATUS_COLOR } from '../fleetUtils'
 import type { FleetSummary, FleetMapData, Vehicle } from '../../../types'
 import { VehicleCard } from '../VehicleCard'
+import { VehicleModule } from '../VehicleModule'
 import { ToggleControl, TypeChips, type GroupMode } from '../FleetFilters'
 import { AddVehicleDialog } from '../AddVehicleDialog'
 import { LeafletMap } from '../LeafletMap'
@@ -85,6 +86,7 @@ export function VehiclesTab() {
 
   // Vehicle selected from the list → drives the mini-map (fly/highlight) and the card ring.
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [openVehicle, setOpenVehicle] = useState<Vehicle | null>(null)
   const mapCardRef = useRef<HTMLDivElement | null>(null)
 
   // Bring the map into view when a vehicle is picked (skip the initial null state).
@@ -389,6 +391,7 @@ export function VehiclesTab() {
               vehicle={v}
               selected={v.id === selectedId}
               onSelect={() => setSelectedId(v.id)}
+              onOpen={() => setOpenVehicle(v)}
             />
           ))}
         </div>
@@ -419,6 +422,7 @@ export function VehiclesTab() {
                         vehicle={v}
                         selected={v.id === selectedId}
                         onSelect={() => setSelectedId(v.id)}
+                        onOpen={() => setOpenVehicle(v)}
                       />
                     ))}
                   </div>
@@ -435,6 +439,15 @@ export function VehiclesTab() {
         onClose={() => setAddOpen(false)}
         onCreated={refetch}
       />
+
+      {/* ── Full editable vehicle module (opens on card click) ── */}
+      {openVehicle && (
+        <VehicleModule
+          vehicle={openVehicle}
+          onClose={() => setOpenVehicle(null)}
+          onChanged={() => { refetch(); setOpenVehicle(null) }}
+        />
+      )}
     </div>
   )
 }

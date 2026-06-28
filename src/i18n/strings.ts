@@ -138,6 +138,7 @@ registerStrings({
   'status.TERMINATED': { ar: 'منتهي', en: 'Terminated' },
   'status.MAINTENANCE': { ar: 'في الصيانة', en: 'Maintenance' },
   'status.RETIRED': { ar: 'خارج الخدمة', en: 'Retired' },
+  'status.SOLD': { ar: 'مُباع', en: 'Sold' },
   'status.SUCCESS': { ar: 'نجاح', en: 'Success' },
   'status.FAILED': { ar: 'فشل', en: 'Failed' },
   'status.WARNING': { ar: 'تحذير', en: 'Warning' },

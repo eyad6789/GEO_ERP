@@ -11,6 +11,7 @@ export const ROLES: RoleOption[] = [
   { key: 'super_admin', label_ar: 'مسؤول عام', label_en: 'Super Admin' },
   { key: 'company_admin', label_ar: 'مسؤول شركة', label_en: 'Company Admin' },
   { key: 'project_manager', label_ar: 'مدير مشروع', label_en: 'Project Manager' },
+  { key: 'fleet_manager', label_ar: 'مدير الآليات', label_en: 'Fleet Manager' },
   { key: 'accountant', label_ar: 'محاسب', label_en: 'Accountant' },
   { key: 'hr_manager', label_ar: 'مدير الموارد البشرية', label_en: 'HR Manager' },
   { key: 'warehouse_manager', label_ar: 'مدير المستودع', label_en: 'Warehouse Manager' },

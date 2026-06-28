@@ -497,7 +497,7 @@ export interface DashboardData {
 export type VehicleType =
   | 'CAR' | 'PICKUP' | 'MIXER' | 'EXCAVATOR' | 'LOADER' | 'BULLDOZER' | 'CRANE'
   | 'DUMP_TRUCK' | 'LIFT' | 'ROLLER' | 'DUMPER' | 'TANKER' | 'PUMP' | 'MISC'
-export type VehicleStatus = 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE' | 'RETIRED'
+export type VehicleStatus = 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE' | 'RETIRED' | 'SOLD'
 export type VehicleCostCategory = 'PURCHASE' | 'MAINTENANCE' | 'FUEL' | 'PARTS'
 
 export interface Vehicle {
@@ -525,6 +525,20 @@ export interface Vehicle {
   lng: number | null
   notes: string
   account_code?: string | null // linked asset account under اليات (5)
+  // Fleet-manager fields (acquisition / sale costs + license & driver details)
+  acquisition_cost?: number | null
+  acquisition_currency?: Currency | null
+  acquisition_date?: ISODate | null
+  sale_price?: number | null
+  sale_currency?: Currency | null
+  sale_date?: ISODate | null
+  vehicle_license_no?: string | null
+  vehicle_license_expiry?: ISODate | null
+  driver_phone?: string | null
+  driver_id_no?: string | null
+  driver_address?: string | null
+  driver_license_no?: string | null
+  driver_license_expiry?: ISODate | null
   created_at?: string
 }
 

@@ -12,10 +12,13 @@ import { warehouseRouter } from './routes/warehouse.js'
 import { reportsRouter } from './routes/reports.js'
 import { fleetRouter } from './routes/fleet.js'
 import { vehicleAccountingRouter } from './routes/vehicleAccounting.js'
+import { vehicleDocsRouter } from './routes/vehicleDocs.js'
 import { resourceRouter } from './routes/resource.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const app = express()
+// Document uploads (base64 scans) need a bigger body; keep every other route small.
+app.use('/api/vehicle-documents', express.json({ limit: '30mb' }))
 app.use(express.json({ limit: '2mb' }))
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
@@ -27,6 +30,7 @@ app.use('/api', warehouseRouter)
 app.use('/api', reportsRouter)
 app.use('/api', fleetRouter)
 app.use('/api', vehicleAccountingRouter)
+app.use('/api', vehicleDocsRouter)
 
 // Generic CRUD last.
 app.use('/api', resourceRouter)
