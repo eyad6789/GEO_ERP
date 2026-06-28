@@ -379,6 +379,9 @@ interface CostRow {
   note: string
   entry_id: string | null
   serial_number: string | null
+  project_id: string | null
+  project_name_ar: string | null
+  project_name_en: string | null
 }
 interface DetailResp {
   vehicle: Record<string, string | number | null>
@@ -406,6 +409,7 @@ function VehicleDetailDialog({ vehicle, onClose, onOpenEntry }: { vehicle: Vehic
   const costColumns: Column<CostRow>[] = [
     { key: 'date', header: t('accounting.vehicles.date'), accessor: (r) => r.date, render: (r) => formatDate(r.date, lang) },
     { key: 'category', header: t('accounting.vehicles.type'), render: (r) => t(`accounting.vehicles.cat.${r.category}`) },
+    { key: 'project', header: t('common.project'), render: (r) => (r.project_id ? <span className="text-slate-600">{(lang === 'en' ? r.project_name_en || r.project_name_ar : r.project_name_ar) || '—'}</span> : <span className="text-slate-300">—</span>) },
     { key: 'doc', header: t('accounting.journal.serial'), render: (r) => (r.serial_number ? <span className="font-mono text-xs text-primary">{r.serial_number}</span> : <span className="text-slate-300">—</span>) },
     { key: 'note', header: t('accounting.vehicles.note'), render: (r) => <span className="text-slate-500">{r.note || '—'}</span> },
     { key: 'amount', header: t('accounting.vehicles.spend'), align: 'end', accessor: (r) => r.amount, render: (r) => <span className="tabular-nums">{formatCurrency(r.amount, r.currency, lang)}</span> },
