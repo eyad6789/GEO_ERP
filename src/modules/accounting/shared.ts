@@ -167,6 +167,7 @@ export const AP_PARENT = '26' // الدائنون (creditors / payables)
 // itself a posting leaf still shows up, and a deeper prod chart expands fully.
 export const CUSTOMER_ROOTS = ['164'] // العملاء — سلف المشاريع
 export const SUPPLIER_ROOTS = ['16114'] // الموردون — سلف المنتسبين (all posting leaves)
+export const CONTRACTOR_ROOTS = ['165'] // سلف المقاولين (contractors' advances)
 
 // Dedicated cash-box / advance accounts (Cash & Bank tab balance logic).
 export const CASH_BOX_IQD = '181' // صندوق د.ع

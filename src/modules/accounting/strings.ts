@@ -59,6 +59,7 @@ registerStrings({
   'accounting.parties.subtitle': { ar: 'أرصدة الذمم المدينة (العملاء) والذمم الدائنة (الموردون)', en: 'Receivable (customers) and payable (suppliers) balances' },
   'accounting.parties.receivables': { ar: 'سلف المشاريع — العملاء', en: 'Project Advances — Customers' },
   'accounting.parties.payables': { ar: 'سلف المنتسبين', en: 'Staff Advances (سلف المنتسبين)' },
+  'accounting.parties.contractors': { ar: 'سلف المقاولين', en: 'Contractor Advances (سلف المقاولين)' },
   'accounting.parties.total_ar': { ar: 'إجمالي سلف المشاريع', en: 'Total Project Advances' },
   'accounting.parties.total_ap': { ar: 'إجمالي سلف المنتسبين', en: 'Total Staff Advances' },
   'accounting.parties.net': { ar: 'صافي المركز', en: 'Net Position' },
@@ -69,7 +70,7 @@ registerStrings({
   'accounting.cash.title': { ar: 'الصندوق والبنوك', en: 'Cash & Bank' },
   'accounting.cash.subtitle': { ar: 'مراكز النقد والأرصدة البنكية والحركة الأخيرة', en: 'Cash positions, bank balances and recent movement' },
   'accounting.cash.total': { ar: 'إجمالي النقدية', en: 'Total Cash' },
-  'accounting.cash.incl_advance': { ar: 'شامل السلفة التشغيلية', en: 'incl. operational advance' },
+  'accounting.cash.incl_advance': { ar: 'شامل سلفة المشاريع', en: 'incl. project advance' },
   'accounting.cash.on_hand': { ar: 'النقد في الصناديق', en: 'Cash on Hand' },
   'accounting.cash.positions': { ar: 'مراكز النقد', en: 'Cash Positions' },
   'accounting.cash.recent': { ar: 'الحركة النقدية الأخيرة', en: 'Recent Cash Movement' },
@@ -83,10 +84,10 @@ registerStrings({
   'accounting.cash.current_balance': { ar: 'الرصيد الحالي', en: 'Current Balance' },
   'accounting.cash.on_hand_iqd': { ar: 'النقد في الصناديق (دينار)', en: 'Cash on Hand (IQD)' },
   'accounting.cash.on_hand_usd': { ar: 'النقد في الصناديق (دولار)', en: 'Cash on Hand (USD)' },
-  'accounting.cash.advance_iqd': { ar: 'السلفة التشغيلية (دينار)', en: 'Operational Advance (IQD)' },
-  'accounting.cash.advance_usd': { ar: 'السلفة التشغيلية (دولار)', en: 'Operational Advance (USD)' },
+  'accounting.cash.advance_iqd': { ar: 'سلفة المشاريع (دينار)', en: 'Project Advance (IQD)' },
+  'accounting.cash.advance_usd': { ar: 'سلفة المشاريع (دولار)', en: 'Project Advance (USD)' },
   'accounting.cash.actual_balance': { ar: 'الرصيد الفعلي', en: 'Actual Balance' },
-  'accounting.cash.advance': { ar: 'السلفة التشغيلية', en: 'Operational Advance' },
+  'accounting.cash.advance': { ar: 'سلفة المشاريع', en: 'Project Advance' },
   'accounting.cash.main_actual': { ar: 'الرصيد الفعلي للصناديق', en: 'Cash — Actual' },
   'accounting.cash.add_box': { ar: 'إضافة صندوق', en: 'Add cash box' },
 
@@ -212,6 +213,7 @@ registerStrings({
 
   // Entry view dialog
   'accounting.entry.title': { ar: 'تفاصيل القيد', en: 'Entry Details' },
+  'accounting.entry.print': { ar: 'طباعة PDF', en: 'Print PDF' },
   'accounting.entry.account': { ar: 'الحساب', en: 'Account' },
   'accounting.entry.lines': { ar: 'سطور القيد', en: 'Entry Lines' },
   'accounting.entry.company': { ar: 'الشركة', en: 'Company' },
