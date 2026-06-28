@@ -5,8 +5,8 @@
 // Costs: acquisition (manual), spent-so-far (REAL, from the journal), sale price.
 // ============================================================================
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Truck, Pencil, Trash2, Save, X, MapPin, User, Wallet, Car, FolderOpen, FileText, Upload, Download } from 'lucide-react'
-import { Dialog, Button, Field, Input, SearchSelect, Badge, useToast } from '../../components/ui'
+import { Truck, Pencil, Trash2, Save, X, MapPin, User, Wallet, Car, FolderOpen, FileText, Upload, Download, StickyNote, Tag } from 'lucide-react'
+import { Dialog, Button, Field, Input, Textarea, SearchSelect, Badge, useToast } from '../../components/ui'
 import { useT, useLang } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { useApi, useResource } from '../../hooks/useResource'
@@ -31,9 +31,14 @@ registerStrings({
   'fleet.mod.confirm_delete': { ar: 'هل تريد حذف هذه الآلية نهائياً؟', en: 'Delete this vehicle permanently?' },
   'fleet.mod.readonly': { ar: 'العرض فقط — التعديل لمدير الآليات', en: 'View only — editing is for the Fleet Manager' },
   'fleet.mod.sec_vehicle': { ar: 'بيانات الآلية', en: 'Vehicle' },
+  'fleet.mod.sec_registration': { ar: 'إجازة وأوراق الآلية', en: 'Registration & Papers' },
+  'fleet.mod.upload_hint': { ar: 'ارفع صور المستندات فقط — لا حاجة لملء حقول', en: 'Upload document scans only — no fields to fill' },
   'fleet.mod.sec_owner': { ar: 'الملكية والتشغيل', en: 'Ownership & Operation' },
   'fleet.mod.sec_driver': { ar: 'السائق', en: 'Driver' },
-  'fleet.mod.sec_costs': { ar: 'التكاليف', en: 'Costs' },
+  'fleet.mod.sec_costs': { ar: 'بيع الآلية', en: 'Sell Vehicle' },
+  'fleet.mod.sell_hint': { ar: 'الحفظ يسجّل الآلية كـ«مُباعة».', en: 'Saving marks this vehicle as Sold.' },
+  'fleet.mod.sec_retire': { ar: 'إخراج من الخدمة', en: 'Out of Service' },
+  'fleet.mod.retire_hint': { ar: 'الحفظ يسجّل الآلية كـ«خارج الخدمة». أضف السبب في الملاحظات.', en: 'Saving marks this vehicle as out of service. Add the reason in Notes.' },
   'fleet.mod.sec_location': { ar: 'الموقع', en: 'Location' },
   'fleet.mod.name_ar': { ar: 'الاسم (عربي)', en: 'Name (Arabic)' },
   'fleet.mod.name_en': { ar: 'الاسم (إنجليزي)', en: 'Name (English)' },
@@ -41,6 +46,9 @@ registerStrings({
   'fleet.mod.veh_license': { ar: 'إجازة/تسجيل الآلية', en: 'Vehicle License / Reg.' },
   'fleet.mod.veh_license_exp': { ar: 'انتهاء إجازة الآلية', en: 'Vehicle License Expiry' },
   'fleet.mod.op_company': { ar: 'الشركة المشغّلة', en: 'Operating Company' },
+  'fleet.mod.ownership': { ar: 'نوع الملكية', en: 'Ownership' },
+  'fleet.veh.PRIVATE': { ar: 'خاصة', en: 'Private' },
+  'fleet.veh.PUBLIC': { ar: 'عامة', en: 'Public' },
   'fleet.mod.driver_phone': { ar: 'هاتف السائق', en: 'Driver Phone' },
   'fleet.mod.driver_id': { ar: 'رقم هوية السائق', en: 'Driver National ID' },
   'fleet.mod.driver_address': { ar: 'عنوان السائق', en: 'Driver Address' },
@@ -53,6 +61,8 @@ registerStrings({
   'fleet.mod.sale_date': { ar: 'تاريخ البيع', en: 'Sale Date' },
   'fleet.mod.map_hint': { ar: 'اضغط على الخريطة أو اسحب العلامة لتحديد موقع الآلية', en: 'Click the map or drag the marker to set the vehicle location' },
   'fleet.mod.no_location': { ar: 'لا يوجد موقع محدد', en: 'No location set' },
+  'fleet.mod.sec_notes': { ar: 'ملاحظات', en: 'Notes' },
+  'fleet.mod.notes_ph': { ar: 'أضف ملاحظات حول الآلية أو السائق…', en: 'Add notes about the vehicle or driver…' },
   'fleet.mod.sec_docs': { ar: 'الأرشيف والمستندات', en: 'Documents & Archive' },
   'fleet.mod.no_docs': { ar: 'لا توجد مستندات', en: 'No documents yet' },
   'fleet.mod.upload': { ar: 'رفع مستند', en: 'Upload document' },
@@ -87,18 +97,27 @@ export function VehicleModule({
   vehicle,
   onClose,
   onChanged,
+  focus = 'full',
 }: {
   vehicle: Vehicle
   onClose: () => void
   onChanged: () => void
+  // 'full' = edit the whole car · 'registration' = reg fields + files ·
+  // 'driver' = upload files only · 'sell' = sale fields (marks SOLD) ·
+  // 'retire' = mark out of service (RETIRED).
+  focus?: 'full' | 'registration' | 'driver' | 'sell' | 'retire'
 }) {
   const t = useT()
   const { lang } = useLang()
   const { role } = useCompany()
   const toast = useToast()
   const canEdit = canEditFleet(role.key)
+  // Driver focus is upload-only — no field editing form.
+  const editable = canEdit && focus !== 'driver'
+  // Sell / retire are actions — open straight into edit mode.
+  const startEditing = (focus === 'sell' || focus === 'retire') && canEdit
 
-  const [editing, setEditing] = useState(false)
+  const [editing, setEditing] = useState(startEditing)
   const [form, setForm] = useState<Vehicle>(vehicle)
   const [saving, setSaving] = useState(false)
 
@@ -115,7 +134,9 @@ export function VehicleModule({
   // ── Documents (license & car-paper scans) ──
   const { data: docs, refetch: refetchDocs } = useApi<VehicleDoc[]>('/vehicle-documents', { vehicle_id: vehicle.id })
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [docType, setDocType] = useState('DRIVER_LICENSE')
+  const [docType, setDocType] = useState(
+    focus === 'registration' ? 'VEHICLE_LICENSE' : focus === 'sell' || focus === 'retire' ? 'OTHER' : 'DRIVER_LICENSE',
+  )
   const [uploading, setUploading] = useState(false)
   const uploadDoc = async (file: File) => {
     setUploading(true)
@@ -143,7 +164,7 @@ export function VehicleModule({
   }
   const fmtSize = (n: number) => (n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB')
 
-  useEffect(() => { setForm(vehicle); setEditing(false) }, [vehicle])
+  useEffect(() => { setForm(vehicle); setEditing(startEditing) }, [vehicle])
 
   const set = (patch: Partial<Vehicle>) => setForm((f) => ({ ...f, ...patch }))
 
@@ -158,11 +179,16 @@ export function VehicleModule({
   const statusOptions = STATUSES.map((s) => ({ value: s, label: t(`status.${s}`) }))
   const typeOptions = VEHICLE_TYPES.map((k) => ({ value: k, label: t(`fleet.type.${k}`) }))
   const currencyOptions = CURRENCIES.map((c) => ({ value: c, label: c }))
+  const ownershipOptions = [{ value: 'PRIVATE', label: t('fleet.veh.PRIVATE') }, { value: 'PUBLIC', label: t('fleet.veh.PUBLIC') }]
 
   const save = async () => {
     setSaving(true)
     try {
-      await apiPut(`/vehicles/${vehicle.id}`, form)
+      // Selling / retiring also flips the vehicle's status.
+      const patch: Vehicle = focus === 'sell' ? { ...form, status: 'SOLD' }
+        : focus === 'retire' ? { ...form, status: 'RETIRED' }
+        : form
+      await apiPut(`/vehicles/${vehicle.id}`, patch)
       toast.success(t('fleet.mod.saved'))
       onChanged()
     } catch (e) {
@@ -245,13 +271,15 @@ export function VehicleModule({
     )
   }
 
+  // Light, journal-style section: a small heading + a dense 2-column grid (same
+  // look in view and edit, so the module stays compact).
   const section = (icon: ReactNode, title: string, body: ReactNode): ReactNode => (
-    <div className="rounded-xl border border-slate-200 bg-white">
-      <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700">
+    <section>
+      <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
         {icon}{title}
-      </div>
-      <div className={editing ? 'grid grid-cols-1 gap-3 p-4 sm:grid-cols-2' : 'px-4 py-2'}>{body}</div>
-    </div>
+      </h4>
+      <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">{body}</div>
+    </section>
   )
 
   const displayName = pickName(form, lang)
@@ -260,7 +288,7 @@ export function VehicleModule({
     <Dialog
       open
       onClose={onClose}
-      size="2xl"
+      size="lg"
       title={
         <span className="flex flex-wrap items-center gap-2">
           <Truck className="h-5 w-5 text-primary" />
@@ -274,7 +302,7 @@ export function VehicleModule({
       footer={
         <div className="flex w-full items-center justify-between gap-2">
           <div>
-            {canEdit && editing && (
+            {editable && editing && (
               <Button variant="outline" onClick={remove} disabled={saving} className="text-danger hover:bg-red-50">
                 <Trash2 className="h-4 w-4" />{t('fleet.mod.delete')}
               </Button>
@@ -282,12 +310,13 @@ export function VehicleModule({
           </div>
           <div className="flex items-center gap-2">
             {!canEdit && <span className="text-xs text-slate-400">{t('fleet.mod.readonly')}</span>}
-            {canEdit && !editing && (
+            {canEdit && focus === 'driver' && <span className="text-xs text-slate-400">{t('fleet.mod.upload_hint')}</span>}
+            {editable && !editing && (
               <Button variant="primary" onClick={() => setEditing(true)}>
                 <Pencil className="h-4 w-4" />{t('fleet.mod.edit')}
               </Button>
             )}
-            {canEdit && editing && (
+            {editable && editing && (
               <>
                 <Button variant="outline" onClick={() => { setForm(vehicle); setEditing(false) }} disabled={saving}>
                   <X className="h-4 w-4" />{t('fleet.mod.cancel')}
@@ -302,8 +331,8 @@ export function VehicleModule({
         </div>
       }
     >
-      <div className="space-y-4">
-        {section(<Car className="h-4 w-4 text-primary" />, t('fleet.mod.sec_vehicle'), (
+      <div className="max-h-[62vh] space-y-4 overflow-y-auto pe-1">
+        {focus === 'full' && section(<Car className="h-4 w-4 text-primary" />, t('fleet.mod.sec_vehicle'), (
           <>
             {row(t('fleet.mod.name_ar'), 'name_ar')}
             {row(t('fleet.mod.name_en'), 'name_en')}
@@ -319,16 +348,28 @@ export function VehicleModule({
           </>
         ))}
 
-        {section(<FolderOpen className="h-4 w-4 text-primary" />, t('fleet.mod.sec_owner'), (
+        {/* Registration focus: identity (read) + a few editable papers fields. */}
+        {focus === 'registration' && section(<Car className="h-4 w-4 text-primary" />, t('fleet.mod.sec_registration'), (
+          <>
+            {row(t('fleet.field.plate'), 'plate_number')}
+            {row(t('fleet.mod.name_ar'), 'name_ar')}
+            {row(t('fleet.mod.veh_license'), 'vehicle_license_no')}
+            {row(t('fleet.mod.veh_license_exp'), 'vehicle_license_expiry', 'date')}
+            {row(t('fleet.field.registration_expiry'), 'registration_expiry', 'date')}
+          </>
+        ))}
+
+        {focus === 'full' && section(<FolderOpen className="h-4 w-4 text-primary" />, t('fleet.mod.sec_owner'), (
           <>
             {row(t('fleet.field.owner'), 'owner_name')}
+            {row(t('fleet.mod.ownership'), 'ownership', 'select', ownershipOptions)}
             {row(t('fleet.mod.op_company'), 'company_id', 'select', companyOptions)}
             {row(t('fleet.field.project'), 'project_id', 'select', projectOptions)}
             {row(t('fleet.field.location'), 'location')}
           </>
         ))}
 
-        {section(<User className="h-4 w-4 text-primary" />, t('fleet.mod.sec_driver'), (
+        {(focus === 'full' || focus === 'driver') && section(<User className="h-4 w-4 text-primary" />, t('fleet.mod.sec_driver'), (
           <>
             {row(t('fleet.field.driver'), 'driver_name')}
             {row(t('fleet.mod.driver_phone'), 'driver_phone')}
@@ -339,8 +380,9 @@ export function VehicleModule({
           </>
         ))}
 
-        {section(<Wallet className="h-4 w-4 text-primary" />, t('fleet.mod.sec_costs'), (
+        {focus === 'sell' && section(<Wallet className="h-4 w-4 text-primary" />, t('fleet.mod.sec_costs'), (
           <>
+            {row(t('fleet.field.plate'), 'plate_number')}
             {row(t('fleet.mod.acq_cost'), 'acquisition_cost', 'number')}
             {editing && row(t('common.currency'), 'acquisition_currency', 'select', currencyOptions)}
             {row(t('fleet.mod.acq_date'), 'acquisition_date', 'date')}
@@ -356,7 +398,26 @@ export function VehicleModule({
                 </span>
               </div>
             )}
+            {editing && <p className="text-xs text-amber-600 sm:col-span-2">{t('fleet.mod.sell_hint')}</p>}
           </>
+        ))}
+
+        {focus === 'retire' && section(<Tag className="h-4 w-4 text-primary" />, t('fleet.mod.sec_retire'), (
+          <>
+            {row(t('fleet.field.plate'), 'plate_number')}
+            {row(t('fleet.mod.name_ar'), 'name_ar')}
+            <p className="text-xs text-amber-600 sm:col-span-2">{t('fleet.mod.retire_hint')}</p>
+          </>
+        ))}
+
+        {section(<StickyNote className="h-4 w-4 text-primary" />, t('fleet.mod.sec_notes'), (
+          <div className="sm:col-span-2">
+            {editing ? (
+              <Textarea value={form.notes ?? ''} onChange={(e) => set({ notes: e.target.value })} rows={3} placeholder={t('fleet.mod.notes_ph')} />
+            ) : (
+              <p className="whitespace-pre-wrap text-sm text-slate-700">{form.notes || '—'}</p>
+            )}
+          </div>
         ))}
 
         {section(<FileText className="h-4 w-4 text-primary" />, t('fleet.mod.sec_docs'), (
@@ -404,10 +465,10 @@ export function VehicleModule({
           </div>
         ))}
 
-        {section(<MapPin className="h-4 w-4 text-primary" />, t('fleet.mod.sec_location'), (
+        {focus === 'full' && section(<MapPin className="h-4 w-4 text-primary" />, t('fleet.mod.sec_location'), (
           <div className="sm:col-span-2">
             {editing && canEdit && <p className="mb-2 text-xs text-slate-400">{t('fleet.mod.map_hint')}</p>}
-            <div ref={mapRef} className="h-64 w-full overflow-hidden rounded-xl border border-slate-200" />
+            <div ref={mapRef} className="h-44 w-full overflow-hidden rounded-xl border border-slate-200" />
             {form.lat == null && <p className="mt-2 text-xs text-slate-400">{t('fleet.mod.no_location')}</p>}
           </div>
         ))}

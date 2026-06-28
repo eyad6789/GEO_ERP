@@ -80,6 +80,7 @@ function migrate(): void {
     addVCol('driver_address', 'TEXT')
     addVCol('driver_license_no', 'TEXT')
     addVCol('driver_license_expiry', 'TEXT')
+    addVCol('ownership', 'TEXT') // PRIVATE (خاصة) | PUBLIC (عامة/حكومية)
   }
   // Per-vehicle / per-driver document archive (license & registration scans).
   db.exec(`CREATE TABLE IF NOT EXISTS vehicle_documents (

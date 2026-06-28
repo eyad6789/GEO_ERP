@@ -5,16 +5,18 @@
 // ============================================================================
 import { MapPin, Activity, Layers, Truck } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { useApi } from '../../../hooks/useResource'
+import { useState } from 'react'
+import { useApi, useResource } from '../../../hooks/useResource'
 import { useT, useLang } from '../../../context/LangContext'
 import { useCompany } from '../../../context/CompanyContext'
 import { Spinner, useToast } from '../../../components/ui'
 import { KpiCard } from '../../../components/shared/KpiCard'
 import { Card, CardHeader } from '../../../components/ui/Card'
 import { LeafletMap } from '../LeafletMap'
+import { VehicleModule } from '../VehicleModule'
 import { STATUS_COLOR, canEditFleet } from '../fleetUtils'
 import { apiPut } from '../../../lib/api'
-import type { FleetMapData } from '../../../types'
+import type { FleetMapData, Vehicle } from '../../../types'
 import { registerStrings } from '../../../i18n/strings'
 
 // Extra i18n keys not in the shared strings.ts (MapTab-specific label/hint)
@@ -47,6 +49,14 @@ export function MapTab() {
   const toast = useToast()
   const canEdit = canEditFleet(role.key)
   const { data, loading, refetch } = useApi<FleetMapData>('/fleet/map')
+  // Full vehicle records (the map data is a lightweight subset) — needed so the
+  // popup's "see more" can open the complete module.
+  const { data: fullVehicles, refetch: refetchVehicles } = useResource<Vehicle>('vehicles')
+  const [openVehicle, setOpenVehicle] = useState<Vehicle | null>(null)
+  const onVehicleOpen = (id: string) => {
+    const v = fullVehicles.find((x) => x.id === id)
+    if (v) setOpenVehicle(v)
+  }
 
   // Fleet Manager: persist a dragged vehicle's new position. We update the local
   // map data in place (so the count/markers stay correct) without a full reload.
@@ -177,7 +187,7 @@ export function MapTab() {
         {/* Map container — direction:ltr so Leaflet tile layout is unaffected by RTL */}
         <div className="p-0" style={{ direction: 'ltr' }}>
           {data ? (
-            <LeafletMap data={data} height={500} editable={canEdit} onVehicleMove={onVehicleMove} />
+            <LeafletMap data={data} height={500} editable={canEdit} onVehicleMove={onVehicleMove} onVehicleOpen={onVehicleOpen} />
           ) : (
             <div className="flex items-center justify-center py-20 text-slate-400 text-sm">
               {t('fleet.map.no_data')}
@@ -224,6 +234,14 @@ export function MapTab() {
         </Card>
       )}
 
+      {/* "See more" from a map popup → the full vehicle module. */}
+      {openVehicle && (
+        <VehicleModule
+          vehicle={openVehicle}
+          onClose={() => setOpenVehicle(null)}
+          onChanged={() => { refetchVehicles(); refetch(); setOpenVehicle(null) }}
+        />
+      )}
     </div>
   )
 }

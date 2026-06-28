@@ -15,6 +15,7 @@ import { registerStrings } from '../../i18n/strings'
 // Cooperative-gesture hint shown when the user scrolls over the map without Ctrl/⌘.
 registerStrings({
   'fleet.map.zoom_hint': { ar: 'استخدم Ctrl + التمرير للتكبير', en: 'Use Ctrl + scroll to zoom' },
+  'fleet.map.see_more': { ar: 'عرض التفاصيل', en: 'See more' },
 })
 
 export interface LeafletMapProps {
@@ -28,6 +29,8 @@ export interface LeafletMapProps {
   editable?: boolean
   /** Called after a vehicle marker is dragged to a new position. */
   onVehicleMove?: (vehicleId: string, lat: number, lng: number) => void
+  /** Called when the popup's "see more" button is clicked → open the full module. */
+  onVehicleOpen?: (vehicleId: string) => void
 }
 
 // Project-kind colours aligned with the app theme:
@@ -80,11 +83,13 @@ const KIND_SVG_POPUP: Record<string, string> = {}
   KIND_SVG_POPUP[k] = iconSvg(KIND_ICON[k], 13, KIND_COLOR[k] ?? '#1a5f7a', 2.25)
 })
 
-export function LeafletMap({ data, height = 400, compact = false, className, selectedVehicleId, editable = false, onVehicleMove }: LeafletMapProps): JSX.Element {
+export function LeafletMap({ data, height = 400, compact = false, className, selectedVehicleId, editable = false, onVehicleMove, onVehicleOpen }: LeafletMapProps): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null)
-  // Latest move callback, kept in a ref so the build effect needn't depend on it.
+  // Latest callbacks kept in refs so the build effect needn't depend on them.
   const onMoveRef = useRef(onVehicleMove)
   onMoveRef.current = onVehicleMove
+  const onOpenRef = useRef(onVehicleOpen)
+  onOpenRef.current = onVehicleOpen
   // Keep a stable ref to the map instance so we can destroy/re-init on data changes
   const mapRef = useRef<unknown>(null)
   // Registry of vehicle markers (id → Leaflet marker) populated by the build effect,
@@ -296,6 +301,7 @@ export function LeafletMap({ data, height = 400, compact = false, className, sel
                 <td style="padding:4px 0 2px;color:#1a5f7a;font-weight:600;${isAr ? 'text-align:left' : 'text-align:right'}">${headingValue}</td>
               </tr>
             </table>
+            <button class="veh-seemore" data-vid="${v.id}" style="margin-top:8px;width:100%;padding:6px 0;background:#1a5f7a;color:#fff;border:none;border-radius:6px;font-family:Cairo,Inter,sans-serif;font-size:12px;font-weight:600;cursor:pointer">${t('fleet.map.see_more')}</button>
           </div>
         `
 
@@ -319,6 +325,19 @@ export function LeafletMap({ data, height = 400, compact = false, className, sel
       })
     }
 
+    // Wire the popup's "see more" button via event delegation on the container
+    // (robust: works regardless of when/where Leaflet renders the popup DOM).
+    const onSeeMore = (ev: Event) => {
+      const btn = (ev.target as HTMLElement)?.closest?.('.veh-seemore') as HTMLElement | null
+      if (btn) {
+        ev.preventDefault()
+        ev.stopPropagation()
+        const vid = btn.getAttribute('data-vid')
+        if (vid) onOpenRef.current?.(vid)
+      }
+    }
+    container.addEventListener('click', onSeeMore)
+
     // Force Leaflet to recalculate its size after mount — fixes blank tile issue
     // when the container wasn't fully painted yet.
     requestAnimationFrame(() => {
@@ -327,6 +346,7 @@ export function LeafletMap({ data, height = 400, compact = false, className, sel
 
     return () => {
       container.removeEventListener('wheel', onWheel)
+      container.removeEventListener('click', onSeeMore)
       try { map.remove() } catch (_) { /* ignore */ }
       mapRef.current = null
     }

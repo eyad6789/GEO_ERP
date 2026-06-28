@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Leaflet's panes & controls default to z-index 200–1000, which would paint the
+   map OVER modals/dialogs (z-50) and dropdowns. Pinning the container to its own
+   low stacking context (z-index 0) traps all those internal z-indexes inside the
+   map, so dialogs, popovers and toasts always render above it. */
+.leaflet-container {
+  z-index: 0;
+}
+
 @layer base {
   :root {
     --header-h: 60px;

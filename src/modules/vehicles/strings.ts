@@ -111,6 +111,8 @@ registerStrings({
   'fleet.arch.registration': { ar: 'إجازات السوق وأوراق الآليات', en: 'Vehicle Registration Papers' },
   'fleet.arch.drivers': { ar: 'مستندات السائقين', en: 'Driver Documents' },
   'fleet.arch.sold': { ar: 'الآليات المباعة والخارجة عن الخدمة', en: 'Sold & Retired Vehicles' },
+  'fleet.arch.sold_cars': { ar: 'الآليات المباعة', en: 'Sold Vehicles' },
+  'fleet.arch.retired_cars': { ar: 'الآليات الخارجة عن الخدمة', en: 'Retired / Out of Service' },
   'fleet.arch.documents': { ar: 'المستندات المؤرشفة', en: 'Archived Documents' },
   'fleet.arch.expiring': { ar: 'قرب الانتهاء', en: 'Expiring Soon' },
   'fleet.arch.valid': { ar: 'سارية', en: 'Valid' },
