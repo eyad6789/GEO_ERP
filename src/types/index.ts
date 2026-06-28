@@ -539,6 +539,7 @@ export interface Vehicle {
   driver_address?: string | null
   driver_license_no?: string | null
   driver_license_expiry?: ISODate | null
+  ownership?: 'PRIVATE' | 'PUBLIC' | null
   created_at?: string
 }
 

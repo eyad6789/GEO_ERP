@@ -51,6 +51,11 @@ registerStrings({
   'fleet.oil.overdue': { ar: 'تجاوز موعد الزيت', en: 'Oil change overdue' },
   'fleet.oil.soon': { ar: 'قرب موعد الزيت', en: 'Oil change due soon' },
   'fleet.oil.ok': { ar: 'الزيت جيد', en: 'Oil OK' },
+  'fleet.filter.all': { ar: 'الكل', en: 'All' },
+  'fleet.filter.project': { ar: 'آليات مشاريع', en: 'Project vehicles' },
+  'fleet.filter.company': { ar: 'آليات الشركة', en: 'Company-wide' },
+  'fleet.veh.PRIVATE': { ar: 'خاصة', en: 'Private' },
+  'fleet.veh.PUBLIC': { ar: 'عامة', en: 'Public' },
 })
 
 // ──────────────────────────────────────────────
@@ -82,6 +87,8 @@ export function VehiclesTab() {
   const [groupMode, setGroupMode] = useState<GroupMode>('by_type')
   const [selectedType, setSelectedType] = useState<string>('ALL')
   const [search, setSearch] = useState('')
+  const [ownerFilter, setOwnerFilter] = useState<'ALL' | 'PRIVATE' | 'PUBLIC'>('ALL')
+  const [assignFilter, setAssignFilter] = useState<'ALL' | 'PROJECT' | 'COMPANY'>('ALL')
   const [addOpen, setAddOpen] = useState(false)
 
   // Vehicle selected from the list → drives the mini-map (fly/highlight) and the card ring.
@@ -103,9 +110,14 @@ export function VehiclesTab() {
           !v.name_ar.toLowerCase().includes(q) &&
           !v.name_en.toLowerCase().includes(q) &&
           !v.driver_name.toLowerCase().includes(q)) return false
+      // Ownership: private / public.
+      if (ownerFilter !== 'ALL' && v.ownership !== ownerFilter) return false
+      // Assignment: tied to a project vs a company-wide pool car (no project).
+      if (assignFilter === 'PROJECT' && !v.project_id) return false
+      if (assignFilter === 'COMPANY' && v.project_id) return false
       return true
     })
-  }, [vehicles, search])
+  }, [vehicles, search, ownerFilter, assignFilter])
 
   const typeCounts = useMemo(() => {
     const map: Record<string, number> = {}
@@ -319,7 +331,13 @@ export function VehiclesTab() {
               <Spinner className="h-8 w-8" />
             </div>
           ) : (
-            <LeafletMap data={mapData} height={600} compact selectedVehicleId={selectedId} />
+            <LeafletMap
+              data={mapData}
+              height={600}
+              compact
+              selectedVehicleId={selectedId}
+              onVehicleOpen={(id) => { const v = vehicles.find((x) => x.id === id); if (v) setOpenVehicle(v) }}
+            />
           )}
         </div>
       </div>
@@ -356,6 +374,32 @@ export function VehiclesTab() {
             <Plus className="me-1 h-4 w-4" />
             {t('fleet.add')}
           </Button>
+        </div>
+      </div>
+
+      {/* ── Category filters: ownership (private/public) + assignment ── */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
+          {(['ALL', 'PRIVATE', 'PUBLIC'] as const).map((k) => (
+            <button
+              key={k}
+              onClick={() => setOwnerFilter(k)}
+              className={'rounded-md px-3 py-1 text-xs font-medium transition ' + (ownerFilter === k ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+            >
+              {k === 'ALL' ? t('fleet.filter.all') : t(`fleet.veh.${k}`)}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
+          {(['ALL', 'PROJECT', 'COMPANY'] as const).map((k) => (
+            <button
+              key={k}
+              onClick={() => setAssignFilter(k)}
+              className={'rounded-md px-3 py-1 text-xs font-medium transition ' + (assignFilter === k ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+            >
+              {k === 'ALL' ? t('fleet.filter.all') : k === 'PROJECT' ? t('fleet.filter.project') : t('fleet.filter.company')}
+            </button>
+          ))}
         </div>
       </div>
 
