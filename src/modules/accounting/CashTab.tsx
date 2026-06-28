@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Wallet, Coins, Plus, ArrowDownToLine, ArrowUpFromLine, Banknote, HandCoins } from 'lucide-react'
 import { Card, CardHeader, Badge } from '../../components/ui'
@@ -14,9 +14,12 @@ import {
   OPERATIONAL_ADVANCE,
   resolvePostingDescendants,
   firstExistingCode,
+  canEditAccounting,
   type TrialBalanceResp,
   type CashMovement,
 } from './shared'
+import { NewEntryDialog } from './NewEntryDialog'
+import { EntryViewDialog } from './EntryViewDialog'
 
 interface Movement extends CashMovement {
   type: 'RECEIPT' | 'PAYMENT'
@@ -26,11 +29,14 @@ interface Movement extends CashMovement {
 export function CashTab() {
   const t = useT()
   const { lang } = useLang()
-  const { companyId } = useCompany()
+  const { companyId, role } = useCompany()
+  const canEdit = canEditAccounting(role.key)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [viewId, setViewId] = useState<string | null>(null)
 
   const { data: accounts } = useResource<Account>('accounts')
   const { data: trial } = useApi<TrialBalanceResp>('/reports/trial-balance', companyId ? { company_id: companyId } : undefined)
-  const { data: mv, loading } = useApi<{ rows: CashMovement[] }>(
+  const { data: mv, loading, refetch } = useApi<{ rows: CashMovement[] }>(
     '/accounting/cash-movements',
     companyId ? { company_id: companyId, limit: 10 } : { limit: 10 },
   )
@@ -217,8 +223,22 @@ export function CashTab() {
 
       <Card className="overflow-hidden">
         <CardHeader title={t('accounting.cash.recent')} icon={<Wallet className="h-5 w-5" />} />
-        <ArabicTable columns={moveColumns} data={movements} loading={loading} rowKey={(m, i) => `${m.entry_id}-${i}`} searchable={false} pageSize={8} emptyTitle={t('accounting.vouchers.empty')} />
+        <ArabicTable
+          columns={moveColumns}
+          data={movements}
+          loading={loading}
+          rowKey={(m, i) => `${m.entry_id}-${i}`}
+          onRowClick={(m) => { if (!m.entry_id) return; if (canEdit) setEditId(m.entry_id); else setViewId(m.entry_id) }}
+          searchable={false}
+          pageSize={8}
+          emptyTitle={t('accounting.vouchers.empty')}
+        />
       </Card>
+
+      {canEdit && (
+        <NewEntryDialog open={editId !== null} editId={editId} onClose={() => setEditId(null)} onCreated={() => { setEditId(null); refetch() }} />
+      )}
+      <EntryViewDialog entryId={viewId} onClose={() => setViewId(null)} />
     </div>
   )
 }

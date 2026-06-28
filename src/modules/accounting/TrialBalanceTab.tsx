@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Scale, Check, AlertTriangle, Download, X } from 'lucide-react'
+import { Scale, Check, AlertTriangle, Download, X, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import { Card, CardHeader, Button, LoadingState, SearchSelect } from '../../components/ui'
 import { EmptyState } from '../../components/shared'
 import { useApi, useResource } from '../../hooks/useResource'
@@ -25,6 +25,11 @@ export function TrialBalanceTab({
   const [companyFilter, setCompanyFilter] = useState('')
   const [projectFilter, setProjectFilter] = useState('')
   const [accountFilter, setAccountFilter] = useState('')
+  // Click a column header to re-rank (like Excel). null = the server's order.
+  type SortKey = 'code' | 'name' | 'debit' | 'credit' | 'balance'
+  const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' } | null>(null)
+  const toggleSort = (key: SortKey) =>
+    setSort((s) => (s?.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }))
 
   const { data: companies } = useResource<Company>('companies')
   const { data: projects } = useResource<Project>('projects')
@@ -94,6 +99,29 @@ export function TrialBalanceTab({
   const hasUsd = totals.debit_usd !== 0 || totals.credit_usd !== 0
 
   const name = (r: TrialBalanceRow) => (lang === 'en' ? r.name_en || r.name_ar : r.name_ar)
+
+  // Re-rank rows by the clicked column; default keeps the server order.
+  const sortedRows = useMemo(() => {
+    if (!sort) return displayRows
+    const dir = sort.dir === 'asc' ? 1 : -1
+    const val = (r: TrialBalanceRow): string | number =>
+      sort.key === 'code' ? r.code
+      : sort.key === 'name' ? name(r)
+      : sort.key === 'debit' ? r.total_debit || 0
+      : sort.key === 'credit' ? r.total_credit || 0
+      : Math.abs(r.balance || 0)
+    return [...displayRows].sort((a, b) => {
+      const va = val(a), vb = val(b)
+      if (typeof va === 'string' && typeof vb === 'string') return va.localeCompare(vb) * dir
+      return ((va as number) - (vb as number)) * dir
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayRows, sort, lang])
+
+  const SortIcon = ({ k }: { k: SortKey }) =>
+    sort?.key !== k ? <ArrowUpDown className="h-3 w-3 text-slate-300" />
+    : sort.dir === 'asc' ? <ArrowUp className="h-3 w-3 text-primary" />
+    : <ArrowDown className="h-3 w-3 text-primary" />
 
   const handleExport = () => {
     const c = t('accounting.trial.code')
@@ -165,21 +193,23 @@ export function TrialBalanceTab({
             <table className="w-full text-sm">
               <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-4 py-3 text-start">{t('accounting.trial.code')}</th>
-                  <th className="px-4 py-3 text-start">{t('accounting.trial.name')}</th>
-                  <th className="px-4 py-3 text-end">{t('accounting.trial.debit')}</th>
-                  <th className="px-4 py-3 text-end">{t('accounting.trial.credit')}</th>
-                  <th className="px-4 py-3 text-end">{t('accounting.trial.balance')}</th>
+                  <th className="w-12 px-4 py-3 text-start">#</th>
+                  <th className="px-4 py-3 text-start"><button type="button" onClick={() => toggleSort('code')} className="inline-flex items-center gap-1 transition hover:text-primary">{t('accounting.trial.code')}<SortIcon k="code" /></button></th>
+                  <th className="px-4 py-3 text-start"><button type="button" onClick={() => toggleSort('name')} className="inline-flex items-center gap-1 transition hover:text-primary">{t('accounting.trial.name')}<SortIcon k="name" /></button></th>
+                  <th className="px-4 py-3 text-end"><button type="button" onClick={() => toggleSort('debit')} className="inline-flex items-center gap-1 transition hover:text-primary">{t('accounting.trial.debit')}<SortIcon k="debit" /></button></th>
+                  <th className="px-4 py-3 text-end"><button type="button" onClick={() => toggleSort('credit')} className="inline-flex items-center gap-1 transition hover:text-primary">{t('accounting.trial.credit')}<SortIcon k="credit" /></button></th>
+                  <th className="px-4 py-3 text-end"><button type="button" onClick={() => toggleSort('balance')} className="inline-flex items-center gap-1 transition hover:text-primary">{t('accounting.trial.balance')}<SortIcon k="balance" /></button></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {displayRows.map((r) => (
+                {sortedRows.map((r, i) => (
                   <tr
                     key={r.code}
                     className="cursor-pointer hover:bg-primary/5"
                     onClick={() => navigate(`/accounting/accounts/${r.code}`)}
                     title={t('accounting.trial.open_account')}
                   >
+                    <td className="px-4 py-2.5 text-xs tabular-nums text-slate-400">{i + 1}</td>
                     <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{r.code}</td>
                     <td className="px-4 py-2.5 text-slate-700">{name(r)}</td>
                     <td className="px-4 py-2.5 text-end tabular-nums text-emerald-700">
@@ -205,7 +235,7 @@ export function TrialBalanceTab({
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-slate-300 bg-slate-50 font-bold text-slate-800">
-                  <td className="px-4 py-3.5" colSpan={2}>
+                  <td className="px-4 py-3.5" colSpan={3}>
                     {t('accounting.trial.totals')}
                   </td>
                   <td className="px-4 py-3.5 text-end tabular-nums text-emerald-700">

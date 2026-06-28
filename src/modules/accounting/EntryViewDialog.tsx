@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { FileText } from 'lucide-react'
+import { FileText, Printer } from 'lucide-react'
 import { Dialog, Button, LoadingState } from '../../components/ui'
 import { StatusBadge } from '../../components/shared'
 import { useApi, useResource } from '../../hooks/useResource'
@@ -7,6 +7,7 @@ import { useLang, useT } from '../../context/LangContext'
 import { formatCurrency, formatDate, pickName } from '../../lib/format'
 import type { Account } from '../../types'
 import type { JournalEntryFull } from './shared'
+import { printJournalEntry } from './printEntry'
 
 export function EntryViewDialog({
   entryId,
@@ -41,9 +42,15 @@ export function EntryViewDialog({
         </span>
       }
       footer={
-        <Button variant="outline" onClick={onClose}>
-          {t('common.close')}
-        </Button>
+        <div className="flex w-full items-center justify-between gap-2">
+          <Button variant="outline" onClick={() => data && printJournalEntry(data, accMap, lang)} disabled={!data}>
+            <Printer className="h-4 w-4" />
+            {t('accounting.entry.print')}
+          </Button>
+          <Button variant="outline" onClick={onClose}>
+            {t('common.close')}
+          </Button>
+        </div>
       }
     >
       {loading || !data ? (
