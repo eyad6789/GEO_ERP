@@ -56,7 +56,6 @@ export function DashboardCharts({ data }: { data: DashboardData }) {
 
   const revenueData = data.revenue_expense_by_month ?? []
   const statusData = (data.projects_by_status ?? []).filter((d) => d.count > 0)
-  const employeeData = data.employees_by_company ?? []
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -150,45 +149,6 @@ export function DashboardCharts({ data }: { data: DashboardData }) {
         )}
       </ChartCard>
 
-      {/* Employees by company — horizontal bar (full width) */}
-      <div className="lg:col-span-3">
-        <ChartCard
-          title={t('dashboard.chart.employees_by_company')}
-          subtitle={t('dashboard.chart.employees_by_company_sub')}
-          icon={<Users className="h-4 w-4" />}
-          height={Math.max(220, employeeData.length * 46)}
-        >
-          {employeeData.length ? (
-            <BarChart
-              data={employeeData}
-              layout="vertical"
-              margin={{ top: 4, right: 24, left: 8, bottom: 4 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-              <XAxis type="number" tick={AXIS} tickLine={false} axisLine={false} allowDecimals={false} />
-              <YAxis
-                type="category"
-                dataKey="company"
-                tick={AXIS}
-                tickLine={false}
-                axisLine={{ stroke: '#e2e8f0' }}
-                width={150}
-              />
-              <Tooltip
-                cursor={{ fill: 'rgba(26,95,122,0.06)' }}
-                content={(props) => <CountTooltip {...props} lang={lang} suffix={t('dashboard.kpi.employees')} />}
-              />
-              <Bar dataKey="count" name={t('dashboard.kpi.employees')} radius={[0, 6, 6, 0]} maxBarSize={26}>
-                {employeeData.map((_, i) => (
-                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          ) : (
-            <EmptyChart />
-          )}
-        </ChartCard>
-      </div>
     </div>
   )
 }
