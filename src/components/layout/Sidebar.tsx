@@ -27,8 +27,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           <img src="/qeg-logo.png" alt={t('app.title')} className="h-full w-full object-contain" />
         </span>
         <div className="min-w-0 flex-1 leading-tight">
-          <p className="truncate text-sm font-bold">{t('app.title')}</p>
-          <p className="truncate text-[11px] text-white/70">{t('app.subtitle')}</p>
+          <p className="truncate text-sm font-bold">مجموعة القبس</p>
         </div>
         <button
           onClick={onClose}

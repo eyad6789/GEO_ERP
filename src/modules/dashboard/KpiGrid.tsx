@@ -1,4 +1,4 @@
-import { Building2, FolderKanban, Users, TrendingUp, Banknote, FileSignature, Truck } from 'lucide-react'
+import { FolderKanban, Users, TrendingUp, Banknote, FileSignature, Truck } from 'lucide-react'
 import { KpiCard } from '../../components/shared'
 import { useT, useLang } from '../../context/LangContext'
 import { formatCurrency, formatNumber } from '../../lib/format'
@@ -23,20 +23,6 @@ export function KpiGrid({ data }: { data: DashboardData }) {
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      <KpiCard
-        label={t('dashboard.kpi.companies')}
-        value={formatNumber(counts.companies, lang)}
-        hint={t('dashboard.kpi.companies_hint')}
-        icon={<Building2 className="h-5 w-5" />}
-        accent="primary"
-      />
-      <KpiCard
-        label={t('dashboard.kpi.active_projects')}
-        value={formatNumber(counts.active_projects, lang)}
-        hint={`${t('dashboard.kpi.active_projects_hint')} ${formatNumber(counts.projects, lang)}`}
-        icon={<FolderKanban className="h-5 w-5" />}
-        accent="info"
-      />
       <KpiCard
         label={t('dashboard.kpi.employees')}
         value={formatNumber(counts.employees, lang)}

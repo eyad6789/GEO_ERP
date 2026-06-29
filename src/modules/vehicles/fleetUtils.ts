@@ -1,7 +1,7 @@
 // ============================================================================
 // Shared Fleet helpers — used by every tab so behaviour stays consistent.
 // ============================================================================
-import type { VehicleType } from '../../types'
+import type { VehicleType, VehicleStatus } from '../../types'
 import type { LucideIcon } from 'lucide-react'
 import {
   Car, Truck, Cylinder, Shovel, Tractor, Construction, Weight,
@@ -61,6 +61,28 @@ export const VEHICLE_TYPES: VehicleType[] = [
   'CAR', 'PICKUP', 'MIXER', 'EXCAVATOR', 'LOADER', 'BULLDOZER', 'CRANE',
   'DUMP_TRUCK', 'LIFT', 'ROLLER', 'DUMPER', 'TANKER', 'PUMP', 'MISC',
 ]
+
+/** Selectable vehicle statuses for the add / edit forms. */
+export const VEHICLE_STATUSES: VehicleStatus[] = ['ACTIVE', 'MAINTENANCE', 'INACTIVE', 'RETIRED', 'SOLD']
+
+/**
+ * The 5 real fleet sites and their map coordinates. New vehicles are placed by
+ * these so they land in the right spot. Keep in sync with LOCATION_MAP in
+ * server/seed/seed.ts (جلولاء + خان ضاري are active project sites).
+ */
+export const FLEET_LOCATIONS: { name: string; lat: number; lng: number }[] = [
+  { name: 'المنصور', lat: 33.313, lng: 44.358 },
+  { name: 'الدورة', lat: 33.265, lng: 44.401 },
+  { name: 'أبو غريب', lat: 33.308, lng: 44.000 },
+  { name: 'جلولاء', lat: 34.27, lng: 45.15 },
+  { name: 'خان ضاري', lat: 33.36, lng: 43.78 },
+]
+
+/** Look up a fleet site's base coordinates by its Arabic name. */
+export function locationCoords(name: string | null | undefined): { lat: number; lng: number } | null {
+  const hit = FLEET_LOCATIONS.find((l) => l.name === (name ?? '').trim())
+  return hit ? { lat: hit.lat, lng: hit.lng } : null
+}
 
 /** Marker color per vehicle status (map + legends). */
 export const STATUS_COLOR: Record<string, string> = {

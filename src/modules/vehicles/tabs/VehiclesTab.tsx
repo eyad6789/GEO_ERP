@@ -9,25 +9,18 @@ import {
   FolderOpen,
   MapPin,
   PieChart as PieIcon,
-  BarChart3,
 } from 'lucide-react'
 import {
   PieChart,
   Pie,
   Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
   Tooltip,
-  CartesianGrid,
   Legend,
 } from 'recharts'
 import {
   KpiCard,
   ChartCard,
   EmptyState,
-  CHART_COLORS,
 } from '../../../components/shared'
 import { Spinner } from '../../../components/ui/Spinner'
 import { Button } from '../../../components/ui/Button'
@@ -40,7 +33,6 @@ import type { FleetSummary, FleetMapData, Vehicle } from '../../../types'
 import { VehicleCard } from '../VehicleCard'
 import { VehicleModule } from '../VehicleModule'
 import { ToggleControl, TypeChips, type GroupMode } from '../FleetFilters'
-import { AddVehicleDialog } from '../AddVehicleDialog'
 import { LeafletMap } from '../LeafletMap'
 import { FEATURES } from '../../../config/features'
 import { MapComingSoon } from '../MapComingSoon'
@@ -73,6 +65,18 @@ function CountTooltip({ active, payload, label, suffix }: any) {
   )
 }
 
+// A blank vehicle for the "Add" flow — opened in the full detail view, edit mode.
+// Nothing is persisted until the user saves (VehicleModule POSTs when id is empty).
+function blankVehicle(): Vehicle {
+  return {
+    id: '', code: `VEH-${Date.now().toString(36).toUpperCase()}`, vehicle_type: 'CAR', type_group: '', name_ar: '', name_en: '',
+    emoji: '', plate_number: '', model_year: null, owner_name: '', owner_company_id: null,
+    registration_expiry: null, oil_change_date: null, status: 'ACTIVE', location: '',
+    project_id: null, driver_name: '', driver_id: null, company_id: null, last_odometer: null,
+    lat: null, lng: null, notes: '', created_at: new Date().toISOString(),
+  } as unknown as Vehicle
+}
+
 // ──────────────────────────────────────────────
 // Main tab
 // ──────────────────────────────────────────────
@@ -89,11 +93,26 @@ export function VehiclesTab() {
   const [search, setSearch] = useState('')
   const [ownerFilter, setOwnerFilter] = useState<'ALL' | 'PRIVATE' | 'PUBLIC'>('ALL')
   const [assignFilter, setAssignFilter] = useState<'ALL' | 'PROJECT' | 'COMPANY'>('ALL')
-  const [addOpen, setAddOpen] = useState(false)
 
   // Vehicle selected from the list → drives the mini-map (fly/highlight) and the card ring.
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [openVehicle, setOpenVehicle] = useState<Vehicle | null>(null)
+  // "Add vehicle" opens the SAME full detail view as editing, blank and in edit
+  // mode. Nothing is written until Save — VehicleModule POSTs on first save (so the
+  // الآليات account is created with the real name), then stays open so the user can
+  // attach documents and set the map point.
+  const [editNew, setEditNew] = useState(false)
+
+  const startAdd = () => {
+    setEditNew(true)
+    setOpenVehicle(blankVehicle())
+  }
+
+  const closeModule = () => {
+    setEditNew(false)
+    setOpenVehicle(null)
+    refetch()
+  }
   const mapCardRef = useRef<HTMLDivElement | null>(null)
 
   // Bring the map into view when a vehicle is picked (skip the initial null state).
@@ -163,11 +182,6 @@ export function VehiclesTab() {
     return (summary?.by_status ?? []).filter((d) => d.count > 0)
   }, [summary])
 
-  // Chart data for by_project bar
-  const projectChartData = useMemo(() => {
-    return (summary?.by_project ?? []).slice(0, 12)
-  }, [summary])
-
   const loading = loadingSum || loadingVehicles
 
   // ── render ────────────────────────────────────
@@ -206,10 +220,9 @@ export function VehiclesTab() {
         />
       </div>
 
-      {/* ── Charts row ── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        {/* Status donut — 2 cols */}
-        <div className="lg:col-span-2">
+      {/* ── Status chart ── */}
+      <div className="grid grid-cols-1 gap-4">
+        <div>
           <ChartCard
             title={t('fleet.chart.status')}
             subtitle={t('fleet.chart.status_sub')}
@@ -251,60 +264,6 @@ export function VehiclesTab() {
                   formatter={(value: string) => t(`status.${value}`)}
                 />
               </PieChart>
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <EmptyState />
-              </div>
-            )}
-          </ChartCard>
-        </div>
-
-        {/* By-project bar — 3 cols */}
-        <div className="lg:col-span-3">
-          <ChartCard
-            title={t('fleet.chart.by_project')}
-            subtitle={t('fleet.chart.by_project_sub')}
-            icon={<BarChart3 className="h-4 w-4" />}
-            height={260}
-          >
-            {projectChartData.length ? (
-              <BarChart
-                data={projectChartData.map((p) => ({
-                  name: lang === 'ar' ? p.name_ar : p.name_en,
-                  count: p.count,
-                }))}
-                margin={{ top: 8, right: 12, left: 4, bottom: 32 }}
-                barGap={4}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 10, fill: '#64748b' }}
-                  tickLine={false}
-                  axisLine={{ stroke: '#e2e8f0' }}
-                  interval={0}
-                  angle={-30}
-                  textAnchor="end"
-                />
-                <YAxis
-                  tick={{ fontSize: 12, fill: '#64748b' }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={28}
-                  allowDecimals={false}
-                />
-                <Tooltip
-                  cursor={{ fill: 'rgba(26,95,122,0.06)' }}
-                  content={(props) => (
-                    <CountTooltip {...props} suffix={t('fleet.inventory.count')} />
-                  )}
-                />
-                <Bar dataKey="count" name={t('fleet.inventory.count')} radius={[4, 4, 0, 0]} maxBarSize={36}>
-                  {projectChartData.map((_, i) => (
-                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
             ) : (
               <div className="flex h-full items-center justify-center">
                 <EmptyState />
@@ -368,7 +327,7 @@ export function VehiclesTab() {
 
           {/* Add button */}
           <Button
-            onClick={() => setAddOpen(true)}
+            onClick={startAdd}
             size="sm"
           >
             <Plus className="me-1 h-4 w-4" />
@@ -421,7 +380,7 @@ export function VehiclesTab() {
           title={t('fleet.empty')}
           hint={t('fleet.empty_hint')}
           action={
-            <Button onClick={() => setAddOpen(true)} size="sm">
+            <Button onClick={startAdd} size="sm">
               <Plus className="me-1 h-4 w-4" />
               {t('fleet.add')}
             </Button>
@@ -477,19 +436,13 @@ export function VehiclesTab() {
         </div>
       )}
 
-      {/* ── Add vehicle dialog ── */}
-      <AddVehicleDialog
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        onCreated={refetch}
-      />
-
-      {/* ── Full editable vehicle module (opens on card click) ── */}
+      {/* ── Full editable vehicle module (opens on card click AND on "Add") ── */}
       {openVehicle && (
         <VehicleModule
           vehicle={openVehicle}
-          onClose={() => setOpenVehicle(null)}
-          onChanged={() => { refetch(); setOpenVehicle(null) }}
+          editOnOpen={editNew}
+          onClose={closeModule}
+          onChanged={closeModule}
         />
       )}
     </div>

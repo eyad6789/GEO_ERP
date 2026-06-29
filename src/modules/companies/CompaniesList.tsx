@@ -105,12 +105,6 @@ export function CompaniesList() {
         title={t('companies.title')}
         subtitle={t('companies.subtitle')}
         icon={<Building2 className="h-6 w-6" />}
-        actions={
-          <span className="inline-flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
-            <Network className="h-4 w-4" />
-            {formatNumber(companies.length, lang)} {t('companies.companies_count')}
-          </span>
-        }
       />
 
       {/* ---- Parent hero card ---- */}
@@ -121,9 +115,6 @@ export function CompaniesList() {
         <h2 className="flex items-center gap-2 text-lg font-bold text-slate-800">
           <Layers className="h-5 w-5 text-primary" />
           {t('companies.group_companies')}
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
-            {formatNumber(filteredSubsidiaries.length, lang)}
-          </span>
         </h2>
 
         <div className="flex flex-wrap items-center gap-2">

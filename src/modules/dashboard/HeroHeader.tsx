@@ -27,8 +27,7 @@ export function HeroHeader() {
               <h1 className="text-2xl font-bold sm:text-3xl">{t('dashboard.greeting')}</h1>
               <Sparkles className="h-5 w-5 text-accent" />
             </div>
-            <p className="mt-1 text-base font-bold text-white">{t('app.title')}</p>
-            <p className="text-xs text-white/80">{t('dashboard.hero_subtitle')}</p>
+            <p className="mt-1 text-xs text-white/80">{t('dashboard.hero_subtitle')}</p>
           </div>
         </div>
 
