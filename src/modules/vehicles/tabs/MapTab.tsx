@@ -3,8 +3,7 @@
 // Fetches /fleet/map, shows KPI row, big Leaflet map, legend, and a
 // optional vehicles-by-project bar chart.
 // ============================================================================
-import { MapPin, Activity, Layers, Truck } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { MapPin, Truck } from 'lucide-react'
 import { useState } from 'react'
 import { useApi, useResource } from '../../../hooks/useResource'
 import { useT, useLang } from '../../../context/LangContext'
@@ -75,19 +74,7 @@ export function MapTab() {
   const projects = data?.projects ?? []
 
   const onSiteCount = vehicles.filter((v) => v.project_id != null).length
-  const activeProjectCount = projects.filter((p) => p.kind === 'ACTIVE').length
-  const masterplanCount = projects.filter((p) => p.kind === 'MASTERPLAN').length
   const totalOnMap = vehicles.length
-
-  // ── Bar chart data: vehicles per project (top 8, sorted desc) ────────────
-  const byProject = projects
-    .filter((p) => p.vehicle_count > 0)
-    .sort((a, b) => b.vehicle_count - a.vehicle_count)
-    .slice(0, 8)
-    .map((p) => ({
-      name: lang === 'ar' ? p.name_ar : p.name_en,
-      count: p.vehicle_count,
-    }))
 
   // ── Loading state ─────────────────────────────────────────────────────────
   if (loading) {
@@ -102,27 +89,13 @@ export function MapTab() {
     <div className="space-y-6">
 
       {/* ── KPI Row ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2">
         <KpiCard
           label={t('fleet.map.onsite')}
           value={onSiteCount}
           icon={<Truck className="h-5 w-5" />}
           hint={t('fleet.map.kpi_onsite_hint')}
           accent="primary"
-        />
-        <KpiCard
-          label={t('fleet.map.projects_active')}
-          value={activeProjectCount}
-          icon={<Activity className="h-5 w-5" />}
-          hint={t('fleet.map.kpi_active_hint')}
-          accent="success"
-        />
-        <KpiCard
-          label={t('fleet.map.masterplans')}
-          value={masterplanCount}
-          icon={<Layers className="h-5 w-5" />}
-          hint={t('fleet.map.kpi_masterplan_hint')}
-          accent="accent"
         />
         <KpiCard
           label={t('fleet.map.vehicles_total')}
@@ -195,44 +168,6 @@ export function MapTab() {
           )}
         </div>
       </Card>
-
-      {/* ── Vehicles by Project — bar chart (nice-to-have) ──────────────── */}
-      {byProject.length > 0 && (
-        <Card>
-          <CardHeader
-            title={t('fleet.map.by_project_chart')}
-            subtitle={t('fleet.map.by_project_chart_sub')}
-            icon={<Truck className="h-4 w-4" />}
-          />
-          <div className="p-4" style={{ direction: 'ltr' }}>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={byProject} margin={{ top: 4, right: 16, left: 0, bottom: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontFamily: 'Cairo,Inter,sans-serif', fontSize: 11, fill: '#64748b' }}
-                  angle={-35}
-                  textAnchor="end"
-                  interval={0}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  tick={{ fontFamily: 'Cairo,Inter,sans-serif', fontSize: 11, fill: '#64748b' }}
-                  width={28}
-                />
-                <Tooltip
-                  contentStyle={{ fontFamily: 'Cairo,Inter,sans-serif', fontSize: 12, borderRadius: 8 }}
-                  formatter={(value: number) => [
-                    value,
-                    lang === 'ar' ? 'آلية' : 'vehicles',
-                  ]}
-                />
-                <Bar dataKey="count" fill="#1a5f7a" radius={[4, 4, 0, 0]} maxBarSize={48} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      )}
 
       {/* "See more" from a map popup → the full vehicle module. */}
       {openVehicle && (

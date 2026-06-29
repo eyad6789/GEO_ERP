@@ -11,7 +11,7 @@ import { useT, useLang } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { useApi, useResource } from '../../hooks/useResource'
 import { apiPut, apiDelete, apiPost } from '../../lib/api'
-import { formatCurrency, formatDate, pickName } from '../../lib/format'
+import { formatCurrency, formatNumber, formatDate, pickName } from '../../lib/format'
 import { registerStrings } from '../../i18n/strings'
 import { canEditFleet, VEHICLE_TYPES } from './fleetUtils'
 import type { Vehicle, Company, Project, Currency, VehicleStatus } from '../../types'
@@ -61,9 +61,22 @@ registerStrings({
   'fleet.mod.sale_date': { ar: 'تاريخ البيع', en: 'Sale Date' },
   'fleet.mod.map_hint': { ar: 'اضغط على الخريطة أو اسحب العلامة لتحديد موقع الآلية', en: 'Click the map or drag the marker to set the vehicle location' },
   'fleet.mod.no_location': { ar: 'لا يوجد موقع محدد', en: 'No location set' },
+  'fleet.mod.sec_maint': { ar: 'الصيانة والمصاريف', en: 'Maintenance & Costs' },
+  'fleet.mod.maint_total': { ar: 'إجمالي ما صُرف', en: 'Total spent' },
+  'fleet.mod.maint_count': { ar: 'عدد القيود', en: 'Entries' },
+  'fleet.mod.no_costs': { ar: 'لا توجد مصاريف مسجّلة', en: 'No costs recorded' },
+  'fleet.cat.FUEL': { ar: 'وقود', en: 'Fuel' },
+  'fleet.cat.MAINTENANCE': { ar: 'صيانة', en: 'Maintenance' },
+  'fleet.cat.MATERIALS': { ar: 'خامات', en: 'Materials' },
+  'fleet.cat.WATER': { ar: 'ماء', en: 'Water' },
+  'fleet.cat.ELECTRICITY': { ar: 'كهرباء', en: 'Electricity' },
+  'fleet.cat.UTILITIES': { ar: 'خدمات', en: 'Utilities' },
+  'fleet.cat.RENT': { ar: 'إيجار', en: 'Rent' },
+  'fleet.cat.OTHER': { ar: 'أخرى', en: 'Other' },
   'fleet.mod.sec_notes': { ar: 'ملاحظات', en: 'Notes' },
   'fleet.mod.notes_ph': { ar: 'أضف ملاحظات حول الآلية أو السائق…', en: 'Add notes about the vehicle or driver…' },
   'fleet.mod.sec_docs': { ar: 'الأرشيف والمستندات', en: 'Documents & Archive' },
+  'fleet.mod.save_to_attach': { ar: 'احفظ الآلية أولاً لإرفاق المستندات', en: 'Save the vehicle first to attach documents' },
   'fleet.mod.no_docs': { ar: 'لا توجد مستندات', en: 'No documents yet' },
   'fleet.mod.upload': { ar: 'رفع مستند', en: 'Upload document' },
   'fleet.mod.uploading': { ar: 'جارٍ الرفع…', en: 'Uploading…' },
@@ -98,6 +111,7 @@ export function VehicleModule({
   onClose,
   onChanged,
   focus = 'full',
+  editOnOpen = false,
 }: {
   vehicle: Vehicle
   onClose: () => void
@@ -106,6 +120,8 @@ export function VehicleModule({
   // 'driver' = upload files only · 'sell' = sale fields (marks SOLD) ·
   // 'retire' = mark out of service (RETIRED).
   focus?: 'full' | 'registration' | 'driver' | 'sell' | 'retire'
+  // Open straight into edit mode (used right after a vehicle is added).
+  editOnOpen?: boolean
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -115,7 +131,7 @@ export function VehicleModule({
   // Driver focus is upload-only — no field editing form.
   const editable = canEdit && focus !== 'driver'
   // Sell / retire are actions — open straight into edit mode.
-  const startEditing = (focus === 'sell' || focus === 'retire') && canEdit
+  const startEditing = (editOnOpen || focus === 'sell' || focus === 'retire') && canEdit
 
   const [editing, setEditing] = useState(startEditing)
   const [form, setForm] = useState<Vehicle>(vehicle)
@@ -123,13 +139,18 @@ export function VehicleModule({
 
   const { data: companies } = useResource<Company>('companies')
   const { data: projects } = useResource<Project>('projects')
-  // Spent-so-far comes from REAL journal lines tagged to this vehicle.
-  const { data: spend } = useApi<{ by_category: Array<{ iqd: number; usd: number }> }>(`/accounting/vehicle-spending/${vehicle.id}`)
+  // Spent-so-far + the full maintenance ledger come from REAL journal lines
+  // tagged to this vehicle (imported from the الآليات maintenance sheets).
+  const { data: spend } = useApi<{
+    by_category: Array<{ iqd: number; usd: number }>
+    costs: Array<{ date: string | null; category: string; amount: number; currency: string; note: string; serial_number: string }>
+  }>(`/accounting/vehicle-spending/${vehicle.id}`)
   const spent = useMemo(() => {
     let iqd = 0, usd = 0
     for (const c of spend?.by_category ?? []) { iqd += c.iqd; usd += c.usd }
     return { iqd, usd }
   }, [spend])
+  const costRows = spend?.costs ?? []
 
   // ── Documents (license & car-paper scans) ──
   const { data: docs, refetch: refetchDocs } = useApi<VehicleDoc[]>('/vehicle-documents', { vehicle_id: vehicle.id })
@@ -188,7 +209,12 @@ export function VehicleModule({
       const patch: Vehicle = focus === 'sell' ? { ...form, status: 'SOLD' }
         : focus === 'retire' ? { ...form, status: 'RETIRED' }
         : form
-      await apiPut(`/vehicles/${vehicle.id}`, patch)
+      if (!vehicle.id) {
+        // New vehicle: create it (the الآليات asset account is built with this name).
+        await apiPost('/vehicles', patch)
+      } else {
+        await apiPut(`/vehicles/${vehicle.id}`, patch)
+      }
       toast.success(t('fleet.mod.saved'))
       onChanged()
     } catch (e) {
@@ -302,7 +328,7 @@ export function VehicleModule({
       footer={
         <div className="flex w-full items-center justify-between gap-2">
           <div>
-            {editable && editing && (
+            {editable && editing && vehicle.id && (
               <Button variant="outline" onClick={remove} disabled={saving} className="text-danger hover:bg-red-50">
                 <Trash2 className="h-4 w-4" />{t('fleet.mod.delete')}
               </Button>
@@ -380,6 +406,42 @@ export function VehicleModule({
           </>
         ))}
 
+        {/* Maintenance ledger — the real per-vehicle costs imported from the
+            الآليات maintenance sheets (read-only; editing is in Accounting). */}
+        {focus === 'full' && section(<Wallet className="h-4 w-4 text-primary" />, t('fleet.mod.sec_maint'), (
+          <div className="space-y-2 sm:col-span-2">
+            <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2">
+              <span className="text-xs text-slate-500">
+                {t('fleet.mod.maint_total')}
+                <span className="ms-1.5 text-slate-400">· {costRows.length} {t('fleet.mod.maint_count')}</span>
+              </span>
+              <span className="flex flex-col items-end">
+                <span className="text-sm font-semibold text-slate-800 tabular-nums">{formatCurrency(spent.iqd, 'IQD', lang)}</span>
+                {spent.usd ? <span className="text-[11px] font-medium text-emerald-600 tabular-nums">{formatCurrency(spent.usd, 'USD', lang)}</span> : null}
+              </span>
+            </div>
+            {costRows.length === 0 ? (
+              <p className="text-xs text-slate-400">{t('fleet.mod.no_costs')}</p>
+            ) : (
+              <div className="max-h-60 divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-200">
+                {costRows.map((c, i) => (
+                  <div key={i} className="flex items-start justify-between gap-3 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-slate-700">{c.note || t(`fleet.cat.${c.category}`)}</p>
+                      <p className="text-[11px] text-slate-400">
+                        {c.date ? formatDate(c.date, lang) : '—'} · {t(`fleet.cat.${c.category}`)}
+                      </p>
+                    </div>
+                    <span className="shrink-0 tabular-nums text-sm font-medium text-slate-700">
+                      {c.currency === 'USD' ? formatCurrency(c.amount, 'USD', lang) : formatNumber(c.amount, lang)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+
         {focus === 'sell' && section(<Wallet className="h-4 w-4 text-primary" />, t('fleet.mod.sec_costs'), (
           <>
             {row(t('fleet.field.plate'), 'plate_number')}
@@ -422,7 +484,7 @@ export function VehicleModule({
 
         {section(<FileText className="h-4 w-4 text-primary" />, t('fleet.mod.sec_docs'), (
           <div className="space-y-3 sm:col-span-2">
-            {canEdit && (
+            {canEdit && (vehicle.id ? (
               <div className="flex flex-wrap items-end gap-2">
                 <div className="w-44">
                   <SearchSelect value={docType} onChange={setDocType} options={DOC_TYPES.map((d) => ({ value: d, label: t(`fleet.doc.${d}`) }))} />
@@ -432,7 +494,9 @@ export function VehicleModule({
                   <Upload className="h-4 w-4" />{uploading ? t('fleet.mod.uploading') : t('fleet.mod.upload')}
                 </Button>
               </div>
-            )}
+            ) : (
+              <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">{t('fleet.mod.save_to_attach')}</p>
+            ))}
             {(docs ?? []).length === 0 ? (
               <p className="text-xs text-slate-400">{t('fleet.mod.no_docs')}</p>
             ) : (

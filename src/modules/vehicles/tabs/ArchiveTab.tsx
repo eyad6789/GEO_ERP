@@ -82,10 +82,6 @@ export function ArchiveTab() {
   }, [vehicles])
   const drivers = useMemo(() => [...driverVehicle.keys()], [driverVehicle])
 
-  const expiringCount = useMemo(
-    () => vehicles.filter((v) => regState(v.registration_expiry) === 'soon').length,
-    [vehicles],
-  )
   const expiredCount = useMemo(
     () => vehicles.filter((v) => regState(v.registration_expiry) === 'expired').length,
     [vehicles],
@@ -133,25 +129,13 @@ export function ArchiveTab() {
   return (
     <div className="space-y-5">
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-2">
         <KpiCard
           label={t('fleet.arch.documents')}
           value={vehicles.length + drivers.length}
           icon={<FileText className="h-5 w-5" />}
           accent="primary"
           hint={`${vehicles.length} + ${drivers.length}`}
-        />
-        <KpiCard
-          label={t('fleet.arch.drivers')}
-          value={drivers.length}
-          icon={<IdCard className="h-5 w-5" />}
-          accent="info"
-        />
-        <KpiCard
-          label={t('fleet.arch.expiring')}
-          value={expiringCount}
-          icon={<AlertTriangle className="h-5 w-5" />}
-          accent="warning"
         />
         <KpiCard
           label={t('fleet.arch.expired')}

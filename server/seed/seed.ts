@@ -4,7 +4,7 @@
 // inventory movements; all FKs reference seeded ids.
 //   npm run seed
 // ============================================================================
-import { db, initSchema } from '../db/connection.js'
+import { db, initSchema, ensureVehicleAccounts } from '../db/connection.js'
 import { buildAccounts, postingAccounts } from './chartOfAccounts.js'
 import { FLEET_ROWS } from './fleetData.js'
 
@@ -39,9 +39,18 @@ const COLORS = ['#1a5f7a', '#2d9cdb', '#e8a838', '#27ae60', '#e74c3c', '#9b59b6'
 // Only the client's real companies. القبس is the parent (below); these are its
 // subsidiaries.
 const SUBS = [
-  ['LARSA', 'لارسا', 'Larsa'],
-  ['TAGHTIA', 'التغطية النفطية', 'Al-Taghtia Petroleum'],
-  ['SBGREEN', 'سمو بغداد الخضراء', 'Sumow Baghdad Al-Khadhra'],
+  ['QABASOIL', 'شركة القبس للخدمات النفطية المحدودة', 'AlQabas Oil Services Co. Ltd.'],
+  ['URANUSTA', 'شركة اورانوس للوكالات التجارية المحدودة', 'Uranus Trading Agencies Co. Ltd.'],
+  ['LARSA', 'شركة لارسا للاستشارات الهندسية والتجارة', 'Larsa for Engineering Consultations & Trade Co.'],
+  ['SOILTECH', 'شركة تقنيات التربة للمقاولات والتجارة المحدودة', 'Soil Technique Contracting & Trading Co. Ltd.'],
+  ['URANUSINT', 'شركة أورانوس المتكاملة للمقاولات والتجارة', 'Uranus Integrated Cont. & Trade L.L.C'],
+  ['BAGHKHAD', 'شركة بغداد الخضراء للمقاولات والتجارة العامة المحدودة', 'Baghdad Al-Khadra Cont. & General Trad. Co. Ltd.'],
+  ['SBK', 'شركة سمو بغداد الخضراء للتجارة والمقاولات المحدودة', 'Sumoh Baghdad Al-Khadra Trading & Contracting Co.'],
+  ['ASADBABEL', 'شركة اسد بابل لتكنولوجيا البناء', 'Asad Babel for Construction Technology'],
+  ['ENGPLAST', 'الشركة الهندسية للصناعات البلاستيكية', 'Engineering Plastic Industrial Co.'],
+  ['JANAN', 'مكتب الجنان العلمي', 'Al-Janan Scientific Bureau'],
+  ['SAMAQTR', 'سما قطر', 'Sama Qatar'],
+  ['HADARA', 'حضارة ما بين النهرين', 'Mesopotamia Civilization'],
 ]
 
 const DEPTS = ['الإدارة العامة', 'المالية والمحاسبة', 'الموارد البشرية', 'إدارة المشاريع', 'الهندسة والتصميم', 'المشتريات', 'المستودعات', 'تكنولوجيا المعلومات', 'الجودة والسلامة', 'الشؤون القانونية']
@@ -130,14 +139,6 @@ function seed() {
     address: 'المنصور - شارع الأميرات', city: 'بغداد', country: 'العراق', phone: '+964 770 000 0000',
     email: 'info@qabas.iq', website: 'www.qabas.iq', established_date: '2005-03-15',
     currency_primary: 'IQD', currency_secondary: 'USD', status: 'ACTIVE', logo_color: '#1a5f7a', created_at: isoNow(400),
-  })
-  // "General" bucket company — used by journal lines that have no company.
-  ins('companies', {
-    id: 'co-gen', code: 'GEN', name_ar: 'عام', name_en: 'General',
-    type: 'SUBSIDIARY', parent_id: parentId, registration_number: '', tax_number: '',
-    address: '', city: 'بغداد', country: 'العراق', phone: '', email: '', website: '',
-    established_date: '2005-01-01', currency_primary: 'IQD', currency_secondary: 'USD',
-    status: 'ACTIVE', logo_color: '#64748b', created_at: isoNow(400),
   })
   const companyIds = [parentId]
   SUBS.forEach((s, i) => {
@@ -400,18 +401,16 @@ function seed() {
   console.log('  · vehicles + vehicle costs')
   {
     // Map location strings to {project_id, base lat, base lng}
+    // The 5 real fleet locations. جلولاء + خان ضاري are active project sites; المنصور
+    // (HQ), الدورة and أبو غريب are Baghdad yards with no project. Strays were merged
+    // into المنصور in fleetData.ts, so no extra keys are needed here.
     const LOCATION_MAP: Record<string, { pid: string | null; lat: number; lng: number }> = {
-      'خان ضاري':        { pid: projectIds[1], lat: 33.36,  lng: 43.78  },
-      'جلولاء':          { pid: projectIds[0], lat: 34.27,  lng: 45.15  },
-      'اليرموك':         { pid: projectIds[2], lat: 33.295, lng: 44.336 },
-      'المقر':           { pid: null,           lat: 33.313, lng: 44.358 },
-      'الدورة':          { pid: null,           lat: 33.265, lng: 44.401 },
-      'مخزن الدورة':    { pid: null,           lat: 33.265, lng: 44.401 },
-      'أبو غريب':        { pid: null,           lat: 33.308, lng: 44.000 },
-      'معمل الثيرمستون': { pid: null,           lat: 32.47,  lng: 44.42  },
+      'خان ضاري': { pid: projectIds[1], lat: 33.36,  lng: 43.78  },
+      'جلولاء':   { pid: projectIds[0], lat: 34.27,  lng: 45.15  },
+      'المنصور':  { pid: null,           lat: 33.313, lng: 44.358 },
+      'الدورة':   { pid: null,           lat: 33.265, lng: 44.401 },
+      'أبو غريب': { pid: null,           lat: 33.308, lng: 44.000 },
     }
-
-    let vcostCounter = 0
 
     for (const row of FLEET_ROWS) {
       // Resolve location
@@ -421,9 +420,12 @@ function seed() {
       const jLat = loc.lat + (rand() - 0.5) * 0.06
       const jLng = loc.lng + (rand() - 0.5) * 0.06
 
-      // Deterministic status
+      // Deterministic status. Cars parked at المنصور (HQ/warehouse bucket) are good but
+      // idle — show them as MAINTENANCE. Field/yard cars keep the random spread so the
+      // archive's sold/retired lists stay populated.
       const r = rand()
       const status =
+        row.location.trim() === 'المنصور' ? 'MAINTENANCE' :
         r < 0.72 ? 'ACTIVE' :
         r < 0.85 ? 'MAINTENANCE' :
         r < 0.95 ? 'INACTIVE' :
@@ -459,44 +461,9 @@ function seed() {
         created_at: isoNow(ri(100, 400)),
       })
 
-      const vehId = `veh-${pad(row.seq)}`
-
-      // IQD costs: split into 2–3 rows (MAINTENANCE + FUEL rows) across different months
-      if (row.amount_iqd > 0) {
-        const splitCount = ri(2, 3)
-        const categories = ['MAINTENANCE', 'FUEL', 'PARTS'] as const
-        for (let s = 0; s < splitCount; s++) {
-          const share = s < splitCount - 1
-            ? Math.round((row.amount_iqd / splitCount) * (0.4 + rand() * 0.4))
-            : 0 // last share computed below
-          const amount = s < splitCount - 1 ? share : Math.max(1, row.amount_iqd - Math.round(row.amount_iqd * 0.8))
-          const finalAmount = s < splitCount - 1 ? share : row.amount_iqd - (splitCount - 1) * Math.round(row.amount_iqd / splitCount)
-          ins('vehicle_costs', {
-            id: `vcost-${pad(++vcostCounter, 4)}`,
-            vehicle_id: vehId,
-            category: categories[s % categories.length],
-            amount: Math.abs(s < splitCount - 1 ? share : row.amount_iqd - (splitCount - 1) * Math.round(row.amount_iqd / splitCount)) || 1,
-            currency: 'IQD',
-            date: daysAgo(ri(15, 300)),
-            note: '',
-            created_at: isoNow(ri(15, 300)),
-          })
-        }
-      }
-
-      // USD costs: one MAINTENANCE row
-      if (row.amount_usd > 0) {
-        ins('vehicle_costs', {
-          id: `vcost-${pad(++vcostCounter, 4)}`,
-          vehicle_id: vehId,
-          category: 'MAINTENANCE',
-          amount: row.amount_usd,
-          currency: 'USD',
-          date: daysAgo(ri(15, 300)),
-          note: '',
-          created_at: isoNow(ri(15, 300)),
-        })
-      }
+      // Vehicle costs / journals are intentionally NOT seeded — the Vehicle
+      // Accounting tab starts at zero. Real costs come from the fleet import
+      // (npm run seed:fleet) when needed.
     }
   }
 
@@ -585,6 +552,16 @@ function seed() {
     ins('accounts', { code: a.code, name_ar: a.name_ar, name_en: a.name_en, type: a.type, normal_balance: a.normal_balance, parent_code: a.parent_code, level: a.level, is_posting: a.is_posting, sort_order: a.sort_order })
   }
 
+  // ---- Fleet asset branch (5 — الآليات) ----
+  // The base chart only defines roots 1–4, so create the «الآليات» asset root
+  // here, then let ensureVehicleAccounts() add + link a 5xxx asset account for
+  // every vehicle (zero balance — no journals reference them).
+  ins('accounts', {
+    code: '5', name_ar: 'الآليات', name_en: 'Fleet Assets', type: 'ASSET',
+    normal_balance: 'DEBIT', parent_code: null, level: 1, is_posting: 0, sort_order: 500, archived: 0,
+  })
+  ensureVehicleAccounts()
+
   // ---- Banks (from the client's list — dual-currency IQD/USD) ----
   console.log('  · banks')
   const BANKS: Array<[string, string]> = [
@@ -596,19 +573,18 @@ function seed() {
   db.prepare(`UPDATE accounts SET is_posting = 0 WHERE code = '183'`).run()
   const bankCodes: string[] = []
   BANKS.forEach(([ar, en], i) => {
-    const iqd = ri(50, 900) * 1000000
-    const usd = ri(10, 300) * 1000
     const acctCode = `183${pad(i + 1, 2)}`
     bankCodes.push(acctCode)
     ins('accounts', {
       code: acctCode, name_ar: ar, name_en: en, type: 'ASSET', normal_balance: 'DEBIT',
       parent_code: '183', level: 4, is_posting: 1, sort_order: 1000 + i, archived: 0,
     })
+    // Bank balances start at zero — real opening balances are set from the app.
     ins('banks', {
       id: `bank-${pad(i + 1, 3)}`, name_ar: ar, name_en: en,
       account_number: `${ri(1000, 9999)}-${ri(100000, 999999)}`, branch: pick(['الفرع الرئيسي', 'فرع المنصور', 'فرع الكرادة']),
-      company_id: pick(subIds), opening_balance_iqd: iqd, opening_balance_usd: usd,
-      balance_iqd: iqd, balance_usd: usd, status: 'ACTIVE', account_code: acctCode, created_at: isoNow(ri(100, 380)),
+      company_id: pick(subIds), opening_balance_iqd: 0, opening_balance_usd: 0,
+      balance_iqd: 0, balance_usd: 0, status: 'ACTIVE', account_code: acctCode, created_at: isoNow(ri(100, 380)),
     })
   })
 
@@ -784,6 +760,13 @@ function seed() {
       { acc: bankPick(), credit: usd },
     ], { currency: 'USD', rate })
   }
+
+  // ---- Clean-slate accounting ----
+  // The chart-of-accounts tree is the single source of truth and starts at ZERO:
+  // wipe every journal entry/line so all accounts, bank nodes and advances compute
+  // to 0. Real transactions are entered from the app and flow back into the tree.
+  db.prepare('DELETE FROM journal_lines').run()
+  db.prepare('DELETE FROM journal_entries').run()
 
   // ---- Archive ----
   console.log('  · archive documents')
