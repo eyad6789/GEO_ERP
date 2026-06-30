@@ -13,7 +13,10 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:4000',
+        // Use 127.0.0.1 (not "localhost"): on macOS "localhost" resolves to IPv6
+        // (::1) first, so if another app holds port 4000 on IPv6 the proxy would
+        // hit it instead of our IPv4 API. Pinning to IPv4 always reaches our server.
+        target: 'http://127.0.0.1:4000',
         changeOrigin: true,
       },
     },
