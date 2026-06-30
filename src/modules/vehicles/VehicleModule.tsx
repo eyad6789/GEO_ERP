@@ -5,7 +5,7 @@
 // Costs: acquisition (manual), spent-so-far (REAL, from the journal), sale price.
 // ============================================================================
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Truck, Pencil, Trash2, Save, X, MapPin, User, Wallet, Car, FolderOpen, FileText, Upload, Download, StickyNote, Tag } from 'lucide-react'
+import { Truck, Pencil, Trash2, Save, X, MapPin, User, Wallet, Car, FolderOpen, FileText, Upload, StickyNote, Tag, ChevronLeft, ChevronRight, ExternalLink, ZoomIn } from 'lucide-react'
 import { Dialog, Button, Field, Input, Textarea, SearchSelect, Badge, useToast } from '../../components/ui'
 import { useT, useLang } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
@@ -78,6 +78,9 @@ registerStrings({
   'fleet.mod.sec_docs': { ar: 'الأرشيف والمستندات', en: 'Documents & Archive' },
   'fleet.mod.save_to_attach': { ar: 'احفظ الآلية أولاً لإرفاق المستندات', en: 'Save the vehicle first to attach documents' },
   'fleet.mod.no_docs': { ar: 'لا توجد مستندات', en: 'No documents yet' },
+  'fleet.mod.no_preview': { ar: 'لا يمكن عرض هذا النوع هنا', en: 'This file type can’t be previewed here' },
+  'fleet.mod.open_new': { ar: 'فتح في تبويب جديد', en: 'Open in new tab' },
+  'fleet.mod.doc_count': { ar: 'مستند', en: 'documents' },
   'fleet.mod.upload': { ar: 'رفع مستند', en: 'Upload document' },
   'fleet.mod.uploading': { ar: 'جارٍ الرفع…', en: 'Uploading…' },
   'fleet.mod.uploaded': { ar: 'تم رفع المستند', en: 'Document uploaded' },
@@ -184,8 +187,27 @@ export function VehicleModule({
     catch (e) { toast.error((e as Error)?.message || t('common.error')) }
   }
   const fmtSize = (n: number) => (n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB')
+  // In-page document viewer (lightbox). Files stream inline from the API, so
+  // images render in <img> and PDFs in an <iframe> — no downloading needed.
+  const [viewerIdx, setViewerIdx] = useState<number | null>(null)
+  const fileUrl = (d: VehicleDoc) => `/api/vehicle-documents/${d.id}/file`
+  const isImg = (m: string) => (m || '').startsWith('image/')
+  const isPdf = (m: string) => (m || '').includes('pdf')
 
   useEffect(() => { setForm(vehicle); setEditing(startEditing) }, [vehicle])
+
+  // Keyboard control for the document viewer: Esc closes, arrows page through.
+  useEffect(() => {
+    if (viewerIdx == null) return
+    const list = docs ?? []
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setViewerIdx(null)
+      else if (e.key === 'ArrowLeft') setViewerIdx((i) => (i == null ? i : (i + 1) % list.length))
+      else if (e.key === 'ArrowRight') setViewerIdx((i) => (i == null ? i : (i - 1 + list.length) % list.length))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [viewerIdx, docs])
 
   const set = (patch: Partial<Vehicle>) => setForm((f) => ({ ...f, ...patch }))
 
@@ -309,8 +331,11 @@ export function VehicleModule({
   )
 
   const displayName = pickName(form, lang)
+  const docList = docs ?? []
+  const viewer = viewerIdx != null ? docList[viewerIdx] : null
 
   return (
+    <>
     <Dialog
       open
       onClose={onClose}
@@ -500,31 +525,60 @@ export function VehicleModule({
             {(docs ?? []).length === 0 ? (
               <p className="text-xs text-slate-400">{t('fleet.mod.no_docs')}</p>
             ) : (
-              <div className="divide-y divide-slate-100 rounded-xl border border-slate-200">
-                {(docs ?? []).map((d) => (
-                  <div key={d.id} className="flex items-center justify-between gap-3 px-3 py-2">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Badge color="gray">{t(`fleet.doc.${d.doc_type}`)}</Badge>
-                        <span className="truncate text-sm font-medium text-slate-700">{d.title}</span>
-                      </div>
-                      <div className="text-[11px] text-slate-400">
-                        {fmtSize(d.size)}{d.expiry ? ' · ' + formatDate(d.expiry, lang) : ''}
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <a href={`/api/vehicle-documents/${d.id}/file`} target="_blank" rel="noreferrer" title={d.file_name} className="rounded-lg p-1.5 text-slate-400 transition hover:bg-primary/10 hover:text-primary">
-                        <Download className="h-4 w-4" />
-                      </a>
+              <>
+                <p className="text-[11px] text-slate-400">{(docs ?? []).length} {t('fleet.mod.doc_count')}</p>
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                  {(docs ?? []).map((d, i) => (
+                    <div key={d.id} className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
+                      {/* Clickable visual preview → opens the in-page viewer */}
+                      <button
+                        type="button"
+                        onClick={() => setViewerIdx(i)}
+                        title={d.title}
+                        className="block h-32 w-full bg-slate-50"
+                      >
+                        {isImg(d.mime) ? (
+                          <img src={fileUrl(d)} alt={d.title} loading="lazy" className="h-32 w-full object-cover" />
+                        ) : isPdf(d.mime) ? (
+                          // Render the actual first page of the PDF as the thumbnail.
+                          <span className="pointer-events-none block h-32 w-full overflow-hidden bg-white">
+                            <object data={`${fileUrl(d)}#toolbar=0&navpanes=0&view=FitH`} type="application/pdf" className="h-40 w-full">
+                              <span className="flex h-32 w-full flex-col items-center justify-center gap-1 text-rose-500">
+                                <FileText className="h-7 w-7" /><span className="text-[10px] font-semibold">PDF</span>
+                              </span>
+                            </object>
+                          </span>
+                        ) : (
+                          <span className="flex h-32 w-full flex-col items-center justify-center gap-1 text-slate-400">
+                            <FileText className="h-7 w-7" /><span className="text-[10px] font-semibold uppercase">{d.file_name.split('.').pop()}</span>
+                          </span>
+                        )}
+                        {/* hover scrim + zoom hint */}
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/30 group-hover:opacity-100">
+                          <ZoomIn className="h-6 w-6 text-white drop-shadow" />
+                        </span>
+                      </button>
+                      {/* type badge */}
+                      <span className="pointer-events-none absolute start-1.5 top-1.5">
+                        <Badge color={isPdf(d.mime) ? 'red' : 'blue'}>{t(`fleet.doc.${d.doc_type}`)}</Badge>
+                      </span>
+                      {/* delete (fleet manager) */}
                       {canEdit && (
-                        <button type="button" onClick={() => deleteDoc(d.id)} title={t('fleet.mod.delete')} className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-danger">
-                          <Trash2 className="h-4 w-4" />
+                        <button
+                          type="button"
+                          onClick={() => deleteDoc(d.id)}
+                          title={t('fleet.mod.delete')}
+                          className="absolute end-1.5 top-1.5 rounded-lg bg-white/90 p-1 text-slate-400 opacity-0 shadow transition hover:text-danger group-hover:opacity-100"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       )}
+                      {/* caption */}
+                      <div className="truncate px-2 py-1.5 text-[11px] text-slate-500" title={d.title}>{d.title}</div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         ))}
@@ -538,5 +592,57 @@ export function VehicleModule({
         ))}
       </div>
     </Dialog>
+
+    {/* In-page document viewer — full image / embedded PDF, no download needed. */}
+    {viewer && (
+      <div
+        className="fixed inset-0 z-[120] flex flex-col bg-black/85 backdrop-blur-sm"
+        onClick={() => setViewerIdx(null)}
+      >
+        {/* top bar */}
+        <div className="flex items-center justify-between gap-3 px-4 py-3 text-white" onClick={(e) => e.stopPropagation()}>
+          <div className="flex min-w-0 items-center gap-2">
+            <Badge color={isPdf(viewer.mime) ? 'red' : 'blue'}>{t(`fleet.doc.${viewer.doc_type}`)}</Badge>
+            <span className="truncate text-sm font-medium" title={viewer.title}>{viewer.title}</span>
+            <span className="shrink-0 text-xs text-white/50">{fmtSize(viewer.size)} · {viewerIdx! + 1}/{docList.length}</span>
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <a href={fileUrl(viewer)} target="_blank" rel="noreferrer" title={t('fleet.mod.open_new')} className="rounded-lg p-2 text-white/70 transition hover:bg-white/10 hover:text-white">
+              <ExternalLink className="h-5 w-5" />
+            </a>
+            <button type="button" onClick={() => setViewerIdx(null)} title={t('common.close')} className="rounded-lg p-2 text-white/70 transition hover:bg-white/10 hover:text-white">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+        {/* stage */}
+        <div className="relative flex flex-1 items-center justify-center overflow-hidden px-2 pb-4" onClick={(e) => e.stopPropagation()}>
+          {docList.length > 1 && (
+            <button type="button" onClick={() => setViewerIdx((i) => (i! + 1) % docList.length)} className="absolute start-2 z-10 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/25">
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          )}
+          {isImg(viewer.mime) ? (
+            <img src={fileUrl(viewer)} alt={viewer.title} className="max-h-full max-w-full rounded-lg object-contain shadow-2xl" />
+          ) : isPdf(viewer.mime) ? (
+            <iframe src={fileUrl(viewer)} title={viewer.title} className="h-full w-full max-w-4xl rounded-lg bg-white shadow-2xl" />
+          ) : (
+            <div className="flex flex-col items-center gap-3 rounded-xl bg-white/95 px-8 py-10 text-center">
+              <FileText className="h-12 w-12 text-slate-400" />
+              <p className="text-sm text-slate-600">{t('fleet.mod.no_preview')}</p>
+              <a href={fileUrl(viewer)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white">
+                <ExternalLink className="h-4 w-4" />{t('fleet.mod.open_new')}
+              </a>
+            </div>
+          )}
+          {docList.length > 1 && (
+            <button type="button" onClick={() => setViewerIdx((i) => (i! - 1 + docList.length) % docList.length)} className="absolute end-2 z-10 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/25">
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          )}
+        </div>
+      </div>
+    )}
+    </>
   )
 }
