@@ -5,7 +5,7 @@
 // render as inline thumbnails and open in an in-page viewer (no downloading).
 // ============================================================================
 import { useMemo, useRef, useState } from 'react'
-import { IdCard, Car, Upload, Trash2, FileText, X, ChevronLeft, ChevronRight, ExternalLink, ZoomIn } from 'lucide-react'
+import { IdCard, Car, Upload, Trash2, FileText, X, ChevronLeft, ChevronRight, ExternalLink, ZoomIn, User, Phone, CreditCard, CalendarClock } from 'lucide-react'
 import { Dialog, Button, Badge, useToast } from '../../components/ui'
 import { useT, useLang } from '../../context/LangContext'
 import { useApi } from '../../hooks/useResource'
@@ -29,6 +29,14 @@ registerStrings({
   'fleet.driver.uploaded': { ar: 'تم رفع وثيقة السائق', en: 'Driver document uploaded' },
   'fleet.driver.cars_count': { ar: 'آلية', en: 'cars' },
   'fleet.driver.doc_hint': { ar: 'هذه وثائق السائق فقط — أوراق الآلية في «أوراق الآليات».', en: 'These are the driver’s own documents — car papers are under “Registration Papers”.' },
+  'fleet.driver.details': { ar: 'بيانات السائق', en: 'Driver details' },
+  'fleet.driver.name': { ar: 'اسم السائق', en: 'Driver name' },
+  'fleet.driver.phone': { ar: 'رقم الهاتف', en: 'Phone number' },
+  'fleet.driver.id_no': { ar: 'رقم الهوية', en: 'National ID' },
+  'fleet.driver.license': { ar: 'رقم إجازة السوق', en: 'Driver license no.' },
+  'fleet.driver.license_exp': { ar: 'تاريخ الإصدار/الانتهاء', en: 'License issue / expiry' },
+  'fleet.driver.address': { ar: 'العنوان', en: 'Address' },
+  'fleet.driver.edit_hint': { ar: 'لتعديل بيانات السائق افتح الآلية من تبويب الآليات.', en: 'To edit driver details, open the vehicle from the Vehicles tab.' },
 })
 
 const fileUrl = (d: VDoc) => `/api/vehicle-documents/${d.id}/file`
@@ -63,6 +71,24 @@ export function DriverDialog({
   const fileRef = useRef<HTMLInputElement>(null)
   const primaryCar = cars[0]
   const viewer = viewerIdx != null ? docs[viewerIdx] : null
+
+  // A driver may be on several cars; take the first non-empty value for each field.
+  const profile = useMemo(() => {
+    const pick = (f: keyof Vehicle) => {
+      for (const c of cars) {
+        const v = c[f]
+        if (v != null && String(v).trim() !== '') return String(v)
+      }
+      return ''
+    }
+    return {
+      phone: pick('driver_phone'),
+      id_no: pick('driver_id_no'),
+      license_no: pick('driver_license_no'),
+      license_expiry: pick('driver_license_expiry'),
+      address: pick('driver_address'),
+    }
+  }, [cars])
 
   const upload = async (file: File) => {
     if (!primaryCar) return
@@ -115,6 +141,31 @@ export function DriverDialog({
         footer={<Button variant="outline" onClick={onClose}>{t('common.close')}</Button>}
       >
         <div className="max-h-[64vh] space-y-5 overflow-y-auto pe-1">
+          {/* Driver details — name, phone, national ID, license no. & expiry */}
+          <section>
+            <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <User className="h-4 w-4 text-primary" />{t('fleet.driver.details')}
+            </h4>
+            <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
+              {[
+                { icon: <User className="h-3.5 w-3.5" />, label: t('fleet.driver.name'), value: driverName },
+                { icon: <Phone className="h-3.5 w-3.5" />, label: t('fleet.driver.phone'), value: profile.phone, ltr: true },
+                { icon: <CreditCard className="h-3.5 w-3.5" />, label: t('fleet.driver.id_no'), value: profile.id_no, ltr: true },
+                { icon: <IdCard className="h-3.5 w-3.5" />, label: t('fleet.driver.license'), value: profile.license_no, ltr: true },
+                { icon: <CalendarClock className="h-3.5 w-3.5" />, label: t('fleet.driver.license_exp'), value: profile.license_expiry ? formatDate(profile.license_expiry, lang) : '' },
+                { icon: <Car className="h-3.5 w-3.5" />, label: t('fleet.driver.address'), value: profile.address },
+              ].map((f, i) => (
+                <div key={i} className="flex items-start justify-between gap-3 border-b border-slate-50 py-1.5 last:border-0">
+                  <span className="flex shrink-0 items-center gap-1.5 text-xs text-slate-400">{f.icon}{f.label}</span>
+                  <span className={'text-sm font-medium text-slate-700 ' + (f.value ? '' : 'text-slate-300')} dir={f.ltr ? 'ltr' : undefined}>
+                    {f.value || '—'}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-1.5 text-[11px] text-slate-400">{t('fleet.driver.edit_hint')}</p>
+          </section>
+
           {/* Cars driven */}
           <section>
             <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
