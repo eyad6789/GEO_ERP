@@ -5,17 +5,18 @@
 // uploaded later by the user.
 // ============================================================================
 import { useMemo, useState } from 'react'
-import { FileText, IdCard, Tag, FolderArchive, AlertTriangle, ShieldCheck, Plus } from 'lucide-react'
+import { FileText, IdCard, Tag, FolderArchive, AlertTriangle, Car, Plus } from 'lucide-react'
 import { KpiCard, StatusBadge, EmptyState } from '../../../components/shared'
 import { Card, CardHeader, CardBody } from '../../../components/ui/Card'
 import { LoadingState } from '../../../components/ui/Spinner'
 import { Button, Dialog, Field, SearchSelect } from '../../../components/ui'
 import { useT, useLang } from '../../../context/LangContext'
 import { useCompany } from '../../../context/CompanyContext'
-import { useResource } from '../../../hooks/useResource'
+import { useResource, useApi } from '../../../hooks/useResource'
 import { pickName } from '../../../lib/format'
 import { regState, REG_CHIP, REG_LABEL_KEY, TYPE_ICON, canEditFleet } from '../fleetUtils'
 import { VehicleModule } from '../VehicleModule'
+import { DriverDialog } from '../DriverDialog'
 import { registerStrings } from '../../../i18n/strings'
 import type { Vehicle, VehicleType } from '../../../types'
 
@@ -54,6 +55,8 @@ export function ArchiveTab() {
   const { role } = useCompany()
   const canEdit = canEditFleet(role.key)
   const { data: vehicles, loading, refetch } = useResource<Vehicle>('vehicles')
+  const { data: allDocs } = useApi<Array<{ id: string; vehicle_id: string; doc_type: string }>>('/vehicle-documents')
+  const [openDriver, setOpenDriver] = useState<string | null>(null)
   const [openVehicle, setOpenVehicle] = useState<Vehicle | null>(null)
   const [openFocus, setOpenFocus] = useState<'full' | AddFocus>('full')
   const openCar = (v: Vehicle, f: 'full' | AddFocus) => { setOpenVehicle(v); setOpenFocus(f) }
@@ -70,17 +73,36 @@ export function ArchiveTab() {
       </button>
     ) : undefined
 
-  // Unique driver names → the (first) vehicle they drive, so clicking a driver
-  // opens that vehicle's module (driver details + license uploads live there).
-  const driverVehicle = useMemo(() => {
-    const m = new Map<string, Vehicle>()
+  // Every driver → all the cars they drive (so we can show "how many cars").
+  const driverCars = useMemo(() => {
+    const m = new Map<string, Vehicle[]>()
     for (const v of vehicles) {
       const name = (v.driver_name || '').trim()
-      if (name && name !== '—' && !m.has(name)) m.set(name, v)
+      if (name && name !== '—') {
+        if (!m.has(name)) m.set(name, [])
+        m.get(name)!.push(v)
+      }
     }
-    return m
+    // Most cars first.
+    return new Map([...m.entries()].sort((a, b) => b[1].length - a[1].length))
   }, [vehicles])
-  const drivers = useMemo(() => [...driverVehicle.keys()], [driverVehicle])
+  const drivers = useMemo(() => [...driverCars.keys()], [driverCars])
+
+  // Count of the driver's OWN documents (DRIVER_LICENSE), keyed by driver name.
+  const driverDocCount = useMemo(() => {
+    const vehDriver = new Map<string, string>()
+    for (const v of vehicles) {
+      const n = (v.driver_name || '').trim()
+      if (n && n !== '—') vehDriver.set(v.id, n)
+    }
+    const counts: Record<string, number> = {}
+    for (const d of allDocs ?? []) {
+      if (d.doc_type !== 'DRIVER_LICENSE') continue
+      const drv = vehDriver.get(d.vehicle_id)
+      if (drv) counts[drv] = (counts[drv] || 0) + 1
+    }
+    return counts
+  }, [allDocs, vehicles])
 
   const expiredCount = useMemo(
     () => vehicles.filter((v) => regState(v.registration_expiry) === 'expired').length,
@@ -176,28 +198,41 @@ export function ArchiveTab() {
           </div>
         </Card>
 
-        {/* Driver documents */}
+        {/* Driver documents — every driver, how many cars, and their own docs */}
         <Card>
           <CardHeader
             title={t('fleet.arch.drivers')}
             subtitle={`${drivers.length}`}
             icon={<IdCard className="h-5 w-5" />}
-            action={addBtn('driver')}
           />
-          <div>
-            {drivers.slice(0, 7).map((name) => (
-              <ListItem key={name} onClick={() => { const v = driverVehicle.get(name); if (v) openCar(v, 'driver') }}>
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-info/10 text-info">
-                  <IdCard className="h-4 w-4" />
-                </span>
-                <p className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">{name}</p>
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
-                  <ShieldCheck className="h-3 w-3" />
-                  {t('fleet.arch.valid')}
-                </span>
-              </ListItem>
-            ))}
-            <p className="px-5 py-3 text-center text-xs text-slate-400">{t('fleet.arch.placeholder')}</p>
+          <div className="max-h-[22rem] overflow-y-auto">
+            {drivers.map((name) => {
+              const carN = driverCars.get(name)?.length ?? 0
+              const docN = driverDocCount[name] ?? 0
+              return (
+                <ListItem key={name} onClick={() => setOpenDriver(name)}>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-info/10 text-info">
+                    <IdCard className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-700">{name}</p>
+                    <p className="flex items-center gap-1.5 text-xs text-slate-400">
+                      <Car className="h-3 w-3" />{carN} {t('fleet.driver.cars_count')}
+                    </p>
+                  </div>
+                  <span
+                    className={
+                      'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ' +
+                      (docN > 0 ? 'bg-success/10 text-success' : 'bg-slate-100 text-slate-400')
+                    }
+                  >
+                    <FileText className="h-3 w-3" />
+                    {docN} {t('fleet.arch.docs_short')}
+                  </span>
+                </ListItem>
+              )
+            })}
+            {drivers.length === 0 && <p className="px-5 py-6 text-center text-xs text-slate-400">{t('fleet.empty')}</p>}
           </div>
         </Card>
 
@@ -209,6 +244,16 @@ export function ArchiveTab() {
       </div>
 
       <p className="text-center text-xs text-slate-400">{t('fleet.arch.placeholder')}</p>
+
+      {openDriver && (
+        <DriverDialog
+          driverName={openDriver}
+          cars={driverCars.get(openDriver) ?? []}
+          canEdit={canEdit}
+          onClose={() => setOpenDriver(null)}
+          onChanged={() => refetch()}
+        />
+      )}
 
       {openVehicle && (
         <VehicleModule

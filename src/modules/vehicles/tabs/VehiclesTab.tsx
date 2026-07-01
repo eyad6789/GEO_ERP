@@ -38,11 +38,7 @@ import { FEATURES } from '../../../config/features'
 import { MapComingSoon } from '../MapComingSoon'
 import { registerStrings } from '../../../i18n/strings'
 
-// Oil-change i18n keys used by VehicleCard (registered here so VehicleCard stays lean)
 registerStrings({
-  'fleet.oil.overdue': { ar: 'تجاوز موعد الزيت', en: 'Oil change overdue' },
-  'fleet.oil.soon': { ar: 'قرب موعد الزيت', en: 'Oil change due soon' },
-  'fleet.oil.ok': { ar: 'الزيت جيد', en: 'Oil OK' },
   'fleet.filter.all': { ar: 'الكل', en: 'All' },
   'fleet.filter.project': { ar: 'آليات مشاريع', en: 'Project vehicles' },
   'fleet.filter.company': { ar: 'آليات الشركة', en: 'Company-wide' },

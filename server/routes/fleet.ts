@@ -147,6 +147,67 @@ fleetRouter.get('/fleet/summary', (req, res) => {
   }
 })
 
+// GET /api/fleet/license-alerts
+// Notifications for the fleet manager: vehicles whose registration / vehicle
+// license is expired or expiring soon (≤ 60 days). Uses the EARLIEST of the two
+// expiry dates. Excludes sold / retired vehicles. Sorted most-urgent first.
+fleetRouter.get('/fleet/license-alerts', (_req, res) => {
+  try {
+    const rows = db
+      .prepare(
+        `SELECT id, code, plate_number, name_ar, name_en, driver_name,
+                registration_expiry, vehicle_license_expiry
+         FROM vehicles
+         WHERE (status IS NULL OR status NOT IN ('RETIRED', 'SOLD'))
+           AND ( (registration_expiry IS NOT NULL AND registration_expiry != '')
+              OR (vehicle_license_expiry IS NOT NULL AND vehicle_license_expiry != '') )`,
+      )
+      .all() as Array<{
+        id: string; code: string; plate_number: string; name_ar: string; name_en: string
+        driver_name: string | null; registration_expiry: string | null; vehicle_license_expiry: string | null
+      }>
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const DAY = 86400000
+    const SOON_DAYS = 60
+
+    const alerts = rows
+      .map((v) => {
+        // Earliest valid expiry of the two license dates.
+        const dates = [v.registration_expiry, v.vehicle_license_expiry]
+          .filter((d): d is string => !!d && !Number.isNaN(Date.parse(d)))
+          .sort()
+        if (!dates.length) return null
+        const expiry = dates[0]
+        const days = Math.round((Date.parse(expiry) - today.getTime()) / DAY)
+        if (days > SOON_DAYS) return null
+        return {
+          id: v.id,
+          code: v.code,
+          plate_number: v.plate_number,
+          name_ar: v.name_ar,
+          name_en: v.name_en,
+          driver_name: v.driver_name || '',
+          expiry,
+          days,
+          kind: days < 0 ? 'expired' : 'soon',
+        }
+      })
+      .filter(Boolean)
+      .sort((a, b) => (a!.days - b!.days))
+
+    res.json({
+      count: alerts.length,
+      expired: alerts.filter((a) => a!.kind === 'expired').length,
+      soon: alerts.filter((a) => a!.kind === 'soon').length,
+      alerts,
+    })
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message })
+  }
+})
+
 // GET /api/fleet/map
 fleetRouter.get('/fleet/map', (_req, res) => {
   try {

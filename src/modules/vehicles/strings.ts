@@ -119,6 +119,7 @@ registerStrings({
   'fleet.arch.expired': { ar: 'منتهية', en: 'Expired' },
   'fleet.arch.placeholder': { ar: 'سيتم رفع المستندات الفعلية لاحقاً', en: 'Actual documents will be uploaded later' },
   'fleet.arch.view_all': { ar: 'عرض الكل', en: 'View all' },
+  'fleet.arch.docs_short': { ar: 'وثيقة', en: 'docs' },
 
   // ---- Vehicle type labels ----
   'fleet.type.CAR': { ar: 'سيارة', en: 'Light Vehicle' },
