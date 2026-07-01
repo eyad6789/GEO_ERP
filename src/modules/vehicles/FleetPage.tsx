@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Truck, Banknote, Map as MapIcon, Archive } from 'lucide-react'
 import { PageHeader } from '../../components/shared'
 import { Tabs, type TabItem } from '../../components/ui'
+import { NotesButton } from '../../components/notes/ModuleNotes'
 import { useT } from '../../context/LangContext'
 import { FEATURES } from '../../config/features'
 import { VehiclesTab } from './tabs/VehiclesTab'
@@ -31,6 +32,7 @@ export function FleetPage() {
         title={t('fleet.title')}
         subtitle={t('fleet.subtitle')}
         icon={<Truck className="h-5 w-5" />}
+        actions={<NotesButton moduleKey="fleet" moduleLabel={t('fleet.title')} />}
       />
       <Tabs tabs={tabs} value={tab} onChange={setTab} className="mb-6" />
       {tab === 'vehicles' && <VehiclesTab />}

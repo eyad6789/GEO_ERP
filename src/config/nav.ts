@@ -11,6 +11,7 @@ import {
   Warehouse,
   FolderOpen,
   ScrollText,
+  StickyNote,
   Bug,
   Truck,
   type LucideIcon,
@@ -34,12 +35,13 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'accounting', path: '/accounting', labelKey: 'nav.accounting', icon: Calculator },
   { key: 'warehouse', path: '/warehouse', labelKey: 'nav.warehouse', icon: Warehouse },
   { key: 'archive', path: '/archive', labelKey: 'nav.archive', icon: FolderOpen },
+  { key: 'notes', path: '/notes', labelKey: 'nav.notes', icon: StickyNote },
   { key: 'logs', path: '/logs', labelKey: 'nav.logs', icon: ScrollText },
   { key: 'debug', path: '/debug', labelKey: 'nav.debug', icon: Bug, variant: 'debug' },
 ]
 
 // Demo gating: only these modules are usable; the rest render a locked screen.
-export const UNLOCKED_MODULES = new Set<string>(['dashboard', 'accounting', 'fleet'])
+export const UNLOCKED_MODULES = new Set<string>(['dashboard', 'accounting', 'fleet', 'notes'])
 export function isModuleLocked(key: string): boolean {
   return !UNLOCKED_MODULES.has(key)
 }

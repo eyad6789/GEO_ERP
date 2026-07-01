@@ -13,6 +13,7 @@ import { routes as accountingRoutes } from './modules/accounting/routes'
 import { routes as warehouseRoutes } from './modules/warehouse/routes'
 import { routes as archiveRoutes } from './modules/archive/routes'
 import { routes as eventlogsRoutes } from './modules/eventlogs/routes'
+import { routes as notesRoutes } from './modules/notes/routes'
 import { routes as debugRoutes } from './modules/debug/routes'
 
 // Locked modules keep their paths but render the lock screen instead of content.
@@ -51,6 +52,7 @@ export const router = createBrowserRouter([
       ...gate('warehouse', warehouseRoutes),
       ...gate('archive', archiveRoutes),
       ...gate('logs', eventlogsRoutes),
+      ...gate('notes', notesRoutes),
       ...gate('debug', debugRoutes),
       { path: '*', element: <NotFound /> },
     ],
