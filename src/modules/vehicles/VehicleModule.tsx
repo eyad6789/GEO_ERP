@@ -395,7 +395,6 @@ export function VehicleModule({
             {row(t('fleet.mod.veh_license_exp'), 'vehicle_license_expiry', 'date')}
             {row(t('fleet.field.registration_expiry'), 'registration_expiry', 'date')}
             {row(t('fleet.field.odometer'), 'last_odometer', 'number')}
-            {row(t('fleet.field.oil_change'), 'oil_change_date', 'date')}
           </>
         ))}
 

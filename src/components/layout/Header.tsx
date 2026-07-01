@@ -1,14 +1,37 @@
-import { Search, Bell, Languages, ChevronDown, Menu } from 'lucide-react'
+import { Search, Bell, Languages, ChevronDown, Menu, AlertTriangle, Clock } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { CompanySelector } from './CompanySelector'
 import { useLang, useT } from '../../context/LangContext'
 import { useCompany, ROLES } from '../../context/CompanyContext'
+import { useApi } from '../../hooks/useResource'
 import { Avatar } from '../ui/Avatar'
 import { Popover } from '../ui/Popover'
+import { Badge } from '../ui/Badge'
+import { formatDate } from '../../lib/format'
+
+interface LicenseAlert {
+  id: string
+  plate_number: string
+  name_ar: string
+  name_en: string
+  driver_name: string
+  expiry: string
+  days: number
+  kind: 'expired' | 'soon'
+}
 
 export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const t = useT()
   const { lang, toggle } = useLang()
   const { role, setRole } = useCompany()
+  const navigate = useNavigate()
+
+  // Vehicle license / registration expiry notifications (for the fleet manager).
+  const { data: licenseData } = useApi<{ count: number; expired: number; soon: number; alerts: LicenseAlert[] }>(
+    '/fleet/license-alerts',
+  )
+  const alerts = licenseData?.alerts ?? []
+  const notifCount = licenseData?.count ?? 0
 
   return (
     <header className="sticky top-0 z-30 flex h-[var(--header-h)] items-center gap-3 border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6">
@@ -44,11 +67,77 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
           {lang === 'ar' ? 'EN' : 'ع'}
         </button>
 
-        {/* Notifications */}
-        <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50">
-          <Bell className="h-4 w-4" />
-          <span className="absolute end-1.5 top-1.5 h-2 w-2 rounded-full bg-danger ring-2 ring-white" />
-        </button>
+        {/* Notifications — vehicle license / registration expiry */}
+        <Popover
+          width="w-[22rem]"
+          align="end"
+          trigger={({ toggle: tg }) => (
+            <button
+              onClick={tg}
+              title={t('header.notif.title')}
+              className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50"
+            >
+              <Bell className="h-4 w-4" />
+              {notifCount > 0 && (
+                <span className="absolute -end-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                  {notifCount > 99 ? '99+' : notifCount}
+                </span>
+              )}
+            </button>
+          )}
+        >
+          {(close) => (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                  <Bell className="h-4 w-4 text-primary" />
+                  {t('header.notif.title')}
+                </span>
+                {notifCount > 0 && <Badge color="red">{notifCount}</Badge>}
+              </div>
+
+              {alerts.length === 0 ? (
+                <p className="py-6 text-center text-sm text-slate-400">{t('header.notif.empty')}</p>
+              ) : (
+                <div className="-mx-1 max-h-[22rem] space-y-1 overflow-y-auto px-1">
+                  {alerts.map((a) => {
+                    const expired = a.kind === 'expired'
+                    return (
+                      <button
+                        key={a.id}
+                        onClick={() => { navigate('/fleet'); close() }}
+                        className="block w-full rounded-lg border border-slate-100 p-2.5 text-start transition hover:border-slate-200 hover:bg-slate-50"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate font-semibold text-slate-700 tabular-nums" dir="ltr">{a.plate_number}</span>
+                          <span
+                            className={
+                              'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ' +
+                              (expired ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700')
+                            }
+                          >
+                            {expired ? <AlertTriangle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                            {t(expired ? 'header.notif.expired' : 'header.notif.soon')}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 truncate text-xs text-slate-500">
+                          {lang === 'ar' ? a.name_ar : a.name_en || a.name_ar}
+                          {a.driver_name ? ` · ${a.driver_name}` : ''}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-slate-400">
+                          {formatDate(a.expiry, lang)} ·{' '}
+                          {expired
+                            ? `${Math.abs(a.days)} ${t('header.notif.days_overdue')}`
+                            : `${a.days} ${t('header.notif.days_left')}`}
+                        </p>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </Popover>
 
         {/* Role / user menu (cosmetic) */}
         <Popover

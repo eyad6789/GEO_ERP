@@ -105,6 +105,13 @@ registerStrings({
   'header.role': { ar: 'الدور', en: 'Role' },
   'header.search_global': { ar: 'بحث في النظام...', en: 'Search the system...' },
   'header.toggle_sidebar': { ar: 'إظهار/إخفاء القائمة', en: 'Toggle menu' },
+  // Vehicle license / registration expiry notifications
+  'header.notif.title': { ar: 'تنبيهات صلاحية الآليات', en: 'Vehicle License Alerts' },
+  'header.notif.empty': { ar: 'لا توجد تنبيهات', en: 'No alerts' },
+  'header.notif.expired': { ar: 'منتهية', en: 'Expired' },
+  'header.notif.soon': { ar: 'قرب الانتهاء', en: 'Expiring soon' },
+  'header.notif.days_overdue': { ar: 'يوم متأخرة', en: 'days overdue' },
+  'header.notif.days_left': { ar: 'يوم متبقٍ', en: 'days left' },
 
   // Notes widget
   'notes.title': { ar: 'ملاحظة خاصة', en: 'Private Note' },

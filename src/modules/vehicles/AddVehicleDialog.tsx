@@ -56,7 +56,6 @@ export function AddVehicleDialog({ open, onClose, onCreated }: Props) {
     { name: 'owner_name', label: t('fleet.field.owner'), type: 'text' },
     { name: 'registration_expiry', label: t('fleet.field.registration_expiry'), type: 'date' },
     { name: 'driver_name', label: t('fleet.field.driver'), type: 'text' },
-    { name: 'oil_change_date', label: t('fleet.field.oil_change'), type: 'date' },
   ]
 
   // جلولاء / خان ضاري are project sites — match the chosen location to its project
