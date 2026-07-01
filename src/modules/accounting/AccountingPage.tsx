@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { Calculator, BookOpen, ListTree, Scale, ReceiptText, Users, Wallet, Landmark, Truck, Lock } from 'lucide-react'
 import { PageHeader } from '../../components/shared'
 import { Tabs, Badge } from '../../components/ui'
+import { NotesButton } from '../../components/notes/ModuleNotes'
 import { useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { JournalTab } from './JournalTab'
@@ -68,12 +69,15 @@ export default function AccountingPage() {
         subtitle={t('accounting.subtitle')}
         icon={<Calculator className="h-6 w-6" />}
         actions={
-          !canEdit ? (
-            <Badge color="gray">
-              <Lock className="h-3.5 w-3.5" />
-              {t('accounting.readonly.badge')}
-            </Badge>
-          ) : undefined
+          <div className="flex items-center gap-2">
+            {!canEdit && (
+              <Badge color="gray">
+                <Lock className="h-3.5 w-3.5" />
+                {t('accounting.readonly.badge')}
+              </Badge>
+            )}
+            <NotesButton moduleKey="accounting" moduleLabel={t('accounting.title')} />
+          </div>
         }
       />
 
