@@ -1,13 +1,16 @@
+import { useState } from 'react'
 import { Search, Bell, Languages, ChevronDown, Menu, AlertTriangle, Clock } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 import { CompanySelector } from './CompanySelector'
 import { useLang, useT } from '../../context/LangContext'
 import { useCompany, ROLES } from '../../context/CompanyContext'
 import { useApi } from '../../hooks/useResource'
+import { apiGet } from '../../lib/api'
 import { Avatar } from '../ui/Avatar'
 import { Popover } from '../ui/Popover'
 import { Badge } from '../ui/Badge'
 import { formatDate } from '../../lib/format'
+import { VehicleModule } from '../../modules/vehicles/VehicleModule'
+import type { Vehicle } from '../../types'
 
 interface LicenseAlert {
   id: string
@@ -24,16 +27,24 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const t = useT()
   const { lang, toggle } = useLang()
   const { role, setRole } = useCompany()
-  const navigate = useNavigate()
 
-  // Vehicle license / registration expiry notifications (for the fleet manager).
+  // Vehicle license / registration expiry notifications — for the FLEET MANAGER only.
+  const isFleetManager = role.key === 'fleet_manager'
   const { data: licenseData } = useApi<{ count: number; expired: number; soon: number; alerts: LicenseAlert[] }>(
     '/fleet/license-alerts',
   )
-  const alerts = licenseData?.alerts ?? []
-  const notifCount = licenseData?.count ?? 0
+  const alerts = isFleetManager ? licenseData?.alerts ?? [] : []
+  const notifCount = isFleetManager ? licenseData?.count ?? 0 : 0
+
+  // Clicking an alert opens that vehicle's full module (license + car details).
+  const [openVehicle, setOpenVehicle] = useState<Vehicle | null>(null)
+  const openCar = async (id: string, close: () => void) => {
+    close()
+    try { setOpenVehicle(await apiGet<Vehicle>(`/vehicles/${id}`)) } catch { /* ignore */ }
+  }
 
   return (
+    <>
     <header className="sticky top-0 z-30 flex h-[var(--header-h)] items-center gap-3 border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6">
       {/* Sidebar toggle */}
       <button
@@ -97,7 +108,9 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
               </div>
 
               {alerts.length === 0 ? (
-                <p className="py-6 text-center text-sm text-slate-400">{t('header.notif.empty')}</p>
+                <p className="py-6 text-center text-sm text-slate-400">
+                  {isFleetManager ? t('header.notif.empty') : t('header.notif.fleet_only')}
+                </p>
               ) : (
                 <div className="-mx-1 max-h-[22rem] space-y-1 overflow-y-auto px-1">
                   {alerts.map((a) => {
@@ -105,7 +118,7 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
                     return (
                       <button
                         key={a.id}
-                        onClick={() => { navigate('/fleet'); close() }}
+                        onClick={() => openCar(a.id, close)}
                         className="block w-full rounded-lg border border-slate-100 p-2.5 text-start transition hover:border-slate-200 hover:bg-slate-50"
                       >
                         <div className="flex items-center justify-between gap-2">
@@ -177,5 +190,16 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
         </Popover>
       </div>
     </header>
+
+    {/* Full vehicle module opened from a license notification. */}
+    {openVehicle && (
+      <VehicleModule
+        vehicle={openVehicle}
+        focus="full"
+        onClose={() => setOpenVehicle(null)}
+        onChanged={() => setOpenVehicle(null)}
+      />
+    )}
+    </>
   )
 }

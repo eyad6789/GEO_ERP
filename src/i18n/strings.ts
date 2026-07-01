@@ -108,6 +108,7 @@ registerStrings({
   // Vehicle license / registration expiry notifications
   'header.notif.title': { ar: 'تنبيهات صلاحية الآليات', en: 'Vehicle License Alerts' },
   'header.notif.empty': { ar: 'لا توجد تنبيهات', en: 'No alerts' },
+  'header.notif.fleet_only': { ar: 'تنبيهات صلاحية الآليات تصل إلى مدير الآليات فقط', en: 'Vehicle license alerts are sent to the Fleet Manager only' },
   'header.notif.expired': { ar: 'منتهية', en: 'Expired' },
   'header.notif.soon': { ar: 'قرب الانتهاء', en: 'Expiring soon' },
   'header.notif.days_overdue': { ar: 'يوم متأخرة', en: 'days overdue' },
