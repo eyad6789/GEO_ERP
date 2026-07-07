@@ -19,9 +19,9 @@ Arabic-first (RTL, AR/EN toggle) demo ERP for an Iraqi construction/engineering 
 - `server/seed/` — `seed.ts` deterministic generator + `chartOfAccounts.ts`; fleet seeding split out: `fleetData.ts`, `fleetCosts.ts`, `seedFleetOnly.ts`
 - `server/lib/eventLog.ts` — every write appends an immutable audit row; `ids.ts` — id generation
 - `src/main.tsx` — frontend entry; `src/App.tsx` assembles router from per-module routes
-- `src/modules/<name>/` — one folder per module (dashboard, companies, projects, hr, accounting, warehouse, vehicles, archive, eventlogs, debug), each exports `routes.tsx`
+- `src/modules/<name>/` — one folder per module (dashboard, companies, projects, hr, accounting, warehouse, vehicles, archive, eventlogs, notes, debug), each exports `routes.tsx`
 - `src/components/{ui,shared,layout,notes}` — hand-rolled component library; `src/hooks/` — `useResource` data hook
-- `src/i18n/strings.ts` + `src/context/LangContext.tsx` — lightweight i18n; `src/config/nav.ts` — nav + module locking (`isModuleLocked`) + `LANDING_PATH`
+- `src/i18n/strings.ts` + `src/context/LangContext.tsx` — lightweight i18n; `src/config/nav.ts` — nav + module gating (`UNLOCKED_MODULES` allowlist + `isModuleLocked`) + `LANDING_PATH`
 - `deploy/deploy.sh` — one-shot Ubuntu deploy (systemd + nginx); `files/` — original planning/spec markdown docs; `AUDIT.md` — prior audit notes
 
 ## Commands
@@ -39,7 +39,7 @@ Arabic-first (RTL, AR/EN toggle) demo ERP for an Iraqi construction/engineering 
 - Ports: API 4000, Vite dev 5173 (proxies `/api` → 4000). Env var NAMES: `PORT`, `HOST`; deploy script: `SERVER_NAME`, `APP_PORT`, `RUN_USER`, `FORCE_SEED`
 - Journal entries must balance (Σdebit = Σcredit) — server rejects unbalanced; warehouse transactions actually move stock
 - Special API routers mount BEFORE generic `resourceRouter` in `server/index.ts` — order matters
-- Locked modules keep their URL paths but render `LockedPage` (see `gate()` in App.tsx)
+- Module gating is an allowlist: `UNLOCKED_MODULES` in `src/config/nav.ts` (currently dashboard, accounting, fleet, notes, warehouse); everything else keeps its URL path but renders `LockedPage` (see `gate()` in App.tsx)
 - Server runs devDeps at runtime (tsx, vite) — do NOT set NODE_ENV=production for install
 - All UI text is bilingual via `src/i18n/strings.ts` (and per-module `strings.ts`) — add both AR and EN keys
 - Companies/projects/chart-of-accounts in prod are REAL data — never delete, overwrite, or reseed prod `server/data`
