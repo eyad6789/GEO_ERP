@@ -251,6 +251,52 @@ accountingRouter.get('/journal_entries/:id/full', (req, res) => {
   res.json({ ...entry, lines })
 })
 
+// PUT /api/accounts/:code/recode — change an account's code (its number),
+// cascading the new code everywhere it is referenced: child accounts'
+// parent_code, journal lines, and linked bank / vehicle accounts. This lets a
+// mis-typed account number be corrected without losing any of its history.
+accountingRouter.put('/accounts/:code/recode', (req, res) => {
+  const oldCode = req.params.code
+  const newCode = String((req.body?.new_code ?? '')).trim()
+  if (!newCode) return res.status(400).json({ error: 'new_code required' })
+  const acc = db.prepare(`SELECT * FROM accounts WHERE code = ?`).get(oldCode) as Record<string, unknown> | undefined
+  if (!acc) return res.status(404).json({ error: 'Account not found' })
+  if (newCode === oldCode) return res.json(acc)
+  if (db.prepare(`SELECT 1 FROM accounts WHERE code = ?`).get(newCode)) {
+    return res.status(409).json({ error: 'An account with this code already exists' })
+  }
+
+  const hasCol = (table: string, col: string) => {
+    try {
+      return (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).some((c) => c.name === col)
+    } catch {
+      return false
+    }
+  }
+  try {
+    db.transaction(() => {
+      db.prepare(`UPDATE accounts SET code = ? WHERE code = ?`).run(newCode, oldCode)
+      db.prepare(`UPDATE accounts SET parent_code = ? WHERE parent_code = ?`).run(newCode, oldCode)
+      db.prepare(`UPDATE journal_lines SET account_code = ? WHERE account_code = ?`).run(newCode, oldCode)
+      if (hasCol('banks', 'account_code')) db.prepare(`UPDATE banks SET account_code = ? WHERE account_code = ?`).run(newCode, oldCode)
+      if (hasCol('vehicles', 'account_code')) db.prepare(`UPDATE vehicles SET account_code = ? WHERE account_code = ?`).run(newCode, oldCode)
+    })()
+    const row = db.prepare(`SELECT * FROM accounts WHERE code = ?`).get(newCode)
+    logEvent({
+      module: 'ACCOUNTING',
+      action: 'UPDATE',
+      record_type: 'accounts',
+      record_id: newCode,
+      record_description: `${String(acc.name_ar ?? '')} (${oldCode} → ${newCode})`,
+      old_values: { code: oldCode },
+      new_values: { code: newCode },
+    })
+    res.json(row)
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message })
+  }
+})
+
 // ---- Banks ↔ chart of accounts -------------------------------------------
 // Each bank is mirrored as a posting sub-account under 183 المصارف (inside
 // النقود 18). Creating/editing/deleting a bank keeps that GL account in sync.

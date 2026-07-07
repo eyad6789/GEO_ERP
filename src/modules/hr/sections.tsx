@@ -117,7 +117,10 @@ export function EmployeesSection({
           { name: 'full_name_ar', label: t('hr.emp.full_name_ar'), required: true, dir: 'rtl' },
           { name: 'full_name_en', label: t('hr.emp.full_name_en'), dir: 'ltr' },
           { name: 'employee_number', label: t('hr.emp.number'), required: true },
+          { name: 'national_id', label: t('hr.f.national_id'), dir: 'ltr' },
           { name: 'job_title', label: t('hr.emp.job_title'), required: true },
+          { name: 'phone_primary', label: t('hr.f.phone_primary'), dir: 'ltr' },
+          { name: 'address', label: t('hr.f.address'), colSpan: 2 },
           {
             name: 'company_id',
             label: t('common.company'),

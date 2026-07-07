@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, BookOpen, Lock, ArrowDownToLine, ArrowUpFromLine, FileText, Search, X } from 'lucide-react'
+import { Plus, Lock, ArrowDownToLine, ArrowUpFromLine, FileText, Search, X, Wallet, Coins } from 'lucide-react'
 import { Button, Badge, Input, SearchSelect } from '../../components/ui'
 import { ArabicTable, KpiCard, type Column } from '../../components/shared'
 import { useApi, useResource } from '../../hooks/useResource'
@@ -166,19 +166,14 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
   // figure (an entry's amount is in its own currency). Every entry balances, so
   // amount = total debit = total credit; we surface it as the period movement.
   const totals = useMemo(() => {
+    // Dinar and dollar are tallied separately and never converted into one another.
     let iqd = 0
     let usd = 0
-    let convertedIqd = 0 // IQD amounts + (USD amount × the entry's exchange rate)
     for (const e of rows) {
-      if (e.currency === 'USD') {
-        usd += e.amount || 0
-        convertedIqd += (e.amount || 0) * (e.exchange_rate && e.exchange_rate > 0 ? e.exchange_rate : 1)
-      } else {
-        iqd += e.amount || 0
-        convertedIqd += e.amount || 0
-      }
+      if (e.currency === 'USD') usd += e.amount || 0
+      else iqd += e.amount || 0
     }
-    return { iqd, usd, convertedIqd, count: rows.length }
+    return { iqd, usd }
   }, [rows])
 
   // All entries remain editable through the journal-entry editor.
@@ -350,11 +345,11 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label={t('accounting.journal.title')} value={`${totals.count} ${t('accounting.journal.count')}`} icon={<BookOpen className="h-5 w-5" />} accent="primary" />
-        <KpiCard label={t('accounting.journal.total_iqd')} value={formatCurrency(totals.iqd, 'IQD', lang)} accent="info" />
-        <KpiCard label={t('accounting.journal.total_usd')} value={formatCurrency(totals.usd, 'USD', lang)} accent="success" />
-        <KpiCard label={t('accounting.journal.total_converted')} value={formatCurrency(totals.convertedIqd, 'IQD', lang)} hint={t('accounting.journal.total_converted_hint')} accent="warning" />
+      {/* Two totals only — dinar and dollar, each on its own. The currencies are
+          never summed or converted into one another. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <KpiCard label={t('accounting.journal.total_iqd')} value={formatCurrency(totals.iqd, 'IQD', lang)} icon={<Wallet className="h-5 w-5" />} accent="info" />
+        <KpiCard label={t('accounting.journal.total_usd')} value={formatCurrency(totals.usd, 'USD', lang)} icon={<Coins className="h-5 w-5" />} accent="success" />
       </div>
 
       <ArabicTable

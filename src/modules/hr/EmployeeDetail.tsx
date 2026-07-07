@@ -1,29 +1,37 @@
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import {
   ArrowRight,
   Award,
   CalendarCheck,
   CalendarClock,
+  FileText,
+  FolderOpen,
   HandCoins,
   IdCard,
+  Pencil,
   Star,
+  Trash2,
+  Upload,
   User,
   Wallet,
+  ZoomIn,
 } from 'lucide-react'
 import {
   ArabicTable,
   Card,
   CardBody,
   CardHeader,
+  FormDialog,
   NoteWidget,
   StatusBadge,
 } from '@/components/shared'
-import type { Column } from '@/components/shared'
-import { Avatar, Spinner, Tabs } from '@/components/ui'
+import type { Column, FormFieldConfig } from '@/components/shared'
+import { Avatar, Badge, Button, Dialog, SearchSelect, Spinner, Tabs, useToast } from '@/components/ui'
 import type { TabItem } from '@/components/ui'
 import { useLang, useT } from '@/context/LangContext'
-import { useRecord, useResource } from '@/hooks/useResource'
+import { useApi, useRecord, useResource } from '@/hooks/useResource'
+import { apiDelete, apiPost, apiPut } from '@/lib/api'
 import { formatCurrency, formatDate, pickName } from '@/lib/format'
 import type {
   Advance,
@@ -31,13 +39,16 @@ import type {
   Company,
   Department,
   Employee,
+  EmployeeDoc,
   LeaveRequest,
   Payroll,
   PerformanceReview,
 } from '@/types'
 import { StarRating } from './lib'
 
-type DetailTab = 'info' | 'attendance' | 'leaves' | 'payroll' | 'advances' | 'reviews'
+type DetailTab = 'info' | 'documents' | 'attendance' | 'leaves' | 'payroll' | 'advances' | 'reviews'
+
+const EMPLOYEE_DOC_TYPES = ['NATIONAL_ID', 'DRIVER_LICENSE', 'PASSPORT', 'CONTRACT', 'CERTIFICATE', 'OTHER'] as const
 
 function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -61,9 +72,11 @@ export default function EmployeeDetail() {
   const { id } = useParams<{ id: string }>()
   const t = useT()
   const { lang } = useLang()
+  const toast = useToast()
   const [tab, setTab] = useState<DetailTab>('info')
+  const [editing, setEditing] = useState(false)
 
-  const { data: emp, loading } = useRecord<Employee>('employees', id)
+  const { data: emp, loading, refetch } = useRecord<Employee>('employees', id)
   const { data: company } = useRecord<Company>('companies', emp?.company_id)
   const { data: department } = useRecord<Department>(
     'departments',
@@ -92,6 +105,7 @@ export default function EmployeeDetail() {
 
   const tabs: TabItem[] = [
     { key: 'info', label: t('hr.detail.tab.info'), icon: <User className="h-4 w-4" /> },
+    { key: 'documents', label: t('hr.detail.tab.documents'), icon: <FolderOpen className="h-4 w-4" /> },
     { key: 'attendance', label: t('hr.detail.tab.attendance'), icon: <CalendarCheck className="h-4 w-4" /> },
     { key: 'leaves', label: t('hr.detail.tab.leaves'), icon: <CalendarClock className="h-4 w-4" /> },
     { key: 'payroll', label: t('hr.detail.tab.payroll'), icon: <Wallet className="h-4 w-4" /> },
@@ -129,7 +143,13 @@ export default function EmployeeDetail() {
               {department && <span>· {pickName(department, lang)}</span>}
             </div>
           </div>
-          <NoteWidget recordType="employee" recordId={emp.id} moduleId="hr" />
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+              <Pencil className="h-4 w-4" />
+              {t('common.edit')}
+            </Button>
+            <NoteWidget recordType="employee" recordId={emp.id} moduleId="hr" />
+          </div>
         </CardBody>
       </Card>
 
@@ -186,12 +206,192 @@ export default function EmployeeDetail() {
         </div>
       )}
 
+      {tab === 'documents' && <EmployeeDocuments employeeId={emp.id} />}
       {tab === 'attendance' && <EmployeeAttendance employeeId={emp.id} />}
       {tab === 'leaves' && <EmployeeLeaves employeeId={emp.id} />}
       {tab === 'payroll' && <EmployeePayroll employeeId={emp.id} />}
       {tab === 'advances' && <EmployeeAdvances employeeId={emp.id} />}
       {tab === 'reviews' && <EmployeeReviews employeeId={emp.id} />}
+
+      {editing && (
+        <FormDialog
+          open={editing}
+          onClose={() => setEditing(false)}
+          title={t('hr.edit.title')}
+          size="lg"
+          initial={emp as unknown as Record<string, unknown>}
+          fields={EDIT_FIELDS(t)}
+          submitLabel={t('common.save')}
+          onSubmit={async (values) => {
+            try {
+              await apiPut(`/employees/${emp.id}`, values)
+              toast.success(t('common.saved'))
+              setEditing(false)
+              refetch()
+            } catch (e) {
+              toast.error((e as Error)?.message || t('common.error'))
+            }
+          }}
+        />
+      )}
     </div>
+  )
+}
+
+// Editable fields for an existing employee — identity, contact/address,
+// employment and financial. Company/department are set at creation (a transfer),
+// so they are intentionally not edited here.
+function EDIT_FIELDS(t: (k: string) => string): FormFieldConfig[] {
+  const sel = (name: string, label: string, values: string[], prefix: string): FormFieldConfig => ({
+    name,
+    label,
+    type: 'select',
+    options: values.map((v) => ({ value: v, label: t(`${prefix}${v}`) })),
+  })
+  return [
+    { name: 'full_name_ar', label: t('hr.emp.full_name_ar'), required: true, dir: 'rtl' },
+    { name: 'full_name_en', label: t('hr.emp.full_name_en'), dir: 'ltr' },
+    { name: 'national_id', label: t('hr.f.national_id'), dir: 'ltr' },
+    { name: 'dob', label: t('hr.f.dob'), type: 'date' },
+    { name: 'place_of_birth', label: t('hr.f.place_of_birth') },
+    { name: 'nationality', label: t('hr.f.nationality') },
+    sel('gender', t('hr.f.gender'), ['MALE', 'FEMALE'], 'hr.gender.'),
+    { name: 'marital_status', label: t('hr.f.marital_status') },
+    { name: 'phone_primary', label: t('hr.f.phone_primary'), dir: 'ltr' },
+    { name: 'phone_secondary', label: t('hr.f.phone_secondary'), dir: 'ltr' },
+    { name: 'email_work', label: t('hr.f.email_work'), type: 'email', dir: 'ltr' },
+    { name: 'email_personal', label: t('hr.f.email_personal'), type: 'email', dir: 'ltr' },
+    { name: 'address', label: t('hr.f.address'), colSpan: 2 },
+    { name: 'emergency_name', label: t('hr.f.emergency_name') },
+    { name: 'emergency_phone', label: t('hr.f.emergency_phone'), dir: 'ltr' },
+    { name: 'job_title', label: t('hr.f.job_title'), required: true },
+    sel('employment_type', t('hr.f.employment_type'), ['FULL', 'PART', 'CONTRACT', 'TEMP'], 'hr.etype.'),
+    sel('status', t('hr.f.status'), ['ACTIVE', 'ON_LEAVE', 'SUSPENDED', 'TERMINATED'], 'status.'),
+    { name: 'hire_date', label: t('hr.f.hire_date'), type: 'date' },
+    { name: 'basic_salary', label: t('hr.f.basic_salary'), type: 'number' },
+    { name: 'bank_name', label: t('hr.f.bank_name') },
+    { name: 'bank_account', label: t('hr.f.bank_account'), dir: 'ltr' },
+    { name: 'iban', label: t('hr.f.iban'), dir: 'ltr' },
+  ]
+}
+
+// --- Employee documents (ID / license / contract scans) ---------------------
+
+function EmployeeDocuments({ employeeId }: { employeeId: string }) {
+  const t = useT()
+  const { lang } = useLang()
+  const toast = useToast()
+  const { data: docs, refetch } = useApi<EmployeeDoc[]>('/employee-documents', { employee_id: employeeId })
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [docType, setDocType] = useState<string>('NATIONAL_ID')
+  const [uploading, setUploading] = useState(false)
+  const [viewer, setViewer] = useState<EmployeeDoc | null>(null)
+
+  const fileUrl = (d: EmployeeDoc) => `/api/employee-documents/${d.id}/file`
+  const isImg = (m: string) => (m || '').startsWith('image/')
+  const isPdf = (m: string) => (m || '').includes('pdf')
+
+  const uploadDoc = async (file: File) => {
+    setUploading(true)
+    try {
+      const data = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader()
+        r.onload = () => resolve(String(r.result))
+        r.onerror = () => reject(r.error)
+        r.readAsDataURL(file)
+      })
+      await apiPost('/employee-documents', { employee_id: employeeId, doc_type: docType, title: file.name, file_name: file.name, mime: file.type, data })
+      toast.success(t('hr.doc.uploaded'))
+      refetch()
+    } catch (e) {
+      toast.error((e as Error)?.message || t('common.error'))
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+  const deleteDoc = async (id: string) => {
+    if (!window.confirm(t('hr.doc.confirm_delete'))) return
+    try {
+      await apiDelete(`/employee-documents/${id}`)
+      toast.success(t('hr.doc.deleted'))
+      refetch()
+    } catch (e) {
+      toast.error((e as Error)?.message || t('common.error'))
+    }
+  }
+
+  const list = docs ?? []
+  return (
+    <Card>
+      <CardHeader title={t('hr.detail.tab.documents')} icon={<FileText className="h-5 w-5" />} />
+      <CardBody className="space-y-4">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="w-52">
+            <SearchSelect
+              value={docType}
+              onChange={setDocType}
+              options={EMPLOYEE_DOC_TYPES.map((d) => ({ value: d, label: t(`hr.doc.${d}`) }))}
+            />
+          </div>
+          <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(f) }} />
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+            <Upload className="h-4 w-4" />
+            {uploading ? t('hr.doc.uploading') : t('hr.doc.upload')}
+          </Button>
+        </div>
+
+        {list.length === 0 ? (
+          <p className="py-8 text-center text-sm text-slate-400">{t('hr.doc.empty')}</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            {list.map((d) => (
+              <div key={d.id} className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
+                <button type="button" onClick={() => setViewer(d)} title={d.title} className="block h-32 w-full bg-slate-50">
+                  {isImg(d.mime) ? (
+                    <img src={fileUrl(d)} alt={d.title} loading="lazy" className="h-32 w-full object-cover" />
+                  ) : (
+                    <span className="flex h-32 w-full flex-col items-center justify-center gap-1 text-slate-400">
+                      <FileText className="h-7 w-7" />
+                      <span className="text-[10px] font-semibold uppercase">{isPdf(d.mime) ? 'PDF' : (d.file_name.split('.').pop() || 'FILE')}</span>
+                    </span>
+                  )}
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/30 group-hover:opacity-100">
+                    <ZoomIn className="h-6 w-6 text-white drop-shadow" />
+                  </span>
+                </button>
+                <span className="pointer-events-none absolute start-1.5 top-1.5">
+                  <Badge color={isPdf(d.mime) ? 'red' : 'blue'}>{t(`hr.doc.${d.doc_type}`)}</Badge>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => deleteDoc(d.id)}
+                  title={t('hr.doc.delete')}
+                  className="absolute end-1.5 top-1.5 rounded-lg bg-white/90 p-1 text-slate-400 opacity-0 shadow transition hover:text-danger group-hover:opacity-100"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+                <p className="truncate px-2 py-1.5 text-xs text-slate-600" title={d.file_name}>{d.title}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardBody>
+
+      <Dialog open={!!viewer} onClose={() => setViewer(null)} size="xl" title={viewer?.title ?? ''}>
+        {viewer && (
+          isImg(viewer.mime) ? (
+            <img src={fileUrl(viewer)} alt={viewer.title} className="mx-auto max-h-[70vh] w-auto rounded-lg" />
+          ) : (
+            <object data={fileUrl(viewer)} type={viewer.mime} className="h-[70vh] w-full rounded-lg">
+              <a href={fileUrl(viewer)} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                {viewer.file_name}
+              </a>
+            </object>
+          )
+        )}
+      </Dialog>
+    </Card>
   )
 }
 

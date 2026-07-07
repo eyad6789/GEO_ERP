@@ -91,6 +91,20 @@ export interface Employee {
   created_at?: string
 }
 
+// A scanned employee document (ID card, license, contract, …). Bytes are stored
+// on disk; this is the metadata returned by /api/employee-documents.
+export interface EmployeeDoc {
+  id: string
+  employee_id?: string
+  doc_type: string
+  title: string
+  file_name: string
+  mime: string
+  size: number
+  expiry: string | null
+  created_at: string
+}
+
 export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LEAVE' | 'MISSION' | 'HOLIDAY'
 export interface Attendance {
   id: ID

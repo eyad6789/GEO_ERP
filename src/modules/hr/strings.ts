@@ -107,11 +107,30 @@ registerStrings({
   'hr.detail.back': { ar: 'العودة للموارد البشرية', en: 'Back to HR' },
   'hr.detail.not_found': { ar: 'لم يتم العثور على الموظف', en: 'Employee not found' },
   'hr.detail.tab.info': { ar: 'المعلومات', en: 'Information' },
+  'hr.detail.tab.documents': { ar: 'المستندات', en: 'Documents' },
   'hr.detail.tab.attendance': { ar: 'الحضور', en: 'Attendance' },
   'hr.detail.tab.leaves': { ar: 'الإجازات', en: 'Leaves' },
   'hr.detail.tab.payroll': { ar: 'الرواتب', en: 'Payroll' },
   'hr.detail.tab.advances': { ar: 'السلف', en: 'Advances' },
   'hr.detail.tab.reviews': { ar: 'التقييم', en: 'Performance' },
+
+  // Edit employee
+  'hr.edit.title': { ar: 'تعديل بيانات الموظف', en: 'Edit Employee' },
+
+  // Documents (ID / license / contract scans)
+  'hr.doc.upload': { ar: 'رفع مستند', en: 'Upload document' },
+  'hr.doc.uploading': { ar: 'جارٍ الرفع…', en: 'Uploading…' },
+  'hr.doc.uploaded': { ar: 'تم رفع المستند', en: 'Document uploaded' },
+  'hr.doc.delete': { ar: 'حذف المستند', en: 'Delete document' },
+  'hr.doc.deleted': { ar: 'تم حذف المستند', en: 'Document deleted' },
+  'hr.doc.confirm_delete': { ar: 'هل تريد حذف هذا المستند؟', en: 'Delete this document?' },
+  'hr.doc.empty': { ar: 'لا توجد مستندات — ارفع الهوية أو الإجازة أو العقد.', en: 'No documents — upload an ID, license or contract.' },
+  'hr.doc.NATIONAL_ID': { ar: 'هوية / بطاقة وطنية', en: 'National ID' },
+  'hr.doc.DRIVER_LICENSE': { ar: 'إجازة سوق', en: 'Driver license' },
+  'hr.doc.PASSPORT': { ar: 'جواز سفر', en: 'Passport' },
+  'hr.doc.CONTRACT': { ar: 'عقد عمل', en: 'Contract' },
+  'hr.doc.CERTIFICATE': { ar: 'شهادة', en: 'Certificate' },
+  'hr.doc.OTHER': { ar: 'أخرى', en: 'Other' },
 
   // Info sections
   'hr.info.identity': { ar: 'المعلومات الشخصية', en: 'Identity' },

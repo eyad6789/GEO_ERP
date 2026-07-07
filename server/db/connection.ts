@@ -94,6 +94,18 @@ function migrate(): void {
     expiry TEXT,
     created_at TEXT
   )`)
+  // Per-employee document archive (ID cards, licenses, contracts — scans).
+  db.exec(`CREATE TABLE IF NOT EXISTS employee_documents (
+    id TEXT PRIMARY KEY,
+    employee_id TEXT,
+    doc_type TEXT,
+    title TEXT,
+    file_name TEXT,
+    mime TEXT,
+    size INTEGER,
+    expiry TEXT,
+    created_at TEXT
+  )`)
   ensureVehicleAccounts()
 
   // Banks ↔ chart of accounts: each bank links to a GL account under 183 المصارف.

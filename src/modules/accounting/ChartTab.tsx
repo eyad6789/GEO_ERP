@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
   ChevronDown,
@@ -12,15 +12,16 @@ import {
   FolderPlus,
   AlertTriangle,
   Pencil,
+  Hash,
   Check,
   X,
 } from 'lucide-react'
-import { Card, CardHeader, Badge, Button, Input, Dialog, useToast } from '../../components/ui'
+import { Card, CardHeader, Badge, Button, Input, Field, Dialog, useToast } from '../../components/ui'
 import { KpiCard, EmptyState } from '../../components/shared'
 import { useApi, useResource } from '../../hooks/useResource'
 import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
-import { apiGet } from '../../lib/api'
+import { apiGet, apiPut } from '../../lib/api'
 import { pickName, formatCurrency } from '../../lib/format'
 import type { Account, AccountType } from '../../types'
 import { ACCOUNT_TYPE_COLOR, ACCOUNT_TYPE_DOT, canEditAccounting, type TrialBalanceResp } from './shared'
@@ -84,6 +85,7 @@ export function ChartTab() {
   const [addOpen, setAddOpen] = useState(false)
   const [addParent, setAddParent] = useState<string | undefined>(undefined)
   const [del, setDel] = useState<DeleteState | null>(null)
+  const [recodeNode, setRecodeNode] = useState<AccountNode | null>(null)
 
   const tree = useMemo(() => buildTree(data), [data])
   const allParents = useMemo(() => {
@@ -161,6 +163,23 @@ export function ChartTab() {
     const patch = lang === 'en' ? { name_en: trimmed } : { name_ar: trimmed }
     try {
       await update(code, patch)
+      refetch()
+    } catch (e) {
+      toast.error((e as Error)?.message || t('common.error'))
+    }
+  }
+
+  // Change an account's CODE (its number). The backend cascades the new code to
+  // child accounts, journal lines and linked bank/vehicle accounts, so a mis-
+  // typed number can be corrected without losing history.
+  const doRecode = async (oldCode: string, newCode: string) => {
+    const next = newCode.trim()
+    if (!next || next === oldCode) return setRecodeNode(null)
+    if (data.some((a) => a.code === next)) return toast.error(t('accounting.recode.err_dup'))
+    try {
+      await apiPut(`/accounts/${encodeURIComponent(oldCode)}/recode`, { new_code: next })
+      toast.success(t('accounting.recode.done'))
+      setRecodeNode(null)
       refetch()
     } catch (e) {
       toast.error((e as Error)?.message || t('common.error'))
@@ -320,6 +339,7 @@ export function ChartTab() {
                 onDelete={requestDelete}
                 onReorder={onReorder}
                 onRename={onRename}
+                onEditCode={setRecodeNode}
               />
             ))}
             </div>
@@ -394,7 +414,79 @@ export function ChartTab() {
           </div>
         )}
       </Dialog>
+
+      {canEdit && (
+        <RecodeDialog
+          node={recodeNode}
+          onClose={() => setRecodeNode(null)}
+          onSubmit={(next) => recodeNode && doRecode(recodeNode.code, next)}
+        />
+      )}
     </div>
+  )
+}
+
+// Change an account's number. The new code cascades to every reference on the
+// backend (child accounts, journal lines, linked bank & vehicle accounts).
+function RecodeDialog({
+  node,
+  onClose,
+  onSubmit,
+}: {
+  node: AccountNode | null
+  onClose: () => void
+  onSubmit: (newCode: string) => void
+}) {
+  const t = useT()
+  const { lang } = useLang()
+  const [draft, setDraft] = useState('')
+  useEffect(() => {
+    if (node) setDraft(node.code)
+  }, [node])
+
+  return (
+    <Dialog
+      open={!!node}
+      onClose={onClose}
+      size="sm"
+      title={
+        <span className="flex items-center gap-2">
+          <Hash className="h-5 w-5 text-primary" />
+          {t('accounting.recode.title')}
+        </span>
+      }
+      footer={
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button variant="primary" onClick={() => onSubmit(draft)} disabled={!draft.trim() || draft.trim() === node?.code}>
+            {t('common.save')}
+          </Button>
+        </div>
+      }
+    >
+      {node && (
+        <div className="space-y-3">
+          <p className="text-sm text-slate-600">
+            <span className="font-mono font-semibold text-slate-500">{node.code}</span> — {pickName(node, lang)}
+          </p>
+          <Field label={t('accounting.recode.new_code')} required>
+            <Input
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && draft.trim() && draft.trim() !== node.code) onSubmit(draft)
+              }}
+              className="font-mono"
+              dir="ltr"
+            />
+          </Field>
+          <p className="rounded-lg bg-amber-50 p-2.5 text-xs leading-relaxed text-amber-700">{t('accounting.recode.warn')}</p>
+        </div>
+      )}
+    </Dialog>
   )
 }
 
@@ -412,6 +504,7 @@ function AccountRow({
   onDelete,
   onReorder,
   onRename,
+  onEditCode,
 }: {
   node: AccountNode
   depth: number
@@ -426,6 +519,7 @@ function AccountRow({
   onDelete: (node: AccountNode) => void
   onReorder: (dragCode: string, targetCode: string, pos: 'before' | 'inside' | 'after') => void
   onRename: (code: string, name: string) => void
+  onEditCode: (node: AccountNode) => void
 }) {
   const hasChildren = node.children.length > 0
   const isOpen = forceOpen || expanded.has(node.code)
@@ -562,6 +656,17 @@ function AccountRow({
             </button>
             <button
               type="button"
+              title={t('accounting.recode.tooltip')}
+              onClick={(e) => {
+                e.stopPropagation()
+                onEditCode(node)
+              }}
+              className="rounded p-1 text-slate-400 transition hover:bg-primary/10 hover:text-primary"
+            >
+              <Hash className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
               title={t('accounting.add.child_tooltip')}
               onClick={(e) => {
                 e.stopPropagation()
@@ -606,6 +711,7 @@ function AccountRow({
               onDelete={onDelete}
               onReorder={onReorder}
               onRename={onRename}
+              onEditCode={onEditCode}
             />
           ))}
         </div>
