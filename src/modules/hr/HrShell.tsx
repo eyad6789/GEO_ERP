@@ -6,7 +6,6 @@ import {
   Gift as GiftIcon,
   HandCoins,
   Layers,
-  Network,
   Users,
   Wallet,
 } from 'lucide-react'
@@ -24,14 +23,12 @@ import {
   EmployeesSection,
   GiftsSection,
   LeavesSection,
-  OrgSection,
   PayrollSection,
   ReviewsSection,
 } from './sections'
 
 type TabKey =
   | 'employees'
-  | 'org'
   | 'departments'
   | 'attendance'
   | 'leaves'
@@ -57,7 +54,6 @@ export default function HrShell() {
 
   const tabs: TabItem[] = [
     { key: 'employees', label: t('hr.tab.employees'), icon: <Users className="h-4 w-4" /> },
-    { key: 'org', label: t('hr.tab.org'), icon: <Network className="h-4 w-4" /> },
     { key: 'departments', label: t('hr.tab.departments'), icon: <Layers className="h-4 w-4" /> },
     { key: 'attendance', label: t('hr.tab.attendance'), icon: <CalendarCheck className="h-4 w-4" /> },
     { key: 'leaves', label: t('hr.tab.leaves'), icon: <CalendarClock className="h-4 w-4" /> },
@@ -109,7 +105,6 @@ export default function HrShell() {
             companies={companies}
           />
         )}
-        {tab === 'org' && <OrgSection employees={employees} loading={loading} />}
         {tab === 'departments' && (
           <DepartmentsSection
             departments={
