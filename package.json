@@ -7,6 +7,7 @@
   "scripts": {
     "seed": "tsx server/seed/seed.ts",
     "seed:fleet": "tsx server/seed/seedFleetOnly.ts",
+    "seed:warehouse": "tsx server/seed/seedWarehouseOnly.ts",
     "server": "tsx watch server/index.ts",
     "client": "vite",
     "dev": "concurrently -n api,web -c blue,green \"npm:server\" \"npm:client\"",
@@ -21,6 +22,7 @@
     "exceljs": "^4.4.0",
     "express": "^4.21.0",
     "lucide-react": "^0.451.0",
+    "qapture2": "^0.2.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",

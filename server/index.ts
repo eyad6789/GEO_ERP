@@ -19,6 +19,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const app = express()
 // Document uploads (base64 scans) need a bigger body; keep every other route small.
 app.use('/api/vehicle-documents', express.json({ limit: '30mb' }))
+// Item camera photos (base64) also need headroom.
+app.use('/api/warehouse/item-photo', express.json({ limit: '20mb' }))
 app.use(express.json({ limit: '2mb' }))
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))

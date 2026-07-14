@@ -33,6 +33,8 @@ export interface ArabicTableProps<T> {
   actions?: (row: T) => ReactNode
   /** when set, shows an export button writing <exportName>.csv */
   exportName?: string
+  /** optional export-only column set (richer/resolved data); defaults to `columns` */
+  exportColumns?: Column<T>[]
   emptyTitle?: string
   emptyHint?: string
   dense?: boolean
@@ -56,6 +58,7 @@ export function ArabicTable<T>({
   toolbar,
   actions,
   exportName,
+  exportColumns,
   emptyTitle,
   emptyHint,
   dense,
@@ -106,7 +109,7 @@ export function ArabicTable<T>({
     // Drop purely-decorative columns (e.g. the chevron/go cell): no accessor and
     // a blank header. Use each kept column's visible (localized) header as the
     // Excel title where it is plain text.
-    const cols = columns.filter(
+    const cols = (exportColumns ?? columns).filter(
       (c) => c.accessor || (typeof c.header === 'string' && c.header.trim() !== ''),
     )
     const headers: Record<string, string> = {}

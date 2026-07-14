@@ -39,7 +39,7 @@ export const NAV_ITEMS: NavItem[] = [
 ]
 
 // Demo gating: only these modules are usable; the rest render a locked screen.
-export const UNLOCKED_MODULES = new Set<string>(['dashboard', 'accounting', 'fleet'])
+export const UNLOCKED_MODULES = new Set<string>(['dashboard', 'accounting', 'fleet', 'warehouse'])
 export function isModuleLocked(key: string): boolean {
   return !UNLOCKED_MODULES.has(key)
 }

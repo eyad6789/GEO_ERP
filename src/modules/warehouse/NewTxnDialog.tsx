@@ -1,26 +1,56 @@
-import { useMemo, useState } from 'react'
-import { Plus, Trash2, PackagePlus } from 'lucide-react'
-import { Dialog, Button, Field, Input, Select } from '../../components/ui'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  ArrowLeftRight,
+  RotateCcw,
+  SlidersHorizontal,
+  ArrowRight,
+  ChevronDown,
+  Minus,
+  Plus,
+  Trash2,
+  PackagePlus,
+  Check,
+} from 'lucide-react'
+import { Dialog, Button, Field, Input, Select, SearchSelect } from '../../components/ui'
 import { useToast } from '../../components/ui'
-import { useResource } from '../../hooks/useResource'
+import { useResource, useApi } from '../../hooks/useResource'
 import { useT, useLang } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { apiPost } from '../../lib/api'
-import { formatCurrency, pickName } from '../../lib/format'
-import { CURRENCIES, type Currency, type InventoryTxnType, type Item, type Company, type Project } from '../../types'
-import { TXN_TYPES, WAREHOUSE_IDS } from './helpers'
+import { formatNumber, pickName } from '../../lib/format'
+import { cn } from '../../lib/cn'
+import type { InventoryTxnType, Item, Company, Project, Warehouse } from '../../types'
+import { TXN_TYPES, sortWarehouses, type StockMatrixRow } from './helpers'
 
 interface LineDraft {
   key: string
   item_id: string
   quantity: number
-  unit_price: number
 }
 
 let lineCounter = 0
-function blankLine(): LineDraft {
+function makeLine(itemId: string): LineDraft {
   lineCounter += 1
-  return { key: `ln-${lineCounter}`, item_id: '', quantity: 1, unit_price: 0 }
+  return { key: `ln-${lineCounter}`, item_id: itemId, quantity: 1 }
+}
+
+// Segmented-control styling for the movement type — icon + soft tint per type.
+const TYPE_ICON = {
+  IN: ArrowDownToLine,
+  OUT: ArrowUpFromLine,
+  TRANSFER: ArrowLeftRight,
+  RETURN: RotateCcw,
+  ADJUST: SlidersHorizontal,
+} as const
+
+const TYPE_TINT: Record<InventoryTxnType, string> = {
+  IN: 'bg-green-50 text-green-700 ring-green-200',
+  OUT: 'bg-red-50 text-red-700 ring-red-200',
+  TRANSFER: 'bg-blue-50 text-blue-700 ring-blue-200',
+  RETURN: 'bg-amber-50 text-amber-700 ring-amber-200',
+  ADJUST: 'bg-purple-50 text-purple-700 ring-purple-200',
 }
 
 export function NewTxnDialog({
@@ -40,18 +70,24 @@ export function NewTxnDialog({
   const { data: items } = useResource<Item>('items')
   const { data: companies } = useResource<Company>('companies')
   const { data: projects } = useResource<Project>('projects')
+  const { data: warehouses } = useResource<Warehouse>('warehouses')
+  const sortedWarehouses = useMemo(() => sortWarehouses(warehouses), [warehouses])
+  const { data: stockMatrix } = useApi<StockMatrixRow[]>('/warehouse/stock-matrix')
 
   const [type, setType] = useState<InventoryTxnType>('IN')
-  const [warehouseId, setWarehouseId] = useState<string>(WAREHOUSE_IDS[0])
-  const [fromWarehouseId, setFromWarehouseId] = useState<string>(WAREHOUSE_IDS[1])
+  const [warehouseId, setWarehouseId] = useState<string>('')
+  const [fromWarehouseId, setFromWarehouseId] = useState<string>('')
   const [company, setCompany] = useState<string>(companyId ?? '')
   const [project, setProject] = useState<string>('')
-  const [currency, setCurrency] = useState<Currency>('IQD')
+  const [docNumber, setDocNumber] = useState<string>('')
   const [date, setDate] = useState<string>(() => new Date().toISOString().slice(0, 10))
   const [notes, setNotes] = useState<string>('')
-  const [lines, setLines] = useState<LineDraft[]>([blankLine()])
+  const [lines, setLines] = useState<LineDraft[]>([])
+  const [moreOpen, setMoreOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [touched, setTouched] = useState(false)
+  const [receivedBy, setReceivedBy] = useState<string>('')
+  const [isLoan, setIsLoan] = useState<boolean>(false)
 
   const itemMap = useMemo(() => {
     const m = new Map<string, Item>()
@@ -59,25 +95,51 @@ export function NewTxnDialog({
     return m
   }, [items])
 
+  const addedIds = useMemo(() => new Set(lines.map((l) => l.item_id)), [lines])
   const itemOptions = useMemo(
     () =>
       [...items]
+        .filter((it) => !addedIds.has(it.id))
         .sort((a, b) => a.code.localeCompare(b.code))
-        .map((it) => ({ value: it.id, label: `${it.code} — ${it.name_ar}` })),
-    [items],
+        .map((it) => ({ value: it.id, label: `${it.code} — ${it.name_ar}${it.spec ? ` (${it.spec})` : ''}` })),
+    [items, addedIds],
   )
+
+  // Warehouse whose stock should be shown as "available" for the current context:
+  // TRANSFER cares about the source; every other type cares about the (single) warehouse field.
+  const contextWarehouseId = type === 'TRANSFER' ? fromWarehouseId : warehouseId
+  const availabilityMap = useMemo(() => {
+    const m = new Map<string, number>()
+    if (!stockMatrix || !contextWarehouseId) return m
+    for (const row of stockMatrix) {
+      if (row.warehouse_id !== contextWarehouseId) continue
+      m.set(row.item_id, (m.get(row.item_id) ?? 0) + row.quantity)
+    }
+    return m
+  }, [stockMatrix, contextWarehouseId])
+
+  // Warehouses load asynchronously, so the default pick backfills once the list is ready
+  // (only if the field is still empty — never overrides a user's own selection).
+  useEffect(() => {
+    if (!sortedWarehouses.length) return
+    setWarehouseId((cur) => cur || sortedWarehouses[0].id)
+    setFromWarehouseId((cur) => cur || sortedWarehouses[1]?.id || sortedWarehouses[0].id)
+  }, [sortedWarehouses])
 
   const reset = () => {
     setType('IN')
-    setWarehouseId(WAREHOUSE_IDS[0])
-    setFromWarehouseId(WAREHOUSE_IDS[1])
+    setWarehouseId(sortedWarehouses[0]?.id ?? '')
+    setFromWarehouseId(sortedWarehouses[1]?.id ?? sortedWarehouses[0]?.id ?? '')
     setCompany(companyId ?? '')
     setProject('')
-    setCurrency('IQD')
+    setDocNumber('')
     setDate(new Date().toISOString().slice(0, 10))
     setNotes('')
-    setLines([blankLine()])
+    setLines([])
+    setMoreOpen(false)
     setTouched(false)
+    setReceivedBy('')
+    setIsLoan(false)
   }
 
   const close = () => {
@@ -86,22 +148,29 @@ export function NewTxnDialog({
     onClose()
   }
 
-  const setLine = (key: string, patch: Partial<LineDraft>) =>
-    setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)))
+  const addItem = (itemId: string) => {
+    if (!itemId || addedIds.has(itemId)) return
+    setLines((ls) => [...ls, makeLine(itemId)])
+  }
+  const removeLine = (key: string) => setLines((ls) => ls.filter((l) => l.key !== key))
+  const stepQty = (key: string, delta: number) =>
+    setLines((ls) =>
+      ls.map((l) => (l.key === key ? { ...l, quantity: Math.max(1, (Number(l.quantity) || 0) + delta) } : l)),
+    )
+  const setQty = (key: string, qty: number) =>
+    setLines((ls) =>
+      ls.map((l) => (l.key === key ? { ...l, quantity: Math.max(1, Number.isFinite(qty) ? qty : 1) } : l)),
+    )
 
-  const addLine = () => setLines((ls) => [...ls, blankLine()])
-  const removeLine = (key: string) => setLines((ls) => (ls.length > 1 ? ls.filter((l) => l.key !== key) : ls))
-
-  const grandTotal = useMemo(
-    () => lines.reduce((sum, l) => sum + (Number(l.quantity) || 0) * (Number(l.unit_price) || 0), 0),
-    [lines],
-  )
-
-  const validLines = lines.filter((l) => l.item_id && Number(l.quantity) > 0)
+  const needsReceivedBy = type === 'OUT' || type === 'TRANSFER'
 
   const submit = async () => {
     setTouched(true)
-    if (validLines.length === 0) {
+    if (needsReceivedBy && !receivedBy.trim()) {
+      toast.error(t('common.required'))
+      return
+    }
+    if (lines.length === 0) {
       toast.error(t('warehouse.txn.no_lines'))
       return
     }
@@ -113,16 +182,21 @@ export function NewTxnDialog({
         from_warehouse_id: type === 'TRANSFER' ? fromWarehouseId : undefined,
         company_id: company || undefined,
         project_id: project || undefined,
+        doc_number: docNumber || undefined,
         date,
-        currency,
+        currency: 'IQD',
         notes: notes || undefined,
-        lines: validLines.map((l) => {
+        total_value: 0,
+        received_by: receivedBy.trim() || undefined,
+        is_loan: type === 'OUT' ? isLoan : false,
+        lines: lines.map((l) => {
           const it = itemMap.get(l.item_id)
           return {
             item_id: l.item_id,
-            quantity: Number(l.quantity),
-            unit_price: Number(l.unit_price) || it?.unit_cost || 0,
+            quantity: Number(l.quantity) || 1,
             uom: it?.uom,
+            unit_price: 0,
+            total: 0,
           }
         }),
       })
@@ -137,11 +211,13 @@ export function NewTxnDialog({
     }
   }
 
-  const typeOptions = TXN_TYPES.map((ty) => ({ value: ty, label: t(`warehouse.type.${ty}`) }))
-  const whOptions = WAREHOUSE_IDS.map((id) => ({ value: id, label: t(`warehouse.wh.${id}`) }))
+  const whOptions = sortedWarehouses.map((w) => ({
+    value: w.id,
+    label: pickName(w, lang),
+    group: t(`warehouse.wh_type.${w.type}`),
+  }))
   const companyOptions = companies.map((c) => ({ value: c.id, label: pickName(c, lang) }))
   const projectOptions = projects.map((p) => ({ value: p.id, label: pickName(p, lang) }))
-  const currencyOptions = CURRENCIES.map((c) => ({ value: c, label: c }))
 
   return (
     <Dialog
@@ -162,151 +238,206 @@ export function NewTxnDialog({
         </>
       }
     >
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Field label={t('warehouse.txn.field_type')} required>
-          <Select
-            value={type}
-            options={typeOptions}
-            onChange={(e) => setType(e.target.value as InventoryTxnType)}
-          />
-        </Field>
-        <Field label={t('warehouse.txn.field_warehouse')} required>
-          <Select value={warehouseId} options={whOptions} onChange={(e) => setWarehouseId(e.target.value)} />
-        </Field>
+      {/* Movement type — segmented control */}
+      <div>
+        <label className="mb-1.5 block text-sm font-medium text-slate-700">
+          {t('warehouse.txn.field_type')}
+        </label>
+        <div className="grid grid-cols-5 gap-2">
+          {TXN_TYPES.map((ty) => {
+            const Icon = TYPE_ICON[ty]
+            const active = type === ty
+            return (
+              <button
+                key={ty}
+                type="button"
+                onClick={() => setType(ty)}
+                className={cn(
+                  'flex flex-col items-center gap-1 rounded-xl px-2 py-2.5 text-xs font-medium ring-1 ring-inset transition',
+                  active ? TYPE_TINT[ty] : 'bg-white text-slate-500 ring-slate-200 hover:bg-slate-50',
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                {t(`warehouse.type.${ty}`)}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Warehouse(s) + date */}
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {type === 'TRANSFER' ? (
-          <Field label={t('warehouse.txn.field_from_warehouse')} required>
-            <Select
-              value={fromWarehouseId}
-              options={whOptions}
-              onChange={(e) => setFromWarehouseId(e.target.value)}
-            />
-          </Field>
+          <div className="grid grid-cols-1 gap-3 sm:col-span-2 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
+            <Field label={t('warehouse.txn.field_from_warehouse')} required>
+              <Select value={fromWarehouseId} options={whOptions} onChange={(e) => setFromWarehouseId(e.target.value)} />
+            </Field>
+            <div className="hidden justify-center pb-2.5 sm:flex">
+              <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 rtl:rotate-180" />
+            </div>
+            <Field label={t('warehouse.txn.to_warehouse')} required>
+              <Select value={warehouseId} options={whOptions} onChange={(e) => setWarehouseId(e.target.value)} />
+            </Field>
+          </div>
         ) : (
-          <Field label={t('warehouse.txn.field_date')}>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <Field label={t('warehouse.txn.field_warehouse')} required>
+            <Select value={warehouseId} options={whOptions} onChange={(e) => setWarehouseId(e.target.value)} />
           </Field>
         )}
-        {type === 'TRANSFER' && (
-          <Field label={t('warehouse.txn.field_date')}>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </Field>
-        )}
-        <Field label={t('warehouse.txn.field_currency')}>
-          <Select value={currency} options={currencyOptions} onChange={(e) => setCurrency(e.target.value as Currency)} />
-        </Field>
-        <Field label={t('warehouse.txn.field_company')}>
-          <Select
-            value={company}
-            placeholder={t('common.all')}
-            options={companyOptions}
-            onChange={(e) => setCompany(e.target.value)}
-          />
-        </Field>
-        <Field label={t('warehouse.txn.field_project')}>
-          <Select
-            value={project}
-            placeholder={t('common.select')}
-            options={projectOptions}
-            onChange={(e) => setProject(e.target.value)}
-          />
-        </Field>
-        <Field label={t('warehouse.txn.field_notes')} className="sm:col-span-3">
-          <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('warehouse.txn.field_notes')} />
+        <Field label={t('warehouse.txn.field_date')} className={type === 'TRANSFER' ? 'sm:col-span-2' : ''}>
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
       </div>
 
-      {/* Lines editor */}
-      <div className="mt-6">
-        <div className="mb-2 flex items-center justify-between">
-          <h4 className="text-sm font-semibold text-slate-700">{t('warehouse.txn.lines')}</h4>
-          <Button variant="outline" size="sm" onClick={addLine}>
-            <Plus className="h-4 w-4" />
-            {t('warehouse.txn.add_line')}
-          </Button>
+      {/* Receiver / custody — required for OUT & TRANSFER, loan toggle for OUT only */}
+      {needsReceivedBy && (
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field
+            label={t('warehouse.txn.received_by')}
+            required
+            error={touched && !receivedBy.trim() ? t('common.required') : undefined}
+            hint={t('warehouse.txn.received_by_hint')}
+          >
+            <Input value={receivedBy} onChange={(e) => setReceivedBy(e.target.value)} placeholder={t('warehouse.txn.received_by_hint')} />
+          </Field>
+          {type === 'OUT' && (
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={() => setIsLoan((v) => !v)}
+                className={cn(
+                  'flex h-10 w-full items-center gap-2 rounded-lg px-3 text-sm font-medium ring-1 ring-inset transition sm:w-auto',
+                  isLoan
+                    ? 'bg-amber-50 text-amber-700 ring-amber-300'
+                    : 'bg-white text-slate-500 ring-slate-200 hover:bg-slate-50',
+                )}
+              >
+                <span
+                  className={cn(
+                    'flex h-4 w-4 shrink-0 items-center justify-center rounded ring-1 ring-inset transition',
+                    isLoan ? 'bg-amber-500 text-white ring-amber-500' : 'ring-slate-300',
+                  )}
+                >
+                  {isLoan && <Check className="h-3 w-3" />}
+                </span>
+                {t('warehouse.txn.is_loan')}
+              </button>
+            </div>
+          )}
         </div>
+      )}
 
-        <div className="overflow-hidden rounded-xl border border-slate-200">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-3 py-2.5 text-start">{t('warehouse.txn.line_item')}</th>
-                <th className="w-28 px-3 py-2.5 text-start">{t('warehouse.txn.line_qty')}</th>
-                <th className="w-36 px-3 py-2.5 text-start">{t('warehouse.txn.line_price')}</th>
-                <th className="w-40 px-3 py-2.5 text-end">{t('warehouse.txn.line_total')}</th>
-                <th className="w-12 px-3 py-2.5" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {lines.map((l) => {
-                const total = (Number(l.quantity) || 0) * (Number(l.unit_price) || 0)
-                const missing = touched && !l.item_id
-                return (
-                  <tr key={l.key} className="align-middle">
-                    <td className="px-3 py-2">
-                      <Select
-                        value={l.item_id}
-                        placeholder={t('warehouse.txn.select_item')}
-                        options={itemOptions}
-                        className={missing ? 'ring-1 ring-danger' : ''}
-                        onChange={(e) => {
-                          const it = itemMap.get(e.target.value)
-                          setLine(l.key, {
-                            item_id: e.target.value,
-                            unit_price: l.unit_price || it?.unit_cost || 0,
-                          })
-                        }}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <Input
-                        type="number"
-                        min={0}
-                        value={l.quantity}
-                        onChange={(e) => setLine(l.key, { quantity: Number(e.target.value) })}
-                      />
-                    </td>
-                    <td className="px-3 py-2">
-                      <Input
-                        type="number"
-                        min={0}
-                        value={l.unit_price}
-                        onChange={(e) => setLine(l.key, { unit_price: Number(e.target.value) })}
-                      />
-                    </td>
-                    <td className="px-3 py-2 text-end font-medium tabular-nums text-slate-700">
-                      {formatCurrency(total, currency, lang)}
-                    </td>
-                    <td className="px-3 py-2 text-center">
+      <Field label={t('warehouse.txn.field_notes')} className="mt-4">
+        <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('warehouse.txn.field_notes')} />
+      </Field>
+
+      {/* More options — company / project / doc number, collapsed by default */}
+      <button
+        type="button"
+        onClick={() => setMoreOpen((v) => !v)}
+        className="mt-4 flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-slate-700"
+      >
+        <ChevronDown className={cn('h-4 w-4 transition-transform', moreOpen && 'rotate-180')} />
+        {t('warehouse.txn.more_options')}
+      </button>
+      {moreOpen && (
+        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Field label={t('warehouse.txn.field_company')}>
+            <Select
+              value={company}
+              placeholder={t('common.all')}
+              options={companyOptions}
+              onChange={(e) => setCompany(e.target.value)}
+            />
+          </Field>
+          <Field label={t('warehouse.txn.field_project')}>
+            <Select
+              value={project}
+              placeholder={t('common.select')}
+              options={projectOptions}
+              onChange={(e) => setProject(e.target.value)}
+            />
+          </Field>
+          <Field label={t('warehouse.txn.doc')}>
+            <Input value={docNumber} onChange={(e) => setDocNumber(e.target.value)} />
+          </Field>
+        </div>
+      )}
+
+      {/* Items cart — no prices, no totals */}
+      <div className="mt-6">
+        <h4 className="mb-2 text-sm font-semibold text-slate-700">{t('warehouse.txn.items')}</h4>
+        <SearchSelect
+          value=""
+          placeholder={t('warehouse.txn.add_item')}
+          options={itemOptions}
+          onChange={(val) => addItem(val)}
+        />
+
+        <div className="mt-3 space-y-2">
+          {lines.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-400">
+              {t('warehouse.txn.no_items_yet')}
+            </div>
+          ) : (
+            lines.map((l) => {
+              const it = itemMap.get(l.item_id)
+              const available = availabilityMap.get(l.item_id) ?? 0
+              const exceeds = (type === 'OUT' || type === 'TRANSFER') && Number(l.quantity) > available
+              return (
+                <div key={l.key} className="rounded-xl px-4 py-3 ring-1 ring-slate-200">
+                  <div className="flex items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-slate-700">{it ? pickName(it, lang) : l.item_id}</p>
+                      <p className="mt-0.5 truncate text-xs text-slate-400">
+                        <span className="font-mono">{it?.code}</span>
+                        <span className="mx-1.5">·</span>
+                        {t('warehouse.txn.available')}: {formatNumber(available, lang)} {it?.uom}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
                       <button
                         type="button"
-                        onClick={() => removeLine(l.key)}
-                        disabled={lines.length === 1}
-                        className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-danger disabled:opacity-30"
-                        aria-label={t('common.delete')}
+                        onClick={() => stepQty(l.key, -1)}
+                        disabled={l.quantity <= 1}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 ring-1 ring-inset ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-30"
+                        aria-label="-"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Minus className="h-3.5 w-3.5" />
                       </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-            <tfoot>
-              <tr className="border-t border-slate-200 bg-slate-50">
-                <td colSpan={3} className="px-3 py-3 text-end text-sm font-semibold text-slate-600">
-                  {t('warehouse.txn.grand_total')}
-                </td>
-                <td className="px-3 py-3 text-end text-base font-bold tabular-nums text-primary">
-                  {formatCurrency(grandTotal, currency, lang)}
-                </td>
-                <td />
-              </tr>
-            </tfoot>
-          </table>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={l.quantity}
+                        onChange={(e) => setQty(l.key, Number(e.target.value))}
+                        className="w-16 text-center tabular-nums"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => stepQty(l.key, 1)}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 ring-1 ring-inset ring-slate-200 transition hover:bg-slate-50"
+                        aria-label="+"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                      <span className="ms-1 text-xs text-slate-400">{it?.uom}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeLine(l.key)}
+                      className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-danger"
+                      aria-label={t('common.delete')}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {exceeds && <p className="mt-1.5 text-xs text-danger">{t('warehouse.txn.exceeds')}</p>}
+                </div>
+              )
+            })
+          )}
         </div>
-        {touched && validLines.length === 0 && (
-          <p className="mt-2 text-xs text-danger">{t('warehouse.txn.no_lines')}</p>
-        )}
+        {touched && lines.length === 0 && <p className="mt-2 text-xs text-danger">{t('warehouse.txn.no_lines')}</p>}
       </div>
     </Dialog>
   )

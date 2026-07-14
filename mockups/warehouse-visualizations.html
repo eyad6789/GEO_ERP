@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>مقترحات لعرض بيانات المستودع — مجموعة القبس</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          primary: { DEFAULT: '#1a5f7a', light: '#2d9cdb', dark: '#134b61' },
+          accent: { DEFAULT: '#e8a838', dark: '#cf9220' },
+          success: '#27ae60', danger: '#e74c3c', warning: '#f39c12', info: '#3498db',
+        },
+        boxShadow: {
+          card: '0 1px 3px rgba(15,23,42,.08), 0 1px 2px rgba(15,23,42,.04)',
+          'card-hover': '0 8px 24px rgba(26,95,122,.15)',
+        },
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Cairo', 'Noto Sans Arabic', sans-serif; }
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+  .brand-gradient { background: linear-gradient(135deg, #1a5f7a, #134b61); }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .method-tab { padding: 14px 22px; font-weight: 600; font-size: 14px; color: #64748b; border-bottom: 3px solid transparent; white-space: nowrap; transition: all .15s; cursor: pointer; background: none; border-top: none; border-inline: none; }
+  .method-tab.active { color: #1a5f7a; border-bottom-color: #1a5f7a; background: rgba(26,95,122,.05); }
+  .method-tab:hover:not(.active) { color: #134b61; background: #f8fafc; }
+  .method-panel.hidden { display: none; }
+
+  /* Tree explorer */
+  details > summary { list-style: none; cursor: pointer; user-select: none; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::before { content: '▸'; display: inline-block; width: 14px; color: #94a3b8; transition: transform .15s; font-size: 11px; }
+  details[open] > summary::before { transform: rotate(90deg); }
+  .tree-row { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 8px; font-size: 13.5px; }
+  .tree-row:hover { background: #f1f5f9; }
+  .tree-row.active-folder { background: rgba(26,95,122,.08); color: #1a5f7a; font-weight: 700; }
+  .tree-count { margin-inline-start: auto; font-size: 11px; color: #94a3b8; background: #f1f5f9; padding: 1px 7px; border-radius: 999px; }
+  .tree-row.active-folder .tree-count { background: rgba(26,95,122,.12); color: #1a5f7a; }
+
+  /* Treemap */
+  #treemap-canvas { position: relative; }
+  .treemap-group { position: absolute; border: 2px solid #e2e8f0; border-radius: 10px; overflow: hidden; background: #fff; }
+  .treemap-group-label { position: absolute; top: 0; right: 0; left: 0; height: 24px; background: #f8fafc; font-size: 11.5px; font-weight: 700; color: #475569; display: flex; align-items: center; padding: 0 10px; border-bottom: 1px solid #e2e8f0; }
+  .treemap-leaf { position: absolute; border-radius: 6px; cursor: pointer; transition: filter .15s, transform .1s; display: flex; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
+  .treemap-leaf:hover { filter: brightness(1.12); transform: scale(1.015); z-index: 5; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+  .treemap-leaf-label { color: white; font-size: 12px; font-weight: 700; line-height: 1.5; padding: 4px; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+
+  /* Floor map */
+  .floor-zone { border: 2px dashed #cbd5e1; border-radius: 16px; padding: 18px; background: repeating-linear-gradient(135deg, #fbfdff, #fbfdff 12px, #f8fafc 12px, #f8fafc 24px); }
+  .floor-zone.project { border-color: #e8a838; background: repeating-linear-gradient(135deg, #fffdf7, #fffdf7 12px, #fef8ec 12px, #fef8ec 24px); }
+  .floor-tile { border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: all .15s; border: 1px solid rgba(0,0,0,.06); color: white; box-shadow: 0 2px 6px rgba(0,0,0,.12); }
+  .floor-tile:hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(0,0,0,.2); }
+  .floor-tile .fq { font-size: 20px; font-weight: 800; }
+
+  /* Cards */
+  .kanban-col { min-width: 260px; max-width: 260px; }
+  .item-card { border-inline-start: 4px solid; transition: all .15s; }
+  .item-card:hover { box-shadow: 0 6px 16px rgba(15,23,42,.12); transform: translateY(-2px); }
+
+  /* Network */
+  .network-link { stroke: #94a3b8; fill: none; }
+  .network-link.in-flow { stroke: #27ae60; stroke-dasharray: 5 3; }
+  .network-node circle { stroke: #fff; stroke-width: 2.5px; }
+  .network-node text { font-size: 12px; font-weight: 700; fill: #1e293b; paint-order: stroke; stroke: #fff; stroke-width: 4px; }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<header class="brand-gradient text-white px-6 md:px-10 py-7 shadow-lg">
+  <div class="max-w-[1500px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold">مقترحات لعرض بيانات المستودع</h1>
+      <p class="text-white/75 text-sm mt-1.5 max-w-2xl">خمس طرق مختلفة لتصفّح وفهم مخزونكم — هذا ملف عرض توضيحي فقط لاتخاذ القرار، وليس جزءاً من النظام الفعلي. البيانات المعروضة هنا حقيقية بالكامل من مخزونَي أبو غريب والدورة (عيّنة ٢٠٩ من أصل ١٬٠٠٦ صنف) ومن حركات التحويل الفعلية كلها.</p>
+    </div>
+    <div class="flex gap-6 text-center shrink-0">
+      <div><div class="text-2xl font-bold tabular-nums">٥</div><div class="text-xs text-white/70 mt-0.5">مستودعات</div></div>
+      <div><div class="text-2xl font-bold tabular-nums">٢٠٩</div><div class="text-xs text-white/70 mt-0.5">عيّنة أصناف</div></div>
+      <div><div class="text-2xl font-bold tabular-nums">٧٦</div><div class="text-xs text-white/70 mt-0.5">حركة حقيقية</div></div>
+    </div>
+  </div>
+</header>
+
+<nav class="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
+  <div class="max-w-[1500px] mx-auto flex overflow-x-auto no-scrollbar">
+    <button class="method-tab active" data-method="tree">📁 &nbsp;١. مستكشف المجلدات</button>
+    <button class="method-tab" data-method="treemap">🗺️ &nbsp;٢. خريطة الكثافة</button>
+    <button class="method-tab" data-method="floor">🏭 &nbsp;٣. المخطط المكاني</button>
+    <button class="method-tab" data-method="cards">🗂️ &nbsp;٤. لوحة البطاقات</button>
+    <button class="method-tab" data-method="network">🔀 &nbsp;٥. شبكة التحويلات</button>
+  </div>
+</nav>
+
+<main class="max-w-[1500px] mx-auto p-5 md:p-7">
+
+  <!-- METHOD 1: TREE EXPLORER -->
+  <section id="method-tree" class="method-panel">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-card p-5 mb-5">
+    <div class="flex items-start gap-3">
+      <div class="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl shrink-0">📁</div>
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">١. مستكشف المجلدات</h2>
+        <p class="text-sm text-slate-500 mt-1 leading-relaxed">تصفّح المستودعات مثل مستكشف الملفات في حاسوبكم: كل مستودع فيه «مجلدات» مبنية فعلياً من ملاحظات الموقع الأصلية الموجودة في اكسل (الرفوف، داخل الجملون، من مصادر خارجية مثل الموصل أو خان ضاري...). اضغط أي مجلد لعرض محتوياته. الأنسب لمن اعتاد تصفح الملفات ويريد الوصول للصنف عبر مساره المنطقي بسرعة.</p>
+      </div>
+    </div>
+  </div>
+    <div class="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-card p-3 max-h-[640px] overflow-y-auto">
+        <div id="tree-root"></div>
+      </div>
+      <div class="bg-white rounded-xl border border-slate-200 shadow-card p-5 min-h-[300px]">
+        <div id="tree-breadcrumb" class="text-xs text-slate-400 mb-3 flex items-center gap-2 flex-wrap"></div>
+        <div id="tree-content"><div class="text-slate-400 text-sm py-16 text-center">اختر مجلداً من القائمة على اليمين للبدء</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- METHOD 2: TREEMAP -->
+  <section id="method-treemap" class="method-panel hidden">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-card p-5 mb-5">
+    <div class="flex items-start gap-3">
+      <div class="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl shrink-0">🗺️</div>
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">٢. خريطة الكثافة (Treemap)</h2>
+        <p class="text-sm text-slate-500 mt-1 leading-relaxed">كل مستطيل = فئة أصناف داخل مستودع معيّن، ومساحته تتناسب مع عدد الأصناف المختلفة فيها (وليس الكمية الفعلية، لأن وحدات القياس تختلف — طن مقابل قطعة مقابل لفة لا يمكن مقارنتها كأرقام مباشرة). تُظهر بنظرة واحدة أين يتركّز تنوّع مخزونكم. اضغط أي مستطيل لرؤية الأصناف داخله.</p>
+      </div>
+    </div>
+  </div>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-card p-5">
+      <div id="treemap-canvas" style="height: 520px;"></div>
+    </div>
+    <div id="treemap-detail" class="mt-5"></div>
+  </section>
+
+  <!-- METHOD 3: FLOOR MAP -->
+  <section id="method-floor" class="method-panel hidden">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-card p-5 mb-5">
+    <div class="flex items-start gap-3">
+      <div class="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl shrink-0">🏭</div>
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">٣. المخطط المكاني (خريطة المستودعات)</h2>
+        <p class="text-sm text-slate-500 mt-1 leading-relaxed">كل مستودع مرسوم كمنطقة فعلية، وبداخله «قطع» تمثّل تقسيماته الحقيقية (رفوف، غرف، حاويات، بضاعة من مصادر خارجية). حجم القطعة ولونها يعكسان عدد الأصناف فيها. هذه الطريقة الأقرب لواقع مستودع فعلي بحوايته وغرفه ورفوفه — أنسب من يفكّر بالمكان الفعلي للصنف لا بتصنيفه المجرد.</p>
+      </div>
+    </div>
+  </div>
+    <div id="floor-map" class="space-y-6"></div>
+  </section>
+
+  <!-- METHOD 4: CARD GALLERY -->
+  <section id="method-cards" class="method-panel hidden">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-card p-5 mb-5">
+    <div class="flex items-start gap-3">
+      <div class="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl shrink-0">🗂️</div>
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">٤. لوحة البطاقات (Kanban)</h2>
+        <p class="text-sm text-slate-500 mt-1 leading-relaxed">كل صنف بطاقة صغيرة قابلة للمسح البصري السريع، مجمّعة في أعمدة حسب اختياركم (الفئة، المستودع، أو حالة المخزون). قريبة من تجربة Trello أو Notion. أنسب لمن يفضّل التصفح البصري السريع والفرز بدلاً من الجداول الطويلة.</p>
+      </div>
+    </div>
+  </div>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-card p-4 mb-5 flex flex-wrap items-center gap-3">
+      <span class="text-sm font-semibold text-slate-600">تجميع حسب:</span>
+      <div id="kanban-group-toggle" class="flex gap-2"></div>
+      <input id="kanban-search" type="text" placeholder="ابحث في الأصناف..." class="ms-auto border border-slate-300 rounded-lg px-3 py-1.5 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-primary/20" />
+    </div>
+    <div id="kanban-board" class="flex gap-4 overflow-x-auto pb-4"></div>
+  </section>
+
+  <!-- METHOD 5: NETWORK -->
+  <section id="method-network" class="method-panel hidden">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-card p-5 mb-5">
+    <div class="flex items-start gap-3">
+      <div class="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl shrink-0">🔀</div>
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">٥. شبكة التحويلات (خريطة الحركة)</h2>
+        <p class="text-sm text-slate-500 mt-1 leading-relaxed">بدلاً من تصفّح المخزون الساكن، هذه الطريقة تروي قصة الحركة: كل مستودع/مشروع عقدة، وكل سهم تحويل فعلي حدث بينهما — سماكة السهم = عدد مرات التحويل على ذلك المسار. الوحيدة من بين الطرق الخمس التي تركّز على «من أين إلى أين» بدل «ماذا لدينا». الأنسب لفهم أنماط حركة المواد بين المواقع بسرعة.</p>
+      </div>
+    </div>
+  </div>
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-card p-5">
+        <div id="network-canvas" style="height: 560px;"></div>
+      </div>
+      <div class="space-y-4">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-card p-4">
+          <h3 class="text-sm font-bold text-slate-700 mb-3">ملخّص الحركات</h3>
+          <div id="network-stats" class="space-y-2 text-sm"></div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-card p-4">
+          <h3 class="text-sm font-bold text-slate-700 mb-3">أهم مسارات النقل</h3>
+          <div id="network-routes" class="space-y-2 text-sm"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="max-w-[1500px] mx-auto px-6 pb-10 pt-4 text-xs text-slate-400 text-center">
+  ملف عرض توضيحي — Claude Code · مجموعة القبس · تصميم مطابق لهوية النظام الفعلية. اختاروا الطريقة المفضّلة وسنبنيها داخل النظام مباشرة.
+</footer>
+
+<script>
+const WAREHOUSES = [{"id":"WH-01","name":"مستودع أبو غريب","type":"MAIN","location":"أبو غريب"},{"id":"WH-02","name":"مستودع الدورة","type":"MAIN","location":"الدورة - بغداد"},{"id":"WH-03","name":"مستودع مشروع جلولاء","type":"PROJECT","location":"جلولاء - ديالى"},{"id":"WH-04","name":"مستودع مشروع خان ضاري","type":"PROJECT","location":"خان ضاري - بغداد"},{"id":"WH-05","name":"مستودع مشروع اليرموك","type":"PROJECT","location":"اليرموك - بغداد"}];
+const ITEMS = [{"code":"ITM-AD-120","name":"واشرات انابيب 100","category":"صحيات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":10},{"code":"ITM-AD-140","name":"بيم حفارة 70سم","category":"أخرى","spec":"70سم","uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":2},{"code":"ITM-AD-144","name":"فنديشن","category":"أدوات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":3},{"code":"ITM-AD-155","name":"قوالب محرك مختلفة الاحجام والانواع","category":"مواد بناء","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":15},{"code":"ITM-AD-163","name":"سفايف رفع مختلف الاطوال والاحجام","category":"أدوات السلامة","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":3},{"code":"ITM-AD-167","name":"خرطوم مفرغة حديد","category":"معدات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-171","name":"كيبل كهرباء مستخدم","category":"كهربائيات","spec":null,"uom":"متر","location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":5},{"code":"ITM-AD-182","name":"برغي جوي حجم 10","category":"قطع غيار","spec":"حجم 10","uom":"درزن","location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":5},{"code":"ITM-AD-231","name":"رولة صبغ كبيره","category":"تشطيبات","spec":"كبيره","uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":35},{"code":"ITM-AD-121","name":"واشرات انابيب 200","category":"صحيات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":16},{"code":"ITM-AD-141","name":"ذراع حفاره","category":"أخرى","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":2},{"code":"ITM-AD-145","name":"كرنك","category":"أدوات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":2},{"code":"ITM-AD-166","name":"خزان فابريتر","category":"مواد بناء","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":15},{"code":"ITM-AD-164","name":"قناع سلامة مواد كيمياوية","category":"أدوات السلامة","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-328","name":"مروحة عامودية أرضية مستعملة","category":"معدات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-189","name":"جهاز خلط كهربائي","category":"كهربائيات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-212","name":"ربل برغي","category":"قطع غيار","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":22},{"code":"ITM-AD-239","name":"صبغ رصاصي فلات 2 كيلو","category":"تشطيبات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":2},{"code":"ITM-AD-122","name":"واشرات انابيب 300","category":"صحيات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":32},{"code":"ITM-AD-142","name":"بيم حفاره طول 50سم","category":"أخرى","spec":"طول 50سم","uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-153","name":"محرك شفل سلندر +كور +كرنك (تفصيخ)","category":"أدوات","spec":"(تفصيخ)","uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":4},{"code":"ITM-AD-197","name":"كوسرة قص بليت","category":"مواد بناء","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-168","name":"كبوس سلامة مستعمل","category":"أدوات السلامة","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":5},{"code":"ITM-AD-386","name":"ماطور ماء / ABB-110KW-1000RPM","category":"معدات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":10},{"code":"ITM-AD-204","name":"بلوجكتر مطري (أنارة شارع)","category":"كهربائيات","spec":"(أنارة شارع)","uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":34},{"code":"ITM-AD-216","name":"برغي ستد حديد","category":"قطع غيار","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":7},{"code":"ITM-AD-240","name":"صبغ رصاص رادليت 3","category":"تشطيبات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":3},{"code":"ITM-AD-123","name":"واشرات انابيب 500","category":"صحيات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":170},{"code":"ITM-AD-143","name":"مشحمة اليات","category":"أخرى","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-184","name":"مسدس تونك","category":"أدوات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-217","name":"طابوق غير مستعمل","category":"مواد بناء","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":50},{"code":"ITM-AD-172","name":"حزام سلامة","category":"أدوات السلامة","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-396","name":"جهاز طرق sheet pile","category":"معدات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-205","name":"قفايص كهرباء","category":"كهربائيات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":10},{"code":"ITM-AD-335","name":"قفل 150 فلنج","category":"قطع غيار","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":21},{"code":"ITM-AD-241","name":"صبغ ازرق","category":"تشطيبات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":2},{"code":"ITM-AD-124","name":"واشرات انابيب 600","category":"صحيات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":4},{"code":"ITM-AD-146","name":"كاور كبير","category":"أخرى","spec":"كبير","uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":2},{"code":"ITM-AD-188","name":"مسدس طلقة","category":"أدوات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":3},{"code":"ITM-AD-227","name":"فخة سحب حديد","category":"مواد بناء","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":3},{"code":"ITM-AD-173","name":"شريط سلامة","category":"أدوات السلامة","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":7},{"code":"ITM-AD-423","name":"هليكوبتر صقل","category":"معدات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-206","name":"شمعات اناره كهرباء","category":"كهربائيات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":10},{"code":"ITM-AD-336","name":"قفل 100 فلنج","category":"قطع غيار","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":90},{"code":"ITM-AD-411","name":"سيراميك","category":"تشطيبات","spec":null,"uom":"اعداد مختلفة","location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-180","name":"شريط عازل انابيب","category":"صحيات","spec":null,"uom":"كارتون","location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":4},{"code":"ITM-AD-147","name":"تركم دائري مسنن","category":"أخرى","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":4},{"code":"ITM-AD-191","name":"كتر تقطيع خشن","category":"أدوات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":4},{"code":"ITM-AD-268","name":"صندوق حديد فارغ 1.75سم * 1.20سم","category":"مواد بناء","spec":"75سم","uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-174","name":"قناع سلامة","category":"أدوات السلامة","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AG-032","name":"طابعات قديمة","category":"معدات","spec":null,"uom":"قطعة","location":null,"bucket":"غير مصنف","warehouse":"WH-01","quantity":2},{"code":"ITM-AD-209","name":"بلوجكتر مستعمل","category":"كهربائيات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":6},{"code":"ITM-AD-338","name":"تقسيم فلنج (100*150)","category":"قطع غيار","spec":"(100*150)","uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":3},{"code":"ITM-AD-452","name":"سيراميك 40*40","category":"تشطيبات","spec":null,"uom":"متر","location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":0.8},{"code":"ITM-AD-211","name":"غطاس انبوبي","category":"صحيات","spec":null,"uom":null,"location":null,"bucket":"غير مصنف","warehouse":"WH-02","quantity":10},{"code":"ITM-AD-002","name":"مكينة لحام DC600 لينكولين (كهرباء)","category":"كهربائيات","spec":"(كهرباء)","uom":null,"location":"مواد داخل الجملون -1","bucket":"داخل الجملون","warehouse":"WH-02","quantity":3},{"code":"ITM-AD-003","name":"خزان كاز أليات صغير ( حديد )","category":"مواد بناء","spec":"صغير ( حديد )","uom":null,"location":"مواد داخل الجملون -1","bucket":"داخل الجملون","warehouse":"WH-02","quantity":5},{"code":"ITM-AD-008","name":"نقار حفار صغير","category":"أخرى","spec":"صغير","uom":null,"location":"مواد داخل الجملون -2","bucket":"داخل الجملون","warehouse":"WH-02","quantity":2},{"code":"ITM-AD-010","name":"جهاز تكسير بايلات كونكريت","category":"معدات","spec":null,"uom":null,"location":"مواد داخل الجملون -2","bucket":"داخل الجملون","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-012","name":"ماطور غطاسات قياس 4 أنج","category":"صحيات","spec":"قياس 4","uom":null,"location":"مواد داخل الجملون -2","bucket":"داخل الجملون","warehouse":"WH-02","quantity":4},{"code":"ITM-AD-023","name":"سيراميك حامضي","category":"تشطيبات","spec":null,"uom":"سكيبة فرط","location":"مواد داخل الجملون -2","bucket":"داخل الجملون","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-036","name":"دريل ثابت","category":"أدوات","spec":null,"uom":null,"location":"مواد داخل الجملون -1","bucket":"داخل الجملون","warehouse":"WH-02","quantity":2},{"code":"ITM-AD-050","name":"طفاية حريق بطل كبير مع عربته","category":"أدوات السلامة","spec":"كبير  مع عربته","uom":null,"location":"مواد داخل الجملون -1","bucket":"داخل الجملون","warehouse":"WH-02","quantity":2},{"code":"ITM-AD-093","name":"ملحقات 2انج مسطره + توصاله +تحويله","category":"قطع غيار","spec":"2انج","uom":"+8","location":"مواد داخل الجملون -2","bucket":"داخل الجملون","warehouse":"WH-02","quantity":5},{"code":"ITM-AD-005","name":"مولد كهرباء كبير","category":"كهربائيات","spec":"كبير","uom":null,"location":"مواد داخل الجملون -2","bucket":"داخل الجملون","warehouse":"WH-02","quantity":2},{"code":"ITM-AD-004","name":"تانكي ماء (بلاستك)","category":"مواد بناء","spec":"(بلاستك)","uom":null,"location":"مواد داخل الجملون -1","bucket":"داخل الجملون","warehouse":"WH-02","quantity":4},{"code":"ITM-AD-009","name":"نقار حفار كبير","category":"أخرى","spec":"كبير","uom":null,"location":"مواد داخل الجملون -2","bucket":"داخل الجملون","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-020","name":"جهاز رمل +بطل سانت بلاس","category":"معدات","spec":null,"uom":null,"location":"مواد داخل الجملون -2","bucket":"داخل الجملون","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-038","name":"بوري حديد","category":"صحيات","spec":null,"uom":null,"location":"مواد داخل الجملون -1","bucket":"داخل الجملون","warehouse":"WH-02","quantity":22},{"code":"ITM-AD-049","name":"درج المنيوم","category":"تشطيبات","spec":null,"uom":null,"location":"مواد داخل الجملون -1","bucket":"داخل الجملون","warehouse":"WH-02","quantity":7},{"code":"ITM-AD-066","name":"جك همر رفع يدوي على شكل شوكية","category":"أدوات","spec":null,"uom":null,"location":"مواد داخل الجملون -1","bucket":"داخل الجملون","warehouse":"WH-02","quantity":0},{"code":"ITM-AD-102","name":"قفل بوابة 300 عاطل","category":"قطع غيار","spec":null,"uom":null,"location":"مواد داخل الجملون -1","bucket":"داخل الجملون","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-006","name":"مولد كهرباء صغير","category":"كهربائيات","spec":"صغير","uom":null,"location":"مواد داخل الجملون -2","bucket":"داخل الجملون","warehouse":"WH-02","quantity":2},{"code":"ITM-AD-007","name":"خباطة صغير (نص جيس)","category":"مواد بناء","spec":"صغير (نص جيس)","uom":null,"location":"مواد داخل الجملون -2","bucket":"داخل الجملون","warehouse":"WH-02","quantity":3},{"code":"ITM-AD-011","name":"ايبوكسي من شركة فوسروك","category":"أخرى","spec":null,"uom":"سكيبه","location":"مواد داخل الجملون -3","bucket":"داخل الجملون","warehouse":"WH-02","quantity":3},{"code":"ITM-AD-024","name":"جهاز كبس بواري بلاستك","category":"معدات","spec":null,"uom":null,"location":"مواد داخل الجملون -2","bucket":"داخل الجملون","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-047","name":"واشرات انابيب 900","category":"صحيات","spec":null,"uom":"صندوق","location":"مواد داخل الجملون -2","bucket":"داخل الجملون","warehouse":"WH-02","quantity":6},{"code":"ITM-AD-062","name":"صبغ ايبوكسي","category":"تشطيبات","spec":null,"uom":"قوطية","location":"مواد داخل الجملون -1","bucket":"داخل الجملون","warehouse":"WH-02","quantity":3},{"code":"ITM-AD-068","name":"قرص كوسرة قطع حجم 180","category":"أدوات","spec":"حجم 180","uom":"قطعة","location":"مواد داخل الجملون -1","bucket":"داخل الجملون","warehouse":"WH-02","quantity":30},{"code":"ITM-AD-112","name":"فلنج 400","category":"قطع غيار","spec":null,"uom":null,"location":"مواد داخل الجملون -1","bucket":"داخل الجملون","warehouse":"WH-02","quantity":20},{"code":"ITM-AD-013","name":"عواجة شيت تسليح كهرباء","category":"كهربائيات","spec":null,"uom":null,"location":"مواد داخل الجملون -2","bucket":"داخل الجملون","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-016","name":"خزان سكيبة (مواد مضافة ) بوشكة","category":"مواد بناء","spec":"(مواد مضافة )","uom":null,"location":"مواد داخل الجملون -1","bucket":"داخل الجملون","warehouse":"WH-02","quantity":5},{"code":"ITM-AD-017","name":"قوايش بايب حجم 900","category":"أخرى","spec":"حجم 900","uom":"غير مسجل العدد","location":"مواد داخل الجملون -1","bucket":"داخل الجملون","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-029","name":"ثلاجة قديمة بيضاء حجم 24 قدم","category":"معدات","spec":"حجم 24","uom":null,"location":"مواد داخل الجملون -2","bucket":"داخل الجملون","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-064","name":"صوندة كمبريسر هواء طول 25 م الحجم 2 انج","category":"صحيات","spec":"طول 25","uom":"طول 25 م","location":"مواد داخل الجملون -1","bucket":"داخل الجملون","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-032","name":"عواجة بليت + مكص بليت","category":"أدوات","spec":null,"uom":"+2","location":"عواجة في الجملون -1/عواجة + مقص بليت في -2","bucket":"الغرف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-273","name":"فوم عازل أزرق اللون","category":"أخرى","spec":null,"uom":null,"location":"غرف رقم 1 في الجملون","bucket":"الغرف","warehouse":"WH-02","quantity":40},{"code":"ITM-AD-277","name":"ليف صب كونكريت","category":"مواد بناء","spec":null,"uom":"لفة","location":"غرف رقم 1 في الجملون","bucket":"الغرف","warehouse":"WH-02","quantity":4},{"code":"ITM-AD-278","name":"حبل سلامة","category":"أدوات السلامة","spec":null,"uom":"متر","location":"غرف رقم 1 في الجملون","bucket":"الغرف","warehouse":"WH-02","quantity":50},{"code":"ITM-AD-283","name":"شباك صحيات 40 سم * 40 سم","category":"صحيات","spec":"40 سم","uom":null,"location":"غرف رقم 1 في الجملون","bucket":"الغرف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-285","name":"واشر لاستيك أنابيب قياس 700,800,900,1000","category":"قطع غيار","spec":"قياس 700,800,900,1000","uom":"لفة","location":"غرف رقم 1 في الجملون","bucket":"الغرف","warehouse":"WH-02","quantity":14},{"code":"ITM-AD-294","name":"بورد كهرباء مستعمل مختلف الانواع والاحجام","category":"كهربائيات","spec":null,"uom":null,"location":"غرف رقم 3 في الجملون","bucket":"الغرف","warehouse":"WH-02","quantity":10},{"code":"ITM-AD-297","name":"مكينة لحام ( cnc 20/500) عدد 2 للون اصفر / للون برتقالي 500/250","category":"معدات","spec":"( cnc 20/500)","uom":null,"location":"غرف رقم 3 في الجملون","bucket":"الغرف","warehouse":"WH-02","quantity":4},{"code":"ITM-AD-303","name":"كتر سيراميك","category":"تشطيبات","spec":null,"uom":null,"location":"غرف رقم 3 في الجملون","bucket":"الغرف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-296","name":"دريل مغناطيس ثابت","category":"أدوات","spec":null,"uom":null,"location":"غرف رقم 3 في الجملون","bucket":"الغرف","warehouse":"WH-02","quantity":2},{"code":"ITM-AD-274","name":"فلين عازل أبيض اللون","category":"أخرى","spec":null,"uom":null,"location":"غرف رقم 1 في الجملون","bucket":"الغرف","warehouse":"WH-02","quantity":45},{"code":"ITM-AD-308","name":"غطاس مختلف الا حجام (2+3+1/2) انج","category":"صحيات","spec":"(2+3+1/2)","uom":null,"location":"غرف رقم 3 في الجملون","bucket":"الغرف","warehouse":"WH-02","quantity":10},{"code":"ITM-AD-349","name":"فلنج 600","category":"قطع غيار","spec":null,"uom":null,"location":"غرف رقم 6 في الجملون","bucket":"الغرف","warehouse":"WH-02","quantity":28},{"code":"ITM-AD-295","name":"بورد كهرباء صغير مستعمل","category":"كهربائيات","spec":"صغير مستعمل","uom":null,"location":"غرف رقم 3 في الجملون","bucket":"الغرف","warehouse":"WH-02","quantity":2},{"code":"ITM-AD-300","name":"مكينة لحام صغيره","category":"معدات","spec":"صغيره","uom":null,"location":"غرف رقم 3 في الجملون","bucket":"الغرف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-301","name":"دريل خلط مواد","category":"أدوات","spec":null,"uom":null,"location":"غرف رقم 3 في الجملون","bucket":"الغرف","warehouse":"WH-02","quantity":2},{"code":"ITM-AD-479","name":"كيبل ضوئي(بكرات) كبيره","category":"كهربائيات","spec":"كبيره","uom":null,"location":"من المنصورية","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":10},{"code":"ITM-AD-615","name":"برج انترنت مع ملحقاته","category":"أخرى","spec":null,"uom":null,"location":"من جديدة الشط 2025/1/30","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-X01","name":"قالب مكعبات صب كونكرنت","category":"مواد بناء","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":22},{"code":"ITM-AD-X03","name":"عربة اوكسجين","category":"معدات","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-X07","name":"دريل همر صغير كسار","category":"أدوات","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-X09","name":"فلتر مولدة بيركنز","category":"قطع غيار","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":2},{"code":"ITM-AD-X12","name":"وحدة صحيات","category":"صحيات","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-X02","name":"فابريتر كهرباء","category":"كهربائيات","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":2},{"code":"ITM-AG-097","name":"مواد مختبرية من المنصورية","category":"أخرى","spec":null,"uom":"قطعة","location":"من ديالى","bucket":"مصادر خارجية","warehouse":"WH-01","quantity":1},{"code":"ITM-AD-X19","name":"لفة وترستوب 25سم","category":"مواد بناء","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-X04","name":"غطاس كهرباء ما انبوبين","category":"معدات","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":6},{"code":"ITM-AD-X15","name":"كوسرة كبيرة","category":"أدوات","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-X14","name":"كونية سبيسر 5سم (فاي 12ملم)","category":"قطع غيار","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-X06","name":"سبلت","category":"كهربائيات","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":1},{"code":"ITM-AG-241","name":"حاوية رقم 23 للون أصفر","category":"أخرى","spec":null,"uom":"قطعة","location":"من الموصل","bucket":"مصادر خارجية","warehouse":"WH-01","quantity":1},{"code":"ITM-AD-X05","name":"صوبة كهرباء","category":"معدات","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-X16","name":"كوسرة صغيرة","category":"أدوات","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-X20","name":"لبوة اوكسجين (كاصوصة)","category":"قطع غيار","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":1},{"code":"ITM-AG-108","name":"برج شبكة انترنيت + ملحقاته (اسلاك )","category":"كهربائيات","spec":null,"uom":"قطعة","location":"من مقر الشركة","bucket":"مصادر خارجية","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-250","name":"حاوية رقم 24 للون برتقالي","category":"أخرى","spec":null,"uom":"قطعة","location":"من الموصل","bucket":"مصادر خارجية","warehouse":"WH-01","quantity":1},{"code":"ITM-AD-X08","name":"مولدة 30 كي في","category":"معدات","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-X17","name":"كاوية بواري بلاستك","category":"أدوات","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-X23","name":"صزندة غطاس بلاستك مختلفة الاطوال مجموع الاطوال 370م","category":"قطع غيار","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":1},{"code":"ITM-AG-254","name":"حاوية رقم 25 للون أزرق","category":"أخرى","spec":null,"uom":"قطعة","location":"من الموصل","bucket":"مصادر خارجية","warehouse":"WH-01","quantity":1},{"code":"ITM-AD-X10","name":"حوض سحب ماء","category":"معدات","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":2},{"code":"ITM-AD-X22","name":"رفوف حديد عمل من شيش التسليح","category":"أدوات","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":1},{"code":"ITM-AG-065","name":"راس حفر كور ارتفاع 48سم قطر 23سم","category":"قطع غيار","spec":null,"uom":"قطعة","location":"من الموصل","bucket":"مصادر خارجية","warehouse":"WH-01","quantity":23},{"code":"ITM-AG-258","name":"حاوية رقم 26 للون أحمر طول 6 م","category":"أخرى","spec":"6 م","uom":"قطعة","location":"من الموصل","bucket":"مصادر خارجية","warehouse":"WH-01","quantity":1},{"code":"ITM-AD-X11","name":"تانكي خزان كاز 800 لتر","category":"معدات","spec":null,"uom":"قطعة","location":"من اليرموك","bucket":"مصادر خارجية","warehouse":"WH-02","quantity":1},{"code":"ITM-AG-067","name":"مسدس هيلتي لحقن مادة تماسك للبراغي في الجدار","category":"أدوات","spec":null,"uom":"قطعة","location":"من الموصل","bucket":"مصادر خارجية","warehouse":"WH-01","quantity":1},{"code":"ITM-AD-118","name":"قطعة ستيل خارجية","category":"أخرى","spec":null,"uom":null,"location":"نقل من حاوية رقم 1","bucket":"منقول من حاوية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-331","name":"سرير حديد منام للعمال","category":"مواد بناء","spec":null,"uom":null,"location":"نقل من حاوية رقم 12","bucket":"منقول من حاوية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-560","name":"بوري سكلة","category":"صحيات","spec":null,"uom":null,"location":"نقل من حاوية رقم 12","bucket":"منقول من حاوية","warehouse":"WH-02","quantity":5},{"code":"ITM-AD-555","name":"خرطوم 2 انج زراعي","category":"أخرى","spec":"2 انج","uom":"اطوال مختلفة","location":"نقل من حاوية رقم 12","bucket":"منقول من حاوية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-553","name":"باب حديد","category":"مواد بناء","spec":null,"uom":null,"location":"نقل من حاوية رقم 12","bucket":"منقول من حاوية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-561","name":"خرطوم غطاس 4 أنج","category":"صحيات","spec":null,"uom":"اعداد مختلفة","location":"نقل من حاوية رقم 12","bucket":"منقول من حاوية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-556","name":"زاوية 1 انج","category":"أخرى","spec":"1 انج","uom":"اعداد مختلفة","location":"نقل من حاوية رقم 12","bucket":"منقول من حاوية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-554","name":"شباك حديد","category":"مواد بناء","spec":null,"uom":null,"location":"نقل من حاوية رقم 12","bucket":"منقول من حاوية","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-186","name":"مكينة حشيش","category":"معدات","spec":null,"uom":null,"location":"عاطل","bucket":"أعطال وتلف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-187","name":"كوسرة","category":"أدوات","spec":null,"uom":null,"location":"عاطل","bucket":"أعطال وتلف","warehouse":"WH-02","quantity":3},{"code":"ITM-AD-213","name":"غطاس 1انج","category":"صحيات","spec":"1انج","uom":null,"location":"عاطل","bucket":"أعطال وتلف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-599","name":"جينكو (كريد)","category":"أخرى","spec":"(كريد)","uom":"متعدد","location":"مستعمل ومتهالك","bucket":"أعطال وتلف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-326","name":"ماطور ماء","category":"معدات","spec":null,"uom":null,"location":"عاطل","bucket":"أعطال وتلف","warehouse":"WH-02","quantity":5},{"code":"ITM-AD-196","name":"دريل همر","category":"أدوات","spec":null,"uom":null,"location":"عاطل","bucket":"أعطال وتلف","warehouse":"WH-02","quantity":1},{"code":"ITM-AG-038","name":"ثلاجة عشتار قديمة","category":"معدات","spec":null,"uom":"قطعة","location":"عاطلة عن العمل","bucket":"أعطال وتلف","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-303","name":"دريل","category":"أدوات","spec":null,"uom":"قطعة","location":"متهالك","bucket":"أعطال وتلف","warehouse":"WH-01","quantity":3},{"code":"ITM-AG-042","name":"مبردة قديمة عاطلة","category":"معدات","spec":null,"uom":"قطعة","location":"عاطلة عن العمل","bucket":"أعطال وتلف","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-304","name":"مسدس بسامير","category":"أدوات","spec":null,"uom":"قطعة","location":"متهالك","bucket":"أعطال وتلف","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-288","name":"براد ماء","category":"معدات","spec":null,"uom":"قطعة","location":"عاطلة عن العمل","bucket":"أعطال وتلف","warehouse":"WH-01","quantity":2},{"code":"ITM-AG-306","name":"كوسرة","category":"أدوات","spec":null,"uom":"قطعة","location":"متهالك","bucket":"أعطال وتلف","warehouse":"WH-01","quantity":3},{"code":"ITM-AG-178","name":"طوك/توصالة فلنج متعدد القياس","category":"قطع غيار","spec":null,"uom":"سكيبة","location":"Rotatable flange","bucket":"تصنيف فني (أجزاء توصيل)","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-179","name":"طوك/توصالة فلنج DN600 PN16","category":"قطع غيار","spec":null,"uom":"قطعة","location":"Rotatable flange","bucket":"تصنيف فني (أجزاء توصيل)","warehouse":"WH-01","quantity":12},{"code":"ITM-AG-180","name":"طوك/توصالة فلنج DN500 PN16","category":"قطع غيار","spec":null,"uom":"قطعة","location":"Rotatable flange","bucket":"تصنيف فني (أجزاء توصيل)","warehouse":"WH-01","quantity":25},{"code":"ITM-AG-181","name":"طوك/توصالة فلنج DN500 PN10","category":"قطع غيار","spec":null,"uom":"قطعة","location":"Rotatable flange","bucket":"تصنيف فني (أجزاء توصيل)","warehouse":"WH-01","quantity":70},{"code":"ITM-AG-182","name":"طوك/توصالة فلنج DN400 PN10","category":"قطع غيار","spec":null,"uom":"قطعة","location":"Rotatable flange","bucket":"تصنيف فني (أجزاء توصيل)","warehouse":"WH-01","quantity":22},{"code":"ITM-AG-183","name":"طوك/توصالة فلنج DN300 PN10","category":"قطع غيار","spec":null,"uom":"قطعة","location":"Rotatable flange","bucket":"تصنيف فني (أجزاء توصيل)","warehouse":"WH-01","quantity":19},{"code":"ITM-AG-184","name":"طوك/توصالة فلنج DN350 PN10","category":"قطع غيار","spec":null,"uom":"قطعة","location":"Rotatable flange","bucket":"تصنيف فني (أجزاء توصيل)","warehouse":"WH-01","quantity":10},{"code":"ITM-AG-185","name":"طوك/توصالة فلنج DN350 PN16","category":"قطع غيار","spec":null,"uom":"قطعة","location":"Rotatable flange","bucket":"تصنيف فني (أجزاء توصيل)","warehouse":"WH-01","quantity":3},{"code":"ITM-AG-186","name":"طوك/توصالة فلنج DN250 PN10","category":"قطع غيار","spec":null,"uom":"قطعة","location":"Rotatable flange","bucket":"تصنيف فني (أجزاء توصيل)","warehouse":"WH-01","quantity":11},{"code":"ITM-AG-187","name":"طوك/توصالة فلنج DN200 PN10","category":"قطع غيار","spec":null,"uom":"قطعة","location":"Rotatable flange","bucket":"تصنيف فني (أجزاء توصيل)","warehouse":"WH-01","quantity":22},{"code":"ITM-AG-188","name":"طوك/توصالة فلنج DN150 PN10","category":"قطع غيار","spec":null,"uom":"قطعة","location":"Rotatable flange","bucket":"تصنيف فني (أجزاء توصيل)","warehouse":"WH-01","quantity":47},{"code":"ITM-AG-189","name":"طوك/توصالة فلنج DN125 PN10","category":"قطع غيار","spec":null,"uom":"قطعة","location":"Rotatable flange","bucket":"تصنيف فني (أجزاء توصيل)","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-190","name":"طوك/توصالة فلنج DN80 PN10","category":"قطع غيار","spec":null,"uom":"قطعة","location":"Rotatable flange","bucket":"تصنيف فني (أجزاء توصيل)","warehouse":"WH-01","quantity":24},{"code":"ITM-AG-191","name":"طوك/توصالة فلنج DN50 PN10","category":"قطع غيار","spec":null,"uom":"قطعة","location":"Rotatable flange","bucket":"تصنيف فني (أجزاء توصيل)","warehouse":"WH-01","quantity":1},{"code":"ITM-AD-179","name":"براين مختلفة الاحجام الاطوال","category":"أخرى","spec":null,"uom":"صندوق","location":"جديد + مستعمل","bucket":"حالة الصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-198","name":"يدة كوسرة","category":"أدوات","spec":null,"uom":null,"location":"مستعمل","bucket":"حالة الصنف","warehouse":"WH-02","quantity":15},{"code":"ITM-AD-229","name":"فابريتر كهربائي","category":"كهربائيات","spec":null,"uom":null,"location":"خروج عدد 2 مستعمل الى خان ضاري","bucket":"حالة الصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AG-040","name":"خوذ عمل أعداد متفرقة","category":"أدوات السلامة","spec":null,"uom":"لوط","location":"بحالة جيدة","bucket":"حالة الصنف","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-311","name":"تانكي ماء","category":"معدات","spec":null,"uom":"قطعة","location":"مستعمل","bucket":"حالة الصنف","warehouse":"WH-01","quantity":10},{"code":"ITM-AD-194","name":"بكرة روبن","category":"أخرى","spec":null,"uom":"كارتون","location":"مستعمل","bucket":"حالة الصنف","warehouse":"WH-02","quantity":1},{"code":"ITM-AG-045","name":"ادوات عمل متفرقة ( منشار+","category":"أدوات","spec":null,"uom":"لوط","location":"بحالة جيدة","bucket":"حالة الصنف","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-218","name":"اعمدة كهرباء دائري طول 9 م","category":"كهربائيات","spec":"9 م","uom":"قطعة","location":"جديد","bucket":"حالة الصنف","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-041","name":"حزام تحميل","category":"أدوات السلامة","spec":null,"uom":"لوط","location":"بحالة جيدة","bucket":"حالة الصنف","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-312","name":"براد ماء","category":"معدات","spec":null,"uom":"قطعة","location":"مستعمل قديم","bucket":"حالة الصنف","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-007","name":"صحن ستلايت","category":"معدات","spec":null,"uom":"قطعة","location":"الرف الاول","bucket":"الرفوف","warehouse":"WH-01","quantity":2},{"code":"ITM-AG-008","name":"أشرطة تنبية (خطر)","category":"أدوات السلامة","spec":null,"uom":"قطعة","location":"الرف الاول","bucket":"الرفوف","warehouse":"WH-01","quantity":6},{"code":"ITM-AG-009","name":"كوسرة","category":"أدوات","spec":null,"uom":"قطعة","location":"الرف  الاول","bucket":"الرفوف","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-011","name":"أقلام دريل","category":"قطع غيار","spec":null,"uom":"لوط","location":"الرف الاول","bucket":"الرفوف","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-022","name":"بلك كهرباء","category":"كهربائيات","spec":null,"uom":"لوط","location":"الرف الخامس","bucket":"الرفوف","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-010","name":"ماطور","category":"معدات","spec":null,"uom":"قطعة","location":"الرف  الاول","bucket":"الرفوف","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-012","name":"مرشات","category":"أدوات","spec":null,"uom":"قطعة","location":"الرف الاول","bucket":"الرفوف","warehouse":"WH-01","quantity":2},{"code":"ITM-AG-015","name":"شفرات","category":"قطع غيار","spec":null,"uom":"لوط","location":"الرف  الثالث","bucket":"الرفوف","warehouse":"WH-01","quantity":1},{"code":"ITM-AD-731","name":"كلاند قياس 100","category":"قطع غيار","spec":"قياس 100","uom":null,"location":"خارج الجملون","bucket":"خارج الجملون","warehouse":"WH-02","quantity":13},{"code":"ITM-AG-326","name":"انابيب دكتايل قطر(1000 ملم) كبس طول 6م","category":"صحيات","spec":null,"uom":"قطعة","location":"خارج الجملون","bucket":"خارج الجملون","warehouse":"WH-01","quantity":38},{"code":"ITM-AG-355","name":"معمل صب كونكريت","category":"معدات","spec":null,"uom":"قطعة","location":"خارج الجملون","bucket":"خارج الجملون","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-362","name":"قالب قمع احواض ترسيب","category":"مواد بناء","spec":null,"uom":"قطعة","location":"خارج الجملون","bucket":"خارج الجملون","warehouse":"WH-01","quantity":2},{"code":"ITM-AG-358","name":"فلنج 900","category":"قطع غيار","spec":null,"uom":"قطعة","location":"خارج الجملون","bucket":"خارج الجملون","warehouse":"WH-01","quantity":15},{"code":"ITM-AG-327","name":"انابيب دكتايل قطر(1000 ملم) دبل فلنج طول 6م","category":"صحيات","spec":null,"uom":"قطعة","location":"خارج الجملون","bucket":"خارج الجملون","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-356","name":"سايلو","category":"معدات","spec":null,"uom":"قطعة","location":"خارج الجملون","bucket":"خارج الجملون","warehouse":"WH-01","quantity":2},{"code":"ITM-AG-359","name":"فلنج 900/ جديد","category":"قطع غيار","spec":null,"uom":"صندوق","location":"خارج الجملون","bucket":"خارج الجملون","warehouse":"WH-01","quantity":2},{"code":"ITM-AG-328","name":"انابيب دكتايل قطر(900 ملم)كبس طول 6م","category":"صحيات","spec":null,"uom":"قطعة","location":"خارج الجملون","bucket":"خارج الجملون","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-357","name":"خزان كبير","category":"معدات","spec":null,"uom":"قطعة","location":"خارج الجملون","bucket":"خارج الجملون","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-360","name":"فلنج فلات بدون شفه 900","category":"قطع غيار","spec":null,"uom":"قطعة","location":"خارج الجملون","bucket":"خارج الجملون","warehouse":"WH-01","quantity":9},{"code":"ITM-AG-329","name":"انابيب دكتايل قطر(800 ملم) كبس الطول 6م","category":"صحيات","spec":null,"uom":"قطعة","location":"خارج الجملون","bucket":"خارج الجملون","warehouse":"WH-01","quantity":53},{"code":"ITM-AG-361","name":"معمل اسمنت مع ملحقاته + كومبريسر للعمل","category":"معدات","spec":null,"uom":"قطعة","location":"خارج الجملون","bucket":"خارج الجملون","warehouse":"WH-01","quantity":1},{"code":"ITM-AG-330","name":"انابيب دكتايل قطر(700 ملم) كبس الطول 6م","category":"صحيات","spec":null,"uom":"قطعة","location":"خارج الجملون","bucket":"خارج الجملون","warehouse":"WH-01","quantity":157},{"code":"ITM-AD-001","name":"كمبريسر هواء(صغير)","category":"معدات","spec":"صغير","uom":null,"location":"لا يوجد حالياً داخل الجملون","bucket":"أخرى (ملاحظة حرة)","warehouse":"WH-02","quantity":0},{"code":"ITM-AD-015","name":"باب كرفان (ساندوج بنل )","category":"أخرى","spec":"(ساندوج بنل )","uom":null,"location":"لا يوجد حالياً داخل الجملون","bucket":"أخرى (ملاحظة حرة)","warehouse":"WH-02","quantity":0},{"code":"ITM-AD-119","name":"واشرات انابيب 900","category":"صحيات","spec":null,"uom":"كمية غير محددة","location":"مواد داخل جملون رقم -2","bucket":"أخرى (ملاحظة حرة)","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-201","name":"رندة نجار","category":"أدوات","spec":null,"uom":null,"location":"6 نوع كهربائي + 3 نوع يدوي","bucket":"أخرى (ملاحظة حرة)","warehouse":"WH-02","quantity":9},{"code":"ITM-AD-207","name":"بورد مستعمل","category":"كهربائيات","spec":null,"uom":null,"location":"لايوجد","bucket":"أخرى (ملاحظة حرة)","warehouse":"WH-02","quantity":0},{"code":"ITM-AD-380","name":"قالب كيكر احواض الترسيب","category":"مواد بناء","spec":null,"uom":"أعداد متفرقة","location":"داخل الحاوية","bucket":"أخرى (ملاحظة حرة)","warehouse":"WH-02","quantity":1},{"code":"ITM-AD-422","name":"قفازات (حدل)","category":"أدوات السلامة","spec":"(حدل)","uom":null,"location":"خروج عدد 2 الى المنصورية 2025/2/25","bucket":"أخرى (ملاحظة حرة)","warehouse":"WH-02","quantity":3},{"code":"ITM-AD-639","name":"عكس دبل فلنج قياس 700 زاوية 45","category":"قطع غيار","spec":"قياس 700","uom":null,"location":"خروج عدد 3 الى جلولا شهر 26/1","bucket":"أخرى (ملاحظة حرة)","warehouse":"WH-02","quantity":18},{"code":"ITM-AG-057","name":"كاشي","category":"تشطيبات","spec":null,"uom":"لوط","location":"بيت ابو مهند","bucket":"أخرى (ملاحظة حرة)","warehouse":"WH-01","quantity":1},{"code":"ITM-AD-X24","name":"صوندة غطاس 2 انج","category":"معدات","spec":"2 انج","uom":"م","location":"ادخال مؤقت","bucket":"أخرى (ملاحظة حرة)","warehouse":"WH-02","quantity":45},{"code":"ITM-AD-051","name":"أغراض تجهيز معمل الخالص","category":"أخرى","spec":null,"uom":null,"location":"نقلت الى جلولاء 5/9/2025","bucket":"أخرى (ملاحظة حرة)","warehouse":"WH-02","quantity":0},{"code":"ITM-AD-208","name":"جوزه + بلك سوج","category":"صحيات","spec":null,"uom":null,"location":"تم سحب جوزه عدد 16 / خان ضاري","bucket":"أخرى (ملاحظة حرة)","warehouse":"WH-02","quantity":3}];
+const PROJECT_STOCK = [{"warehouse_id":"WH-03","warehouse_name":"مستودع مشروع جلولاء","code":"ITM-AD-047","name":"واشرات انابيب 900","category":"صحيات","spec":"","uom":"صندوق","quantity":0},{"warehouse_id":"WH-03","warehouse_name":"مستودع مشروع جلولاء","code":"ITM-AG-059","name":"واشرات","category":"قطع غيار","spec":"","uom":"لوط","quantity":60},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-005","name":"مولد كهرباء كبير","category":"كهربائيات","spec":"كبير","uom":"","quantity":3},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-014","name":"لايت نور(بوليمة)","category":"كهربائيات","spec":"(بوليمة)","uom":"","quantity":2},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-016","name":"خزان سكيبة (مواد مضافة ) بوشكة","category":"مواد بناء","spec":"(مواد مضافة )","uom":"","quantity":4},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-020","name":"جهاز رمل +بطل سانت بلاس","category":"معدات","spec":"","uom":"","quantity":1},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-022","name":"ظفيرة كيبل 3 فيز","category":"كهربائيات","spec":"","uom":"متر","quantity":50},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-049","name":"درج المنيوم","category":"تشطيبات","spec":"","uom":"","quantity":4},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-062","name":"صبغ ايبوكسي","category":"تشطيبات","spec":"","uom":"قوطية","quantity":3},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-063","name":"ثنر","category":"تشطيبات","spec":"","uom":"قوطية","quantity":3},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-172","name":"حزام سلامة","category":"أدوات السلامة","spec":"","uom":"","quantity":4},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-176","name":"حبل سلامة","category":"أدوات السلامة","spec":"","uom":"متر","quantity":47},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-296","name":"دريل مغناطيس ثابت","category":"أدوات","spec":"","uom":"","quantity":1},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-442","name":"دراب خشب 4 م","category":"أخرى","spec":"4 م","uom":"","quantity":8},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-540","name":"قالب أعمدة كهرباء من ديالى/ (عرض 60سم*1م طول )","category":"كهربائيات","spec":"عرض 60سم*1م","uom":"","quantity":2},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-541","name":"تلفزيون بلازما متوسط الحجم من المنصورية مستعملة","category":"أخرى","spec":"متوسط الحجم من المنصورية مستعملة","uom":"","quantity":15},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-609","name":"سكلة لبخ طول 6 م","category":"أخرى","spec":"طول 6","uom":"متعدد","quantity":4},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-610","name":"سكلة لبخ طول 4م","category":"أخرى","spec":"طول 4م","uom":"متعدد","quantity":5},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-611","name":"مسطرة لبخ طول 2م","category":"أدوات","spec":"طول 2م","uom":"متعدد","quantity":2},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AD-663","name":"تقسيم ثلاثي دك تايل 400*400*250","category":"أخرى","spec":"","uom":"","quantity":1},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AG-004","name":"قفيص سكلة أعداد متفرقة","category":"أخرى","spec":"","uom":"كيس","quantity":1},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AG-022","name":"بلك كهرباء","category":"كهربائيات","spec":"","uom":"لوط","quantity":0},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AG-024","name":"نقط كهرباء","category":"كهربائيات","spec":"","uom":"لوط","quantity":0},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AG-030","name":"دهن هايدروليك","category":"معدات","spec":"","uom":"قطعة","quantity":0},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AG-045","name":"ادوات عمل متفرقة ( منشار+","category":"أدوات","spec":"","uom":"لوط","quantity":0},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AG-049","name":"أحزمة عمل شيالات مشد","category":"أدوات السلامة","spec":"","uom":"كيس","quantity":2},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AG-054","name":"أنابيب بلاستيك","category":"صحيات","spec":"","uom":"لوط","quantity":58},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AG-083","name":"بطل اوكسجين","category":"معدات","spec":"","uom":"قطعة","quantity":3},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AG-088","name":"كمبريسور 250 لتر / 12 بار","category":"معدات","spec":"","uom":"قطعة","quantity":1},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AG-105","name":"قايش معمل الكونكريت","category":"معدات","spec":"","uom":"قطعة","quantity":1},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AG-149","name":"بواري سكلات أطول متعدده مرزومة في أقفاص","category":"مواد بناء","spec":"","uom":"قفص","quantity":0},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AG-259","name":"درابين سكلات","category":"أدوات","spec":"","uom":"لوط","quantity":0},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AG-355","name":"معمل صب كونكريت","category":"معدات","spec":"","uom":"قطعة","quantity":1},{"warehouse_id":"WH-04","warehouse_name":"مستودع مشروع خان ضاري","code":"ITM-AG-357","name":"خزان كبير","category":"معدات","spec":"","uom":"قطعة","quantity":1}];
+const TRANSFERS = [{"serial":"WHT-0024","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2018-01-25","notes":"خروج عدد 1 الى خان ضاري تاريخ 25/1/18"},{"serial":"WHT-0073","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-02-09","notes":"وارد"},{"serial":"WHT-0051","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-06-26","notes":"متضرره"},{"serial":"WHT-0052","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-06-26","notes":"وارد"},{"serial":"WHT-0053","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-06-26","notes":"وارد"},{"serial":"WHT-0054","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-06-26","notes":"وارد"},{"serial":"WHT-0055","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-06-26","notes":"وارد"},{"serial":"WHT-0056","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-06-26","notes":"عاطل"},{"serial":"WHT-0057","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-06-26","notes":"عاطل"},{"serial":"WHT-0058","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-08-31","notes":"وارد"},{"serial":"WHT-0059","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-08-31","notes":"وارد"},{"serial":"WHT-0060","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-08-31","notes":"وارد"},{"serial":"WHT-0061","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-08-31","notes":"خروج لاحقاً الى مقر الشركة 16/5/2025"},{"serial":"WHT-0062","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-08-31","notes":"مع مقعد شرقي و دوش و مغسلة"},{"serial":"WHT-0063","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-08-31","notes":"وارد"},{"serial":"WHT-0064","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-08-31","notes":"وارد"},{"serial":"WHT-0065","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-08-31","notes":"وارد"},{"serial":"WHT-0066","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-08-31","notes":"وارد"},{"serial":"WHT-0067","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-08-31","notes":"وارد"},{"serial":"WHT-0068","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-08-31","notes":"وارد"},{"serial":"WHT-0069","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-08-31","notes":"وارد"},{"serial":"WHT-0070","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-08-31","notes":"وارد"},{"serial":"WHT-0071","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-08-31","notes":"وارد"},{"serial":"WHT-0072","type":"IN","to":"مستودع الدورة","from":null,"date":"2024-08-31","notes":"وارد"},{"serial":"WHT-0074","type":"OUT","to":"مستودع الدورة","from":null,"date":"2024-10-14","notes":"الى المنصورية"},{"serial":"WHT-0075","type":"OUT","to":"مستودع الدورة","from":null,"date":"2024-10-16","notes":"الى المنصوية مع أبو عدنان"},{"serial":"WHT-0032","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2024-10-20","notes":"خروج عدد3 /خان ضاري 20/10/2024"},{"serial":"WHT-0076","type":"TRANSFER","to":"مستودع أبو غريب","from":"مستودع الدورة","date":"2024-10-20","notes":"الى أبو غريب"},{"serial":"WHT-0045","type":"OUT","to":"مستودع الدورة","from":null,"date":"2024-10-22","notes":"خروج عدد  12 22/10/2024"},{"serial":"WHT-0046","type":"OUT","to":"مستودع الدورة","from":null,"date":"2024-10-22","notes":"خروج عدد1 22/10/2024"},{"serial":"WHT-0031","type":"TRANSFER","to":"مستودع أبو غريب","from":"مستودع الدورة","date":"2024-10-29","notes":"خروج 1 الى أبو غريب 29/10/2024"},{"serial":"WHT-0006","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع أبو غريب","date":"2025-01-07","notes":"خروج الى خان ضاري عدد 2 تاريخ 25/1/7"},{"serial":"WHT-0011","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع أبو غريب","date":"2025-01-09","notes":"خروج الى خان ضاري 9/1/2025"},{"serial":"WHT-0018","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع أبو غريب","date":"2025-01-09","notes":"خروج عدد 1الى خان ضاري تاريخ 25/1/09"},{"serial":"WHT-0019","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع أبو غريب","date":"2025-01-09","notes":"خروج عدد 1الى خان ضاري تاريخ 25/1/09"},{"serial":"WHT-0050","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2025-01-21","notes":"خروج عدد 1 دبل فلنج الى خان ضاري 2025/1/21"},{"serial":"WHT-0042","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2025-01-25","notes":"خروج عدد 8 الى خان ضاري 2025/1/25"},{"serial":"WHT-0047","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2025-01-25","notes":"خروج عدد 4 الى خان ضاري 2025/1/25"},{"serial":"WHT-0048","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2025-01-25","notes":"خروج عدد 5 الى خان ضاري 2025/1/25"},{"serial":"WHT-0049","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2025-01-25","notes":"خروج عدد 2 الى خان ضاري 2025/1/25"},{"serial":"WHT-0017","type":"OUT","to":"مستودع أبو غريب","from":null,"date":"2025-02-03","notes":"خروج الى المنصورية عدد 1 تاريخ 2025/2/3"},{"serial":"WHT-0043","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2025-02-05","notes":"خروج عدد 2 الى خان ضاري 2025/2/5"},{"serial":"WHT-0015","type":"OUT","to":"مستودع أبو غريب","from":null,"date":"2025-02-09","notes":"خروج عدد 1 الى المنصورية 2025/2/9"},{"serial":"WHT-0025","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2025-02-25","notes":"خروج طول 50 م الى خان ضاري 2025/2/25"},{"serial":"WHT-0040","type":"OUT","to":"مستودع الدورة","from":null,"date":"2025-02-25","notes":"خروج عدد 6 الى المنصورية  2025/2/25"},{"serial":"WHT-0001","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع أبو غريب","date":"2025-03-03","notes":"خروج 1 كونية الى خان ضاري 2025/3/3"},{"serial":"WHT-0012","type":"OUT","to":"مستودع أبو غريب","from":null,"date":"2025-03-04","notes":"خروج عدد 1 الى المنصورية 2025/3/4"},{"serial":"WHT-0036","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2025-03-04","notes":"خروج عدد 4 الى خان ضاري 2025/3/4"},{"serial":"WHT-0037","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2025-03-04","notes":"خروج الى خان ضاري طول 47 م 2025/3/4"},{"serial":"WHT-0038","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2025-03-20","notes":"خروج عدد 1 الى خان ضاري 2025/3/20"},{"serial":"WHT-0041","type":"OUT","to":"مستودع الدورة","from":null,"date":"2025-03-25","notes":"خروج عدد 1 الى المنصورية 2025/3/25"},{"serial":"WHT-0030","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2025-04-29","notes":"خروج عدد 4 الى خان ضاري 2025/4/29"},{"serial":"WHT-0002","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع أبو غريب","date":"2025-06-01","notes":"خروج الى خان ضاري"},{"serial":"WHT-0003","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع أبو غريب","date":"2025-06-01","notes":"خروج الى خان ضاري"},{"serial":"WHT-0004","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع أبو غريب","date":"2025-06-01","notes":"خروج الى خان ضاري"},{"serial":"WHT-0005","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع أبو غريب","date":"2025-06-01","notes":"خروج الى خان ضاري"},{"serial":"WHT-0007","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع أبو غريب","date":"2025-06-01","notes":"نقل 58 / خان ضاري"},{"serial":"WHT-0009","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع أبو غريب","date":"2025-06-01","notes":"خروج 3 / خان ضاري"},{"serial":"WHT-0010","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع أبو غريب","date":"2025-06-01","notes":"خروج 1 / خان ضاري"},{"serial":"WHT-0013","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع أبو غريب","date":"2025-06-01","notes":"الى خان ظاري"},{"serial":"WHT-0014","type":"OUT","to":"مستودع أبو غريب","from":null,"date":"2025-06-01","notes":"خروج 1/ديالى"},{"serial":"WHT-0016","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع أبو غريب","date":"2025-06-01","notes":"خروج الى خان ضاري"},{"serial":"WHT-0020","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2025-06-01","notes":"سحب مولد 200kv + 25kv+150kv   /خان ضاري"},{"serial":"WHT-0021","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2025-06-01","notes":"سحب بوليمة (2) الى خان ضاري"},{"serial":"WHT-0023","type":"OUT","to":"مستودع الدورة","from":null,"date":"2025-06-01","notes":"خروج من المخزن"},{"serial":"WHT-0026","type":"OUT","to":"مستودع الدورة","from":null,"date":"2025-06-01","notes":"خروج المكسر + بورد التشغيل (تم البيع)"},{"serial":"WHT-0027","type":"OUT","to":"مستودع الدورة","from":null,"date":"2025-06-01","notes":"خروج من المخزن"},{"serial":"WHT-0028","type":"OUT","to":"مستودع الدورة","from":null,"date":"2025-06-01","notes":"خروج من المخزن"},{"serial":"WHT-0029","type":"TRANSFER","to":"مستودع مشروع جلولاء","from":"مستودع الدورة","date":"2025-06-01","notes":"خروج 30 واشر الى جلولاء"},{"serial":"WHT-0034","type":"OUT","to":"مستودع الدورة","from":null,"date":"2025-06-01","notes":"خروج / جديد غير مستعمل"},{"serial":"WHT-0035","type":"OUT","to":"مستودع الدورة","from":null,"date":"2025-06-01","notes":"خروج المواد الى المنصورية"},{"serial":"WHT-0039","type":"OUT","to":"مستودع الدورة","from":null,"date":"2025-06-01","notes":"خروج سرير ذو نفرين عدد 2 + سرسر لنفر4"},{"serial":"WHT-0044","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2025-06-01","notes":"خروج طول (3م+4م+5م)عدد 15 /خان ضاري 27/2"},{"serial":"WHT-0033","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2025-10-20","notes":"خروج عدد3 /خان ضاري 20/10/2025"},{"serial":"WHT-0008","type":"TRANSFER","to":"مستودع مشروع جلولاء","from":"مستودع أبو غريب","date":"2026-01-01","notes":"نقل قياس 600 عدد 60 الى جلولا ء شهر 26/1"},{"serial":"WHT-0022","type":"TRANSFER","to":"مستودع مشروع خان ضاري","from":"مستودع الدورة","date":"2026-01-08","notes":"خروج عدد4 الى خان ضاري 8/1/2026"}];
+const BUCKET_ICON = {"داخل الجملون":"📥","الغرف":"🚪","الرفوف":"📚","خارج الجملون":"📤","مصادر خارجية":"🚚","منقول من حاوية":"📦","أعطال وتلف":"🔧","تصنيف فني (أجزاء توصيل)":"🔩","حالة الصنف":"🏷️","غير مصنف":"❔","أخرى (ملاحظة حرة)":"📝"};
+const CAT_COLORS = {"مواد بناء":"#b45309","تشطيبات":"#8b5cf6","كهربائيات":"#f39c12","صحيات":"#3498db","معدات":"#1a5f7a","أدوات":"#64748b","أدوات السلامة":"#e74c3c","قطع غيار":"#0d9488","أخرى":"#94a3b8"};
+
+// ---------- Tab switching ----------
+document.querySelectorAll('.method-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.method-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.method-panel').forEach(p => p.classList.add('hidden'));
+    document.getElementById('method-' + btn.dataset.method).classList.remove('hidden');
+    if (btn.dataset.method === 'treemap' && !window.__treemapDrawn) { drawTreemap(); window.__treemapDrawn = true; }
+    if (btn.dataset.method === 'network' && !window.__networkDrawn) { drawNetwork(); window.__networkDrawn = true; }
+  });
+});
+
+function esc(s) { return (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function catColor(cat) { return CAT_COLORS[cat] || '#94a3b8'; }
+function fmtNum(n) { return Number(n ?? 0).toLocaleString('ar'); }
+
+function itemTableHTML(list) {
+  if (!list || !list.length) return '<div class="text-slate-400 text-sm py-10 text-center">لا توجد أصناف في هذا التصنيف</div>';
+  const rows = list.map(it => `
+    <tr class="border-b border-slate-100 hover:bg-slate-50">
+      <td class="px-3 py-2.5"><span class="inline-block w-2 h-2 rounded-full align-middle ms-1" style="background:${catColor(it.category)}"></span> <span class="text-xs font-semibold" style="color:${catColor(it.category)}">${esc(it.category)}</span></td>
+      <td class="px-3 py-2.5 font-medium text-slate-800">${esc(it.name)}</td>
+      <td class="px-3 py-2.5 text-slate-400 text-xs">${esc(it.spec) || '—'}</td>
+      <td class="px-3 py-2.5 text-slate-500 text-xs">${esc(it.uom) || '—'}</td>
+      <td class="px-3 py-2.5 text-end font-semibold tabular-nums">${fmtNum(it.quantity)}</td>
+      <td class="px-3 py-2.5 font-mono text-xs text-slate-400">${esc(it.code)}</td>
+    </tr>`).join('');
+  return `<div class="overflow-hidden rounded-xl border border-slate-200">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <tr><th class="px-3 py-2.5 text-start">الفئة</th><th class="px-3 py-2.5 text-start">الصنف</th><th class="px-3 py-2.5 text-start">المواصفة</th><th class="px-3 py-2.5 text-start">الوحدة</th><th class="px-3 py-2.5 text-end">الكمية</th><th class="px-3 py-2.5 text-start">الرمز</th></tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+// ---------- METHOD 1: Tree Explorer ----------
+const TREE = {};
+for (const wh of WAREHOUSES) TREE[wh.id] = { name: wh.name, type: wh.type, children: {} };
+for (const it of ITEMS) { const n = TREE[it.warehouse]; (n.children[it.bucket] ??= []).push(it); }
+for (const row of PROJECT_STOCK) {
+  const n = TREE[row.warehouse_id];
+  const it = { code: row.code, name: row.name, category: row.category, spec: row.spec, uom: row.uom, quantity: row.quantity };
+  (n.children[row.category] ??= []).push(it);
+}
+
+function buildTreeHTML() {
+  let out = '';
+  for (const wh of WAREHOUSES) {
+    const node = TREE[wh.id];
+    const bucketKeys = Object.keys(node.children);
+    const totalCount = bucketKeys.reduce((s,k) => s + node.children[k].length, 0);
+    const icon = wh.type === 'MAIN' ? '🏢' : '🏗️';
+    out += `<details ${wh.type==='MAIN' ? 'open' : ''}>
+      <summary><span class="tree-row" id="folder-${wh.id}|__all__" onclick="showFolder(event,'${wh.id}','__all__')">
+        <span>${icon}</span><span class="font-bold">${esc(wh.name)}</span><span class="tree-count">${totalCount}</span>
+      </span></summary>
+      <div style="padding-inline-start:22px">`;
+    for (const bk of bucketKeys.sort((a,b) => node.children[b].length - node.children[a].length)) {
+      const bicon = wh.type === 'MAIN' ? (BUCKET_ICON[bk] || '📁') : '🏷️';
+      out += `<div class="tree-row" id="folder-${wh.id}|${bk}" onclick="showFolder(event,'${wh.id}','${bk.replace(/'/g,"\\'")}')">
+        <span>${bicon}</span><span>${esc(bk)}</span><span class="tree-count">${node.children[bk].length}</span>
+      </div>`;
+    }
+    if (!bucketKeys.length) out += '<div class="text-xs text-slate-400 py-2 px-2">لا يوجد رصيد حالياً</div>';
+    out += '</div></details>';
+  }
+  return out;
+}
+document.getElementById('tree-root').innerHTML = buildTreeHTML();
+
+function showFolder(event, whId, bucketKey) {
+  event.stopPropagation();
+  document.querySelectorAll('.tree-row').forEach(r => r.classList.remove('active-folder'));
+  const rowEl = document.getElementById('folder-' + whId + '|' + bucketKey);
+  if (rowEl) rowEl.classList.add('active-folder');
+  const wh = WAREHOUSES.find(w => w.id === whId);
+  let list, label;
+  if (bucketKey === '__all__') {
+    list = Object.values(TREE[whId].children).flat();
+    label = 'كل الأصناف';
+  } else {
+    list = TREE[whId].children[bucketKey] || [];
+    label = bucketKey;
+  }
+  document.getElementById('tree-breadcrumb').innerHTML = `<span class="font-semibold text-slate-600">${esc(wh.name)}</span><span>/</span><span class="font-semibold text-primary">${esc(label)}</span><span class="tree-count">${list.length} صنف</span>`;
+  document.getElementById('tree-content').innerHTML = itemTableHTML(list);
+}
+
+// ---------- METHOD 2: Treemap ----------
+function buildTreemapData() {
+  const root = { name: 'root', children: [] };
+  for (const wh of WAREHOUSES) {
+    const relevant = wh.type === 'MAIN' ? ITEMS.filter(i => i.warehouse === wh.id) : PROJECT_STOCK.filter(r => r.warehouse_id === wh.id).map(r => ({category: r.category}));
+    const byCat = {};
+    for (const it of relevant) byCat[it.category] = (byCat[it.category] || 0) + 1;
+    const children = Object.entries(byCat).map(([cat, count]) => ({ name: cat, value: count }));
+    if (children.length) root.children.push({ name: wh.name, whId: wh.id, children });
+  }
+  return root;
+}
+
+function drawTreemap() {
+  const el = document.getElementById('treemap-canvas');
+  const width = el.clientWidth, height = el.clientHeight;
+  const data = buildTreemapData();
+  const rootH = d3.hierarchy(data).sum(d => d.value).sort((a,b) => b.value - a.value);
+  d3.treemap().size([width, height]).paddingOuter(6).paddingTop(26).paddingInner(3)(rootH);
+  el.style.position = 'relative';
+  let html = '';
+  for (const node of rootH.descendants()) {
+    if (node.depth === 0) continue;
+    const x = node.x0, y = node.y0, w = node.x1 - node.x0, h = node.y1 - node.y0;
+    if (node.depth === 1) {
+      html += `<div class="treemap-group" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px"><div class="treemap-group-label">${esc(node.data.name)}</div></div>`;
+    } else if (w > 2 && h > 2) {
+      const showLabel = w > 55 && h > 34;
+      const showNumOnly = !showLabel && w > 26 && h > 20;
+      html += `<div class="treemap-leaf" style="left:${x+2}px;top:${y+2}px;width:${w-4}px;height:${h-4}px;background:${catColor(node.data.name)}" onclick="showTreemapDetail('${node.parent.data.whId}','${node.data.name.replace(/'/g,"\\'")}')" title="${esc(node.parent.data.name)} — ${esc(node.data.name)}: ${node.value} صنف">
+        <div class="treemap-leaf-label">${showLabel ? esc(node.data.name) + '<br>' + node.value : showNumOnly ? node.value : ''}</div>
+      </div>`;
+    }
+  }
+  el.innerHTML = html;
+}
+
+function showTreemapDetail(whId, category) {
+  const wh = WAREHOUSES.find(w => w.id === whId);
+  const list = wh.type === 'MAIN'
+    ? ITEMS.filter(i => i.warehouse === whId && i.category === category)
+    : PROJECT_STOCK.filter(r => r.warehouse_id === whId && r.category === category).map(r => ({code:r.code,name:r.name,category:r.category,spec:r.spec,uom:r.uom,quantity:r.quantity}));
+  document.getElementById('treemap-detail').innerHTML = `
+    <div class="bg-white rounded-xl border border-slate-200 shadow-card p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="inline-block w-3 h-3 rounded" style="background:${catColor(category)}"></span>
+        <h3 class="font-bold text-slate-800">${esc(wh.name)} — ${esc(category)}</h3>
+        <span class="tree-count">${list.length} صنف</span>
+      </div>
+      ${itemTableHTML(list)}
+    </div>`;
+  document.getElementById('treemap-detail').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+// ---------- METHOD 3: Floor Map ----------
+function buildFloorMap() {
+  let out = '';
+  for (const wh of WAREHOUSES) {
+    const node = TREE[wh.id];
+    const keys = Object.keys(node.children);
+    const maxCount = Math.max(1, ...keys.map(k => node.children[k].length));
+    const zoneClass = wh.type === 'PROJECT' ? 'floor-zone project' : 'floor-zone';
+    let tiles = '';
+    for (const k of keys.sort((a,b) => node.children[b].length - node.children[a].length)) {
+      const count = node.children[k].length;
+      const intensity = 0.35 + 0.65 * (count / maxCount);
+      const bg = wh.type === 'PROJECT' ? `rgba(232,168,56,${intensity})` : `rgba(26,95,122,${intensity})`;
+      const icon = wh.type === 'MAIN' ? (BUCKET_ICON[k] || '📁') : '🏷️';
+      tiles += `<div class="floor-tile" style="background:${bg}" onclick="showFolder(event,'${wh.id}','${k.replace(/'/g,"\\'")}');document.querySelector('[data-method=tree]').click();">
+        <div class="text-lg">${icon}</div>
+        <div class="text-xs font-semibold mt-1 leading-tight">${esc(k)}</div>
+        <div class="fq tabular-nums mt-1">${count}</div>
+      </div>`;
+    }
+    if (!keys.length) tiles = '<div class="text-xs text-slate-400 py-4 px-2 col-span-full">لا يوجد رصيد حالياً في هذا المستودع (لم يصله تحويل بعد)</div>';
+    out += `<div class="${zoneClass}">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">${wh.type==='MAIN'?'🏢':'🏗️'}</span>
+          <h3 class="font-bold text-slate-800">${esc(wh.name)}</h3>
+          <span class="text-xs px-2 py-0.5 rounded-full ${wh.type==='MAIN' ? 'bg-primary/10 text-primary' : 'bg-accent/20 text-accent-dark'}">${wh.type==='MAIN'?'رئيسي':'مشروع'}</span>
+        </div>
+        <span class="text-xs text-slate-400">${esc(wh.location)}</span>
+      </div>
+      <div class="grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">${tiles}</div>
+    </div>`;
+  }
+  document.getElementById('floor-map').innerHTML = out;
+}
+buildFloorMap();
+
+// ---------- METHOD 4: Card Gallery ----------
+let kanbanGroupBy = 'category';
+const GROUP_LABELS = { category: 'الفئة', warehouse: 'المستودع', status: 'حالة المخزون' };
+function renderGroupToggle() {
+  document.getElementById('kanban-group-toggle').innerHTML = Object.keys(GROUP_LABELS).map(k =>
+    `<button onclick="kanbanGroupBy='${k}';renderGroupToggle();renderKanban();" class="text-xs px-3 py-1.5 rounded-full font-semibold ${kanbanGroupBy===k ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${GROUP_LABELS[k]}</button>`
+  ).join('');
+}
+function statusOf(q) { return q <= 0 ? 'نفد' : q <= 5 ? 'منخفض' : 'متوفر'; }
+function statusColor(s) { return s==='نفد' ? '#e74c3c' : s==='منخفض' ? '#f39c12' : '#27ae60'; }
+function renderKanban() {
+  const q = document.getElementById('kanban-search').value.trim();
+  const filtered = ITEMS.filter(i => !q || i.name.includes(q) || i.code.includes(q));
+  const groups = {};
+  for (const it of filtered) {
+    const key = kanbanGroupBy === 'category' ? it.category : kanbanGroupBy === 'warehouse' ? WAREHOUSES.find(w=>w.id===it.warehouse).name : statusOf(it.quantity);
+    (groups[key] ??= []).push(it);
+  }
+  const board = document.getElementById('kanban-board');
+  board.innerHTML = Object.entries(groups).sort((a,b)=>b[1].length-a[1].length).map(([key, list]) => `
+    <div class="kanban-col shrink-0">
+      <div class="flex items-center justify-between mb-3 px-1">
+        <h4 class="font-bold text-sm text-slate-700">${esc(key)}</h4>
+        <span class="tree-count">${list.length}</span>
+      </div>
+      <div class="space-y-2.5 max-h-[560px] overflow-y-auto pe-1">
+        ${list.map(it => `
+          <div class="item-card bg-white rounded-lg shadow-card p-3" style="border-color:${kanbanGroupBy==='category' ? catColor(it.category) : statusColor(statusOf(it.quantity))}">
+            <div class="text-xs font-mono text-slate-400 mb-1">${esc(it.code)}</div>
+            <div class="text-sm font-semibold text-slate-800 leading-snug">${esc(it.name)}</div>
+            <div class="flex items-center justify-between mt-2">
+              <span class="text-xs px-2 py-0.5 rounded-full" style="background:${catColor(it.category)}22;color:${catColor(it.category)}">${esc(it.category)}</span>
+              <span class="text-sm font-bold tabular-nums" style="color:${statusColor(statusOf(it.quantity))}">${fmtNum(it.quantity)}</span>
+            </div>
+            ${it.spec ? `<div class="text-xs text-slate-400 mt-1.5">📐 ${esc(it.spec)}</div>` : ''}
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+renderGroupToggle();
+renderKanban();
+document.getElementById('kanban-search').addEventListener('input', renderKanban);
+
+// ---------- METHOD 5: Network ----------
+function drawNetwork() {
+  const flowEdges = [];
+  for (const t of TRANSFERS) {
+    if (t.type === 'TRANSFER' && t.from && t.to) flowEdges.push({ from: t.from, to: t.to, kind: 'transfer' });
+    else if (t.type === 'IN' && !t.from) flowEdges.push({ from: 'مشروع اليرموك (توريد)', to: t.to, kind: 'in' });
+  }
+  const outNoDestCount = TRANSFERS.filter(t => t.type === 'OUT').length;
+  const edgeMap = new Map();
+  for (const e of flowEdges) {
+    const key = e.from + '␟' + e.to + '␟' + e.kind;
+    edgeMap.set(key, (edgeMap.get(key) || 0) + 1);
+  }
+  const links = [...edgeMap.entries()].map(([k, count]) => { const [source, target, kind] = k.split('␟'); return { source, target, count, kind }; });
+  const nodeNames = [...new Set(flowEdges.flatMap(e => [e.from, e.to]))];
+  const nodes = nodeNames.map(name => ({ id: name, isVirtual: name.includes('توريد') }));
+
+  const el = document.getElementById('network-canvas');
+  const width = el.clientWidth, height = el.clientHeight;
+  el.innerHTML = '';
+  const svg = d3.select(el).append('svg').attr('width', width).attr('height', height);
+
+  svg.append('defs').append('marker').attr('id', 'arrow').attr('viewBox', '0 -5 10 10').attr('refX', 26).attr('refY', 0)
+    .attr('markerWidth', 7).attr('markerHeight', 7).attr('orient', 'auto')
+    .append('path').attr('d', 'M0,-5L10,0L0,5').attr('fill', '#94a3b8');
+
+  const sim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(170).strength(0.6))
+    .force('charge', d3.forceManyBody().strength(-900))
+    .force('center', d3.forceCenter(width/2, height/2))
+    .force('collide', d3.forceCollide(70));
+
+  const link = svg.append('g').selectAll('path').data(links).join('path')
+    .attr('class', d => 'network-link' + (d.kind === 'in' ? ' in-flow' : ''))
+    .attr('stroke-width', d => 1.5 + Math.min(d.count, 20) * 0.9)
+    .attr('marker-end', 'url(#arrow)');
+
+  const linkLabel = svg.append('g').selectAll('text').data(links).join('text')
+    .attr('font-size', 11).attr('fill', '#64748b').attr('font-weight', 700)
+    .text(d => d.count);
+
+  const node = svg.append('g').selectAll('g').data(nodes).join('g').attr('class', 'network-node')
+    .call(d3.drag().on('start', dragstart).on('drag', dragged).on('end', dragend));
+
+  node.append('circle')
+    .attr('r', d => d.isVirtual ? 22 : 34)
+    .attr('fill', d => d.isVirtual ? '#e8a838' : (WAREHOUSES.find(w=>w.name===d.id)?.type === 'MAIN' ? '#1a5f7a' : '#3498db'));
+  node.append('text').attr('text-anchor', 'middle').attr('dy', 50).text(d => d.id.length > 18 ? d.id.slice(0,16)+'…' : d.id);
+  node.append('text').attr('text-anchor', 'middle').attr('dy', 5).attr('fill', '#fff').attr('stroke', 'none').style('font-size','16px').text(d => d.isVirtual ? '🚚' : (WAREHOUSES.find(w=>w.name===d.id)?.type === 'MAIN' ? '🏢' : '🏗️'));
+
+  sim.on('tick', () => {
+    link.attr('d', d => `M${d.source.x},${d.source.y} L${d.target.x},${d.target.y}`);
+    linkLabel.attr('x', d => (d.source.x + d.target.x)/2).attr('y', d => (d.source.y + d.target.y)/2 - 6);
+    node.attr('transform', d => `translate(${d.x},${d.y})`);
+  });
+  function dragstart(event,d){ if(!event.active) sim.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; }
+  function dragged(event,d){ d.fx=event.x; d.fy=event.y; }
+  function dragend(event,d){ if(!event.active) sim.alphaTarget(0); d.fx=null; d.fy=null; }
+
+  const typeCounts = TRANSFERS.reduce((a,t)=>{a[t.type]=(a[t.type]||0)+1;return a},{});
+  document.getElementById('network-stats').innerHTML = `
+    <div class="flex justify-between"><span class="text-slate-500">تحويلات بين مستودعات</span><span class="font-bold tabular-nums">${typeCounts.TRANSFER||0}</span></div>
+    <div class="flex justify-between"><span class="text-slate-500">وارد (استلام)</span><span class="font-bold tabular-nums text-success">${typeCounts.IN||0}</span></div>
+    <div class="flex justify-between"><span class="text-slate-500">صادر بلا وجهة محددة</span><span class="font-bold tabular-nums text-slate-400">${outNoDestCount}</span></div>
+    <div class="pt-2 mt-2 border-t border-slate-100 flex justify-between"><span class="text-slate-600 font-semibold">إجمالي الحركات</span><span class="font-bold tabular-nums">${TRANSFERS.length}</span></div>`;
+
+  document.getElementById('network-routes').innerHTML = links.sort((a,b)=>b.count-a.count).slice(0,6).map(l => `
+    <div class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-50 last:border-0">
+      <span class="text-xs text-slate-600 truncate">${esc(l.source.id||l.source)} ← ${esc(l.target.id||l.target)}</span>
+      <span class="tree-count shrink-0">${l.count}</span>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>

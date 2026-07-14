@@ -250,7 +250,10 @@ CREATE TABLE IF NOT EXISTS project_diagrams (
 CREATE TABLE IF NOT EXISTS warehouses (
   id TEXT PRIMARY KEY,
   name_ar TEXT,
+  name_en TEXT,
   location TEXT,
+  type TEXT,                 -- MAIN (physical store) | PROJECT (project site holding transferred stock)
+  project_id TEXT,            -- FK -> projects.id; set only when type = PROJECT
   created_at TEXT
 );
 
@@ -259,8 +262,12 @@ CREATE TABLE IF NOT EXISTS items (
   code TEXT,
   name_ar TEXT,
   name_en TEXT,
-  category TEXT,
-  sub_category TEXT,
+  category TEXT,             -- canonical taxonomy id (see server/seed/warehouseTaxonomy.ts), e.g. 'PIPES'
+  sub_category TEXT,         -- canonical sub id within the category, e.g. 'DUCTILE'
+  spec TEXT,                 -- free-text size/dimension, e.g. "قطر 250ملم", "2 انج", "طول 12 م"
+  size_label TEXT,           -- normalized diameter chip for pipes/fittings/valves, e.g. "DN 600", "2 انج"
+  size_mm REAL,              -- numeric diameter in mm (inches converted) — sorts the size chips
+  condition TEXT,            -- NEW | GOOD | USED | NEEDS_REPAIR | BROKEN (imported from workbook notes)
   uom TEXT,
   min_stock REAL DEFAULT 0,
   max_stock REAL DEFAULT 0,
@@ -291,6 +298,10 @@ CREATE TABLE IF NOT EXISTS inventory_transactions (
   currency TEXT,
   total_value REAL DEFAULT 0,
   approved_by TEXT,
+  received_by TEXT,          -- من استلم المواد (custody name, free text)
+  is_loan INTEGER DEFAULT 0, -- عهدة: outgoing loan expected back
+  returned_at TEXT,          -- set when a loan is returned (one-tap from the custody board)
+  signature_file TEXT,       -- on-screen receiver signature image (server/data/item-images sibling dir)
   notes TEXT,
   created_at TEXT
 );

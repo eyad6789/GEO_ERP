@@ -1,12 +1,24 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
-import { ArabicTable, FormDialog, type Column, type FormFieldConfig } from '../../components/shared'
-import { Badge, Button } from '../../components/ui'
-import { useResource } from '../../hooks/useResource'
+import { Plus, LayoutGrid, Table as TableIcon, Merge } from 'lucide-react'
+import { ArabicTable, type Column } from '../../components/shared'
+import { Badge, Button, Tabs } from '../../components/ui'
+import { useApi } from '../../hooks/useResource'
 import { useT, useLang } from '../../context/LangContext'
-import { formatCurrency, formatNumber, pickName } from '../../lib/format'
-import type { Item } from '../../types'
-import { STOCK_STATUS_COLOR, type StockSummaryRow } from './helpers'
+import { formatNumber, pickName } from '../../lib/format'
+import {
+  STOCK_STATUS_COLOR,
+  categoryLabel,
+  subCategoryLabel,
+  type CategoryDef,
+  type DuplicateItem,
+  type StockSummaryRow,
+} from './helpers'
+import { CategoryExplorer } from './CategoryExplorer'
+import { ItemDetailDialog } from './ItemDetailDialog'
+import { NewItemDialog } from './NewItemDialog'
+import { MergeDuplicatesDialog } from './MergeDuplicatesDialog'
+
+type ViewMode = 'cards' | 'table'
 
 export function ItemsTab({
   rows,
@@ -19,8 +31,14 @@ export function ItemsTab({
 }) {
   const t = useT()
   const { lang } = useLang()
-  const { create } = useResource<Item>('items')
+  const { data: taxonomy } = useApi<CategoryDef[]>('/warehouse/categories')
+  const { data: dupGroups, refetch: refetchDupGroups } = useApi<DuplicateItem[][]>('/warehouse/duplicate-candidates')
   const [open, setOpen] = useState(false)
+  const [mergeOpen, setMergeOpen] = useState(false)
+  const [view, setView] = useState<ViewMode>('cards')
+  const [detailId, setDetailId] = useState<string | null>(null)
+
+  const mergeGroupCount = dupGroups?.length ?? 0
 
   const columns: Column<StockSummaryRow>[] = [
     {
@@ -40,18 +58,33 @@ export function ItemsTab({
     {
       key: 'category',
       header: t('warehouse.col.category'),
+      accessor: (r) => categoryLabel(taxonomy, r.category, lang),
       sortable: true,
-      render: (r) => <span className="text-slate-500">{r.category || '—'}</span>,
+      render: (r) => <span className="text-slate-500">{categoryLabel(taxonomy, r.category, lang)}</span>,
+    },
+    {
+      key: 'sub_category',
+      header: t('warehouse.col.sub_category'),
+      accessor: (r) => subCategoryLabel(taxonomy, r.sub_category, lang),
+      sortable: true,
+      render: (r) => (
+        <span className="text-slate-500">{subCategoryLabel(taxonomy, r.sub_category, lang) || '—'}</span>
+      ),
+    },
+    {
+      key: 'size',
+      header: t('warehouse.col.size'),
+      accessor: (r) => r.size_label,
+      render: (r) => (r.size_label ? <span dir="ltr" className="text-slate-600">{r.size_label}</span> : '—'),
+    },
+    {
+      key: 'spec',
+      header: t('warehouse.col.spec'),
+      accessor: (r) => r.spec,
+      sortable: true,
+      render: (r) => <span className="text-slate-500">{r.spec || '—'}</span>,
     },
     { key: 'uom', header: t('warehouse.col.uom'), align: 'center' },
-    {
-      key: 'unit_cost',
-      header: t('warehouse.col.unit_cost'),
-      accessor: (r) => r.unit_cost,
-      sortable: true,
-      align: 'end',
-      render: (r) => <span className="tabular-nums">{formatCurrency(r.unit_cost, 'IQD', lang)}</span>,
-    },
     {
       key: 'quantity',
       header: t('warehouse.col.quantity'),
@@ -73,57 +106,60 @@ export function ItemsTab({
     },
   ]
 
-  const fields: FormFieldConfig[] = [
-    { name: 'name_ar', label: t('warehouse.field.name_ar'), required: true, dir: 'rtl' },
-    { name: 'name_en', label: t('warehouse.field.name_en'), required: true, dir: 'ltr' },
-    { name: 'code', label: t('warehouse.field.code'), required: true },
-    { name: 'category', label: t('warehouse.field.category'), required: true },
-    { name: 'uom', label: t('warehouse.field.uom'), required: true, placeholder: 'kg / m / pcs' },
-    { name: 'shelf_location', label: t('warehouse.field.shelf_location'), placeholder: 'A-12' },
-    { name: 'min_stock', label: t('warehouse.field.min_stock'), type: 'number' },
-    { name: 'max_stock', label: t('warehouse.field.max_stock'), type: 'number' },
-    { name: 'unit_cost', label: t('warehouse.field.unit_cost'), type: 'number' },
+  const viewTabs = [
+    { key: 'cards', label: t('warehouse.view.cards'), icon: <LayoutGrid className="h-4 w-4" /> },
+    { key: 'table', label: t('warehouse.view.table'), icon: <TableIcon className="h-4 w-4" /> },
   ]
+
+  const toolbarButtons = (
+    <div className="flex items-center gap-2">
+      {mergeGroupCount > 0 && (
+        <Button size="sm" variant="outline" onClick={() => setMergeOpen(true)}>
+          <Merge className="h-4 w-4" />
+          {t('warehouse.merge.button')} ({formatNumber(mergeGroupCount, lang)})
+        </Button>
+      )}
+      <Button size="sm" onClick={() => setOpen(true)}>
+        <Plus className="h-4 w-4" />
+        {t('warehouse.items.new')}
+      </Button>
+    </div>
+  )
 
   return (
     <>
-      <ArabicTable<StockSummaryRow>
-        columns={columns}
-        data={rows}
-        loading={loading}
-        rowKey={(r) => r.item_id}
-        searchPlaceholder={t('warehouse.items.search')}
-        exportName="warehouse-items"
-        emptyTitle={t('warehouse.items.empty')}
-        emptyHint={t('warehouse.items.empty_hint')}
-        toolbar={
-          <Button size="sm" onClick={() => setOpen(true)}>
-            <Plus className="h-4 w-4" />
-            {t('warehouse.items.new')}
-          </Button>
-        }
-      />
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <Tabs tabs={viewTabs} value={view} onChange={(k) => setView(k as ViewMode)} variant="pills" />
+        {view === 'cards' && toolbarButtons}
+      </div>
 
-      <FormDialog
-        open={open}
-        onClose={() => setOpen(false)}
-        title={t('warehouse.items.new')}
-        fields={fields}
-        submitLabel={t('common.save')}
-        onSubmit={async (values) => {
-          await create({
-            name_ar: String(values.name_ar),
-            name_en: String(values.name_en),
-            code: String(values.code),
-            category: String(values.category),
-            uom: String(values.uom),
-            shelf_location: String(values.shelf_location ?? ''),
-            min_stock: Number(values.min_stock) || 0,
-            max_stock: Number(values.max_stock) || 0,
-            unit_cost: Number(values.unit_cost) || 0,
-            currency: 'IQD',
-          })
+      {view === 'cards' ? (
+        <CategoryExplorer rows={rows} onOpenItem={setDetailId} />
+      ) : (
+        <ArabicTable<StockSummaryRow>
+          columns={columns}
+          data={rows}
+          loading={loading}
+          rowKey={(r) => r.item_id}
+          onRowClick={(r) => setDetailId(r.item_id)}
+          searchPlaceholder={t('warehouse.items.search')}
+          exportName="warehouse-items"
+          emptyTitle={t('warehouse.items.empty')}
+          emptyHint={t('warehouse.items.empty_hint')}
+          toolbar={toolbarButtons}
+        />
+      )}
+
+      <ItemDetailDialog itemId={detailId} onClose={() => setDetailId(null)} />
+
+      <NewItemDialog open={open} onClose={() => setOpen(false)} onCreated={onChanged} rows={rows} />
+
+      <MergeDuplicatesDialog
+        open={mergeOpen}
+        onClose={() => setMergeOpen(false)}
+        onMerged={() => {
           onChanged()
+          refetchDupGroups()
         }}
       />
     </>
