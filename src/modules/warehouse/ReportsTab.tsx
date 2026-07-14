@@ -1,12 +1,27 @@
 import { useMemo, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts'
-import { AlertTriangle, Boxes, Layers, Wallet, Warehouse as WarehouseIcon } from 'lucide-react'
+import { AlertTriangle, BellRing, Boxes, Layers, PackageX, Warehouse as WarehouseIcon, ArrowLeftRight } from 'lucide-react'
 import { Card, CardHeader, CardBody, Badge, Select, LoadingState } from '../../components/ui'
 import { ChartCard, EmptyState, KpiCard, CHART_COLORS } from '../../components/shared'
-import { useApi } from '../../hooks/useResource'
+import { useApi, useResource } from '../../hooks/useResource'
 import { useT, useLang } from '../../context/LangContext'
-import { formatCurrency, formatCompact, formatNumber, pickName } from '../../lib/format'
-import { WAREHOUSE_IDS, type LowStockRow, type StockSummaryRow } from './helpers'
+import { formatNumber, formatDate, pickName } from '../../lib/format'
+import type { InventoryTransaction, Warehouse } from '../../types'
+import { categoryLabel, sortWarehouses, type CategoryDef, type LowStockRow, type StockSummaryRow } from './helpers'
+
+// Row shape returned by GET /api/warehouse/reorder-radar
+interface ReorderRadarRow {
+  item_id: string
+  code: string
+  name_ar: string
+  name_en: string
+  category: string
+  sub_category: string
+  size_label: string | null
+  uom: string
+  min_stock: number
+  quantity: number
+}
 
 export function ReportsTab() {
   const t = useT()
@@ -18,36 +33,59 @@ export function ReportsTab() {
     warehouseId ? { warehouse_id: warehouseId } : undefined,
   )
   const { data: lowStock } = useApi<LowStockRow[]>('/warehouse/low-stock')
+  const { data: radar } = useApi<ReorderRadarRow[]>('/warehouse/reorder-radar')
+  const { data: taxonomy } = useApi<CategoryDef[]>('/warehouse/categories')
+  const { data: warehouses } = useResource<Warehouse>('warehouses')
+  const { data: transactions } = useResource<InventoryTransaction>('inventory_transactions')
+  const warehouseMap = useMemo(() => {
+    const m = new Map<string, Warehouse>()
+    for (const w of warehouses) m.set(w.id, w)
+    return m
+  }, [warehouses])
+  const recentTransfers = useMemo(
+    () =>
+      transactions
+        .filter((tx) => tx.type === 'TRANSFER')
+        .sort((a, b) => (a.date < b.date ? 1 : -1))
+        .slice(0, 6),
+    [transactions],
+  )
 
   const rows = summary ?? []
 
   const totals = useMemo(() => {
     let qty = 0
-    let value = 0
+    let outOfStock = 0
     for (const r of rows) {
       qty += r.quantity || 0
-      value += (r.quantity || 0) * (r.unit_cost || 0)
+      if (r.stock_status === 'OUT') outOfStock += 1
     }
-    return { count: rows.length, qty, value }
+    return { count: rows.length, qty, outOfStock }
   }, [rows])
 
+  // Item count by category (costs are all 0 for real data, so value charts are meaningless).
   const byCategory = useMemo(() => {
     const m = new Map<string, number>()
     for (const r of rows) {
-      const cat = r.category || '—'
-      m.set(cat, (m.get(cat) ?? 0) + (r.quantity || 0) * (r.unit_cost || 0))
+      const cat = r.category || 'OTHER'
+      m.set(cat, (m.get(cat) ?? 0) + 1)
     }
     return Array.from(m.entries())
-      .map(([category, value]) => ({ category, value }))
-      .sort((a, b) => b.value - a.value)
-  }, [rows])
+      .map(([id, count]) => ({ category: categoryLabel(taxonomy, id, lang), count }))
+      .sort((a, b) => b.count - a.count)
+  }, [rows, taxonomy, lang])
 
   const whOptions = [
     { value: '', label: t('warehouse.reports.all') },
-    ...WAREHOUSE_IDS.map((id) => ({ value: id, label: t(`warehouse.wh.${id}`) })),
+    ...sortWarehouses(warehouses).map((w) => ({
+      value: w.id,
+      label: pickName(w, lang),
+      group: t(`warehouse.wh_type.${w.type}`),
+    })),
   ]
 
-  const low = lowStock ?? []
+  const low = (lowStock ?? []).filter((r) => r.quantity <= 0)
+  const radarRows = radar ?? []
 
   return (
     <div className="space-y-6">
@@ -77,18 +115,55 @@ export function ReportsTab() {
           accent="info"
         />
         <KpiCard
-          label={t('warehouse.reports.total_value')}
-          value={formatCurrency(totals.value, 'IQD', lang)}
-          hint={formatCompact(totals.value, lang)}
-          icon={<Wallet className="h-5 w-5" />}
-          accent="success"
+          label={t('warehouse.reports.out_of_stock')}
+          value={formatNumber(totals.outOfStock, lang)}
+          icon={<PackageX className="h-5 w-5" />}
+          accent={totals.outOfStock > 0 ? 'danger' : 'success'}
         />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Low-stock alerts */}
+        {/* Low-stock alerts: reorder radar (explicit thresholds) + zero-stock list */}
         <Card>
           <CardHeader
+            title={t('warehouse.radar.title')}
+            subtitle={`${radarRows.length}`}
+            icon={<BellRing className="h-5 w-5 text-warning" />}
+          />
+          <CardBody className="p-0">
+            {radarRows.length === 0 ? (
+              <EmptyState title={t('warehouse.radar.empty')} icon={<Boxes className="h-8 w-8" />} />
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {radarRows.map((r) => (
+                  <li key={r.item_id} className="flex items-center justify-between gap-3 px-5 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-slate-800">{pickName(r, lang)}</p>
+                      <p className="text-xs text-slate-400">
+                        <span className="font-mono">{r.code}</span> · {r.size_label || '—'}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3 text-xs">
+                      <span className="text-slate-500">
+                        {t('warehouse.reports.current')}:{' '}
+                        <span className="font-semibold text-slate-700 tabular-nums">
+                          {formatNumber(r.quantity, lang)}
+                        </span>{' '}
+                        / {t('warehouse.reports.min')}:{' '}
+                        <span className="tabular-nums">{formatNumber(r.min_stock, lang)}</span>
+                      </span>
+                      <Badge color="amber" dot>
+                        {t('warehouse.radar.below')} {formatNumber(r.min_stock - r.quantity, lang)}
+                      </Badge>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardBody>
+
+          <CardHeader
+            className="border-t border-slate-100"
             title={t('warehouse.reports.low_stock_title')}
             subtitle={`${low.length}`}
             icon={<AlertTriangle className="h-5 w-5 text-warning" />}
@@ -117,8 +192,8 @@ export function ReportsTab() {
                         {t('warehouse.reports.min')}:{' '}
                         <span className="tabular-nums">{formatNumber(r.min_stock, lang)}</span>
                       </span>
-                      <Badge color={r.quantity <= 0 ? 'red' : 'amber'} dot>
-                        {r.quantity <= 0 ? t('warehouse.stock.OUT') : t('warehouse.stock.LOW')}
+                      <Badge color="red" dot>
+                        {t('warehouse.stock.OUT')}
                       </Badge>
                     </div>
                   </li>
@@ -131,7 +206,7 @@ export function ReportsTab() {
         {/* Stock value by category */}
         {byCategory.length === 0 ? (
           <Card>
-            <CardHeader title={t('warehouse.reports.by_category')} icon={<Layers className="h-5 w-5" />} />
+            <CardHeader title={t('warehouse.reports.by_category_count')} icon={<Layers className="h-5 w-5" />} />
             <CardBody>
               {loading ? (
                 <LoadingState label={t('common.loading')} />
@@ -142,21 +217,21 @@ export function ReportsTab() {
           </Card>
         ) : (
           <ChartCard
-            title={t('warehouse.reports.by_category')}
-            subtitle={t('warehouse.reports.total_value')}
+            title={t('warehouse.reports.by_category_count')}
+            subtitle={t('warehouse.reports.item_count')}
             icon={<Layers className="h-5 w-5" />}
             height={300}
           >
             <BarChart data={byCategory} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
               <XAxis dataKey="category" tick={{ fontSize: 11, fill: '#64748b' }} interval={0} angle={-12} textAnchor="end" height={50} />
-              <YAxis tickFormatter={(v) => formatCompact(Number(v), lang)} tick={{ fontSize: 11, fill: '#64748b' }} width={56} />
+              <YAxis allowDecimals={false} tickFormatter={(v) => formatNumber(Number(v), lang)} tick={{ fontSize: 11, fill: '#64748b' }} width={56} />
               <Tooltip
-                formatter={(v: number | string) => formatCurrency(Number(v), 'IQD', lang)}
+                formatter={(v: number | string) => formatNumber(Number(v), lang)}
                 labelStyle={{ fontWeight: 600 }}
                 contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }}
               />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={48}>
+              <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={48}>
                 {byCategory.map((_, i) => (
                   <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                 ))}
@@ -165,6 +240,41 @@ export function ReportsTab() {
           </ChartCard>
         )}
       </div>
+
+      {/* Recent transfers — surfaces from→to movements at a glance */}
+      <Card>
+        <CardHeader
+          title={t('warehouse.reports.recent_transfers')}
+          subtitle={`${recentTransfers.length}`}
+          icon={<ArrowLeftRight className="h-5 w-5 text-primary" />}
+        />
+        <CardBody className="p-0">
+          {recentTransfers.length === 0 ? (
+            <EmptyState title={t('common.empty')} icon={<ArrowLeftRight className="h-8 w-8" />} />
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {recentTransfers.map((tx) => {
+                const from = tx.from_warehouse_id ? warehouseMap.get(tx.from_warehouse_id) : undefined
+                const to = warehouseMap.get(tx.warehouse_id)
+                return (
+                  <li key={tx.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                    <div className="flex min-w-0 items-center gap-2 text-sm">
+                      <span className="truncate font-medium text-slate-800">
+                        {from ? pickName(from, lang) : tx.from_warehouse_id}
+                      </span>
+                      <ArrowLeftRight className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                      <span className="truncate font-medium text-slate-800">
+                        {to ? pickName(to, lang) : tx.warehouse_id}
+                      </span>
+                    </div>
+                    <span className="shrink-0 text-xs text-slate-400">{formatDate(tx.date, lang)}</span>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </CardBody>
+      </Card>
     </div>
   )
 }

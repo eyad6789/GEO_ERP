@@ -152,6 +152,52 @@ function migrate(): void {
       }
     }
   }
+
+  // Warehouse module: real Abu Ghraib + Al Dora data replaced the 2-fake-warehouse
+  // demo — warehouses gained name_en/type/project_id, items gained a free-text
+  // spec/dimension field. Added idempotently so existing databases gain the
+  // columns without a reseed.
+  const whCols = db.prepare(`PRAGMA table_info(warehouses)`).all() as Array<{ name: string }>
+  if (whCols.length) {
+    const whHas = (n: string) => whCols.some((c) => c.name === n)
+    const addWhCol = (n: string, type: string) => { if (!whHas(n)) db.exec(`ALTER TABLE warehouses ADD COLUMN ${n} ${type}`) }
+    addWhCol('name_en', 'TEXT')
+    addWhCol('type', 'TEXT')        // MAIN | PROJECT
+    addWhCol('project_id', 'TEXT')  // FK -> projects.id; set only when type = PROJECT
+  }
+  const itemCols = db.prepare(`PRAGMA table_info(items)`).all() as Array<{ name: string }>
+  if (itemCols.length && !itemCols.some((c) => c.name === 'spec')) {
+    db.exec(`ALTER TABLE items ADD COLUMN spec TEXT`) // free-text size/dimension
+  }
+  // Warehouse category explorer: normalized pipe/fitting diameter for the size chips.
+  if (itemCols.length) {
+    if (!itemCols.some((c) => c.name === 'size_label')) db.exec(`ALTER TABLE items ADD COLUMN size_label TEXT`)
+    if (!itemCols.some((c) => c.name === 'size_mm')) db.exec(`ALTER TABLE items ADD COLUMN size_mm REAL`)
+  }
+
+  // Warehouse smart search: dialect words the storekeeper taught the system
+  // ("هل تقصد…؟" confirmations). term = what he typed, target = the word it means.
+  db.exec(`CREATE TABLE IF NOT EXISTS search_synonyms (
+    id TEXT PRIMARY KEY,
+    term TEXT,
+    target TEXT,
+    created_at TEXT
+  )`)
+
+  // Warehouse custody (عهدة): who received an outgoing movement, loan tracking,
+  // and the on-screen signature captured on delivery.
+  const txnCols = db.prepare(`PRAGMA table_info(inventory_transactions)`).all() as Array<{ name: string }>
+  if (txnCols.length) {
+    const txnHas = (n: string) => txnCols.some((c) => c.name === n)
+    if (!txnHas('received_by')) db.exec(`ALTER TABLE inventory_transactions ADD COLUMN received_by TEXT`)
+    if (!txnHas('is_loan')) db.exec(`ALTER TABLE inventory_transactions ADD COLUMN is_loan INTEGER DEFAULT 0`)
+    if (!txnHas('returned_at')) db.exec(`ALTER TABLE inventory_transactions ADD COLUMN returned_at TEXT`)
+    if (!txnHas('signature_file')) db.exec(`ALTER TABLE inventory_transactions ADD COLUMN signature_file TEXT`)
+  }
+  // Item condition (شغال/عاطل/بحاجة صيانة…) — canonical enum, imported from the workbooks.
+  if (itemCols.length && !itemCols.some((c) => c.name === 'condition')) {
+    db.exec(`ALTER TABLE items ADD COLUMN condition TEXT`) // NEW | GOOD | USED | NEEDS_REPAIR | BROKEN
+  }
 }
 
 // Create a posting ASSET account under «اليات» (code 5) for every vehicle that

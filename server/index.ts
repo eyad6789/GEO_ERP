@@ -23,6 +23,8 @@ const app = express()
 app.use('/api/vehicle-documents', express.json({ limit: '30mb' }))
 app.use('/api/employee-documents', express.json({ limit: '30mb' }))
 app.use('/api/hr/attendance-import', express.json({ limit: '30mb' }))
+// Item camera photos (base64) also need headroom.
+app.use('/api/warehouse/item-photo', express.json({ limit: '20mb' }))
 app.use(express.json({ limit: '2mb' }))
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))

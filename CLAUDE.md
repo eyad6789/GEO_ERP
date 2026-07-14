@@ -16,7 +16,7 @@ Arabic-first (RTL, AR/EN toggle) demo ERP for an Iraqi construction/engineering 
 - `server/index.ts` — backend entry: Express API, serves `dist/` SPA in prod
 - `server/routes/` — `resource.ts` = generic `/api/:resource` CRUD; plus computed endpoints: `dashboard.ts`, `accounting.ts`, `reports.ts`, `warehouse.ts`, `fleet.ts`, `vehicleAccounting.ts`, `vehicleDocs.ts`
 - `server/db/` — `schema.sql` (all tables) + `connection.ts`
-- `server/seed/` — `seed.ts` deterministic generator + `chartOfAccounts.ts`; fleet seeding split out: `fleetData.ts`, `fleetCosts.ts`, `seedFleetOnly.ts`
+- `server/seed/` — `seed.ts` deterministic generator + `chartOfAccounts.ts`; fleet seeding split out: `fleetData.ts`, `fleetCosts.ts`, `seedFleetOnly.ts`; warehouse seeding split out: `warehouseData.ts` (raw Excel rows — auto-generated, don't hand-edit) + `warehouseTaxonomy.ts` (14-category tree, single source of truth for category IDs) + `warehouseClassification.ts` (generated code→category/size mapping) + `warehouseTransfers.ts` + `warehouseSeeder.ts` + `seedWarehouseOnly.ts` (`npm run seed:warehouse`, additive — only warehouse tables)
 - `server/lib/eventLog.ts` — every write appends an immutable audit row; `ids.ts` — id generation
 - `src/main.tsx` — frontend entry; `src/App.tsx` assembles router from per-module routes
 - `src/modules/<name>/` — one folder per module (dashboard, companies, projects, hr, accounting, warehouse, vehicles, archive, eventlogs, notes, debug), each exports `routes.tsx`
@@ -35,7 +35,7 @@ Arabic-first (RTL, AR/EN toggle) demo ERP for an Iraqi construction/engineering 
 - No tests exist
 
 ## Conventions & Gotchas
-- **Local dev needs Node 20.** The machine default is Node 26, which can't build the `better-sqlite3` native module — put `node@20` on PATH before `npm install` / `npm run dev`.
+- **Node:** the machine's fnm default is currently Node 24 (v24.17), and the prebuilt `better-sqlite3` loads fine under it (verified 2026-07). If a future Node major bump breaks the native module again, pin an LTS (e.g. node@20) on PATH before `npm install`.
 - Ports: API 4000, Vite dev 5173 (proxies `/api` → 4000). Env var NAMES: `PORT`, `HOST`; deploy script: `SERVER_NAME`, `APP_PORT`, `RUN_USER`, `FORCE_SEED`
 - Journal entries must balance (Σdebit = Σcredit) — server rejects unbalanced; warehouse transactions actually move stock
 - Special API routers mount BEFORE generic `resourceRouter` in `server/index.ts` — order matters

@@ -7,6 +7,7 @@
 import { db, initSchema, ensureVehicleAccounts } from '../db/connection.js'
 import { buildAccounts, postingAccounts } from './chartOfAccounts.js'
 import { FLEET_ROWS } from './fleetData.js'
+import { seedWarehouseData } from './warehouseSeeder.js'
 
 // ---- deterministic RNG (Mulberry32) ---------------------------------------
 let _s = 0x9e3779b9
@@ -57,38 +58,6 @@ const DEPTS = ['الإدارة العامة', 'المالية والمحاسبة
 const DEPTS_EN = ['Administration', 'Finance & Accounting', 'Human Resources', 'Project Management', 'Engineering', 'Procurement', 'Warehousing', 'IT', 'Quality & Safety', 'Legal']
 const TITLES = ['مدير عام', 'نائب المدير العام', 'مدير مالي', 'محاسب أول', 'محاسب', 'مدير موارد بشرية', 'مهندس مدني', 'مهندس معماري', 'مهندس مشروع', 'مدير مشروع', 'مساح', 'فني', 'أمين مستودع', 'مسؤول مشتريات', 'مراقب جودة', 'مسؤول سلامة', 'سكرتير', 'سائق', 'عامل بناء', 'كهربائي']
 
-const ITEM_DEFS: [string, string, string, string][] = [
-  ['إسمنت بورتلاندي', 'Portland Cement', 'مواد بناء', 'طن'],
-  ['حديد تسليح 16مم', 'Rebar 16mm', 'مواد بناء', 'طن'],
-  ['حديد تسليح 12مم', 'Rebar 12mm', 'مواد بناء', 'طن'],
-  ['طابوق', 'Bricks', 'مواد بناء', 'قطعة'],
-  ['رمل', 'Sand', 'مواد بناء', 'متر مكعب'],
-  ['حصى', 'Gravel', 'مواد بناء', 'متر مكعب'],
-  ['بلوك إسمنتي', 'Concrete Block', 'مواد بناء', 'قطعة'],
-  ['جص', 'Gypsum', 'مواد بناء', 'كيس'],
-  ['سيراميك أرضيات', 'Floor Ceramic', 'تشطيبات', 'متر مربع'],
-  ['رخام', 'Marble', 'تشطيبات', 'متر مربع'],
-  ['كيبل نحاس 4مم', 'Copper Cable 4mm', 'كهربائيات', 'لفة'],
-  ['قاطع كهربائي', 'Circuit Breaker', 'كهربائيات', 'قطعة'],
-  ['لوحة توزيع', 'Distribution Panel', 'كهربائيات', 'قطعة'],
-  ['مصباح LED', 'LED Light', 'كهربائيات', 'قطعة'],
-  ['مأخذ كهربائي', 'Power Socket', 'كهربائيات', 'قطعة'],
-  ['أنابيب PVC 4 إنش', 'PVC Pipe 4"', 'صحيات', 'متر'],
-  ['مغسلة', 'Sink', 'صحيات', 'قطعة'],
-  ['خلاط ماء', 'Water Mixer', 'صحيات', 'قطعة'],
-  ['سخان ماء', 'Water Heater', 'صحيات', 'قطعة'],
-  ['مولدة كهرباء 100KVA', 'Generator 100KVA', 'معدات', 'قطعة'],
-  ['مضخة ماء', 'Water Pump', 'معدات', 'قطعة'],
-  ['خلاطة إسمنت', 'Cement Mixer', 'معدات', 'قطعة'],
-  ['مثقاب كهربائي', 'Electric Drill', 'أدوات', 'قطعة'],
-  ['منشار حديد', 'Steel Saw', 'أدوات', 'قطعة'],
-  ['خوذة سلامة', 'Safety Helmet', 'أدوات السلامة', 'قطعة'],
-  ['قفازات عمل', 'Work Gloves', 'أدوات السلامة', 'علبة'],
-  ['أصباغ جدران', 'Wall Paint', 'تشطيبات', 'علبة'],
-  ['عازل حراري', 'Thermal Insulation', 'مواد بناء', 'لفة'],
-  ['زجاج سيكوريت', 'Tempered Glass', 'تشطيبات', 'متر مربع'],
-  ['أبواب خشبية', 'Wooden Doors', 'تشطيبات', 'قطعة'],
-]
 
 // The client's real projects. The first 3 are ACTIVE construction sites that get
 // vehicles; the last 3 are master-plan sites (PLANNING) shown as map pins only.
@@ -467,84 +436,9 @@ function seed() {
     }
   }
 
-  // ---- Warehouses + items + stock + transactions ----
-  console.log('  · warehouse (items, stock, transactions)')
-  ins('warehouses', { id: 'WH-01', name_ar: 'مستودع أبو غريب', location: 'أبو غريب', created_at: isoNow(400) })
-  ins('warehouses', { id: 'WH-02', name_ar: 'مستودع الدورة', location: 'الدورة - بغداد', created_at: isoNow(400) })
-
-  const itemIds: string[] = []
-  const itemMeta: Record<string, { uom: string; cost: number }> = {}
-  ITEM_DEFS.forEach((it, i) => {
-    const id = `itm-${pad(i + 1)}`
-    itemIds.push(id)
-    const cost = ri(10, 500) * 1000
-    itemMeta[id] = { uom: it[3], cost }
-    ins('items', {
-      id, code: `ITM-${pad(i + 1, 4)}`, name_ar: it[0], name_en: it[1], category: it[2], sub_category: '',
-      uom: it[3], min_stock: ri(20, 100), max_stock: ri(500, 2000), shelf_location: `${pick(['A', 'B', 'C', 'D'])}-${ri(1, 20)}`,
-      description: `${it[0]} - صنف ${it[2]}`, unit_cost: cost, currency: CURR, created_at: isoNow(ri(100, 300)),
-    })
-  })
-
-  // stock map: itemId -> { WH-01, WH-02 }
-  const stockMap: Record<string, Record<string, number>> = {}
-  for (const id of itemIds) stockMap[id] = { 'WH-01': 0, 'WH-02': 0 }
-
-  let invSeq = 0
-  function txn(type: string, wh: string, fromWh: string | null, lines: { item: string; qty: number }[], dayOffset: number) {
-    const id = `inv-${pad(++invSeq, 5)}`
-    let total = 0
-    const lineRows = lines.map((l) => {
-      const price = itemMeta[l.item].cost
-      const t = l.qty * price
-      total += t
-      return { id: `invl-${id}-${l.item}`, transaction_id: id, item_id: l.item, quantity: l.qty, uom: itemMeta[l.item].uom, unit_price: price, total: t }
-    })
-    ins('inventory_transactions', {
-      id, serial_number: `SER-${pad(invSeq, 6)}`, doc_number: `${type}-2026-${pad(invSeq, 4)}`, date: daysAgo(dayOffset),
-      type, warehouse_id: wh, from_warehouse_id: fromWh, company_id: pick(subIds), project_id: chance(0.5) ? pick(projectIds) : null,
-      currency: CURR, total_value: total, approved_by: pick(empIds), notes: '', created_at: isoNow(dayOffset),
-    })
-    for (const lr of lineRows) ins('inventory_lines', lr)
-    // apply deltas
-    for (const l of lines) {
-      if (type === 'IN' || type === 'RETURN') stockMap[l.item][wh] += l.qty
-      else if (type === 'OUT') stockMap[l.item][wh] -= l.qty
-      else if (type === 'ADJUST') stockMap[l.item][wh] += l.qty
-      else if (type === 'TRANSFER') { stockMap[l.item][fromWh!] -= l.qty; stockMap[l.item][wh] += l.qty }
-    }
-  }
-
-  // opening stock for every item
-  for (const id of itemIds) txn('IN', 'WH-01', null, [{ item: id, qty: ri(200, 1200) }], 300)
-  for (const id of itemIds) if (chance(0.6)) txn('IN', 'WH-02', null, [{ item: id, qty: ri(100, 600) }], 295)
-  // ongoing movements
-  for (let k = 0; k < 160; k++) {
-    const type = pick(['OUT', 'OUT', 'OUT', 'IN', 'TRANSFER', 'RETURN', 'ADJUST'])
-    const day = ri(1, 290)
-    const nLines = ri(1, 3)
-    const lines = Array.from({ length: nLines }, () => ({ item: pick(itemIds), qty: ri(5, 80) }))
-    // dedup items in lines
-    const seen = new Set<string>()
-    const uniq = lines.filter((l) => (seen.has(l.item) ? false : (seen.add(l.item), true)))
-    if (type === 'TRANSFER') txn('TRANSFER', 'WH-02', 'WH-01', uniq, day)
-    else if (type === 'ADJUST') txn('ADJUST', chance(0.5) ? 'WH-01' : 'WH-02', null, uniq.map((l) => ({ item: l.item, qty: chance(0.5) ? l.qty : -l.qty })), day)
-    else txn(type, chance(0.6) ? 'WH-01' : 'WH-02', null, uniq, day)
-  }
-  // Drain the last 5 items via real OUT transactions so the low-stock alert has
-  // data (keeps stock = replayed-movements consistent).
-  for (const id of itemIds.slice(-5)) {
-    if (stockMap[id]['WH-01'] > 8) txn('OUT', 'WH-01', null, [{ item: id, qty: stockMap[id]['WH-01'] - ri(0, 8) }], ri(1, 20))
-    if (stockMap[id]['WH-02'] > 0) txn('OUT', 'WH-02', null, [{ item: id, qty: stockMap[id]['WH-02'] }], ri(1, 20))
-  }
-
-  // write final stock (clamp negatives to 0 for display sanity)
-  let stkSeq = 0
-  for (const id of itemIds) {
-    for (const wh of ['WH-01', 'WH-02']) {
-      ins('stock', { id: `stk-${pad(++stkSeq, 4)}`, item_id: id, warehouse_id: wh, quantity: Math.max(0, stockMap[id][wh]) })
-    }
-  }
+  // ---- Warehouses + items + stock + transactions (real Abu Ghraib + Al Dora data) ----
+  console.log('  · warehouse (real Abu Ghraib + Al Dora data)')
+  seedWarehouseData(projectIds, parentId)
 
   // ---- Accounts ----
   console.log('  · chart of accounts')
@@ -797,7 +691,7 @@ function seed() {
   let ntSeq = 0
   const noteTargets: [string, string][] = [
     ['projects', projectIds[0]], ['projects', projectIds[1]], ['employees', empIds[2]],
-    ['companies', subIds[0]], ['items', itemIds[3]], ['journal_entries', 'je-0001'],
+    ['companies', subIds[0]], ['items', 'itm-ag-002'], ['journal_entries', 'je-0001'],
   ]
   for (const [rt, rid] of noteTargets) {
     ins('notes', {

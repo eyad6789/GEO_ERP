@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
-import { Warehouse as WarehouseIcon, Boxes, AlertTriangle, Building2, Wallet, Package, ArrowLeftRight, BarChart3 } from 'lucide-react'
+import { Warehouse as WarehouseIcon, Boxes, AlertTriangle, Building2, PackageX, Package, ArrowLeftRight, BarChart3 } from 'lucide-react'
 import { PageHeader, KpiCard } from '../../components/shared'
 import { Tabs } from '../../components/ui'
-import { useApi } from '../../hooks/useResource'
+import { useApi, useResource } from '../../hooks/useResource'
 import { useT, useLang } from '../../context/LangContext'
-import { formatCurrency, formatCompact, formatNumber } from '../../lib/format'
-import { WAREHOUSE_IDS, type LowStockRow, type StockSummaryRow } from './helpers'
+import { formatNumber } from '../../lib/format'
+import type { Warehouse } from '../../types'
+import { type LowStockRow, type StockSummaryRow } from './helpers'
 import { ItemsTab } from './ItemsTab'
 import { TransactionsTab } from './TransactionsTab'
 import { ReportsTab } from './ReportsTab'
@@ -22,11 +23,14 @@ export function WarehousePage() {
     '/warehouse/stock-summary',
   )
   const { data: lowStock, refetch: refetchLow } = useApi<LowStockRow[]>('/warehouse/low-stock')
+  const { data: warehouses } = useResource<Warehouse>('warehouses')
 
   const rows = useMemo(() => summary ?? [], [summary])
+  const mainCount = useMemo(() => warehouses.filter((w) => w.type === 'MAIN').length, [warehouses])
+  const projectCount = useMemo(() => warehouses.filter((w) => w.type === 'PROJECT').length, [warehouses])
 
-  const totalValue = useMemo(
-    () => rows.reduce((sum, r) => sum + (r.quantity || 0) * (r.unit_cost || 0), 0),
+  const outOfStockCount = useMemo(
+    () => rows.filter((r) => r.stock_status === 'OUT').length,
     [rows],
   )
   const lowCount = lowStock?.length ?? 0
@@ -68,17 +72,17 @@ export function WarehousePage() {
         />
         <KpiCard
           label={t('warehouse.kpi.warehouses')}
-          value={formatNumber(WAREHOUSE_IDS.length, lang)}
-          hint={t('warehouse.kpi.warehouses_hint')}
+          value={formatNumber(warehouses.length, lang)}
+          hint={`${formatNumber(mainCount, lang)} ${t('warehouse.wh_type.MAIN')} · ${formatNumber(projectCount, lang)} ${t('warehouse.wh_type.PROJECT')}`}
           icon={<Building2 className="h-5 w-5" />}
           accent="info"
         />
         <KpiCard
-          label={t('warehouse.kpi.value')}
-          value={formatCurrency(totalValue, 'IQD', lang)}
-          hint={`${t('warehouse.kpi.value_hint')} · ${formatCompact(totalValue, lang)}`}
-          icon={<Wallet className="h-5 w-5" />}
-          accent="success"
+          label={t('warehouse.kpi.out_of_stock')}
+          value={formatNumber(outOfStockCount, lang)}
+          hint={t('warehouse.kpi.out_of_stock_hint')}
+          icon={<PackageX className="h-5 w-5" />}
+          accent={outOfStockCount > 0 ? 'danger' : 'success'}
         />
       </div>
 
@@ -94,7 +98,7 @@ export function WarehousePage() {
       {tab === 'items' && (
         <ItemsTab rows={rows} loading={summaryLoading} onChanged={refetchAll} />
       )}
-      {tab === 'transactions' && <TransactionsTab onChanged={refetchAll} />}
+      {tab === 'transactions' && <TransactionsTab rows={rows} onChanged={refetchAll} />}
       {tab === 'reports' && <ReportsTab />}
     </div>
   )

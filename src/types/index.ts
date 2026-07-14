@@ -271,10 +271,14 @@ export interface ProjectDiagram {
 }
 
 // ---- Warehouse -------------------------------------------------------------
+export type WarehouseType = 'MAIN' | 'PROJECT'
 export interface Warehouse {
   id: ID
   name_ar: string
+  name_en?: string
   location: string
+  type: WarehouseType
+  project_id: ID | null
 }
 
 export interface Item {
@@ -284,10 +288,14 @@ export interface Item {
   name_en: string
   category: string
   sub_category: string
+  size_label: string | null
+  size_mm: number | null
+  spec: string
   uom: string
   min_stock: number
   max_stock: number
   shelf_location: string
+  condition?: string | null // NEW | GOOD | USED | NEEDS_REPAIR | BROKEN
   description: string
   unit_cost: number
   currency: Currency

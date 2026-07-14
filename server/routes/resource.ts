@@ -39,6 +39,7 @@ const REGISTRY: Record<string, TableConfig> = {
   vehicle_costs: { module: 'FLEET', search: ['category', 'note'], defaultSort: 'date' },
   warehouses: { module: 'WAREHOUSE', search: ['name_ar', 'location'] },
   items: { module: 'WAREHOUSE', search: ['name_ar', 'name_en', 'code', 'category'] },
+  search_synonyms: { module: 'WAREHOUSE', search: ['term', 'target'] },
   stock: { module: 'WAREHOUSE' },
   inventory_transactions: { module: 'WAREHOUSE', search: ['serial_number', 'doc_number', 'notes'], defaultSort: 'date' },
   inventory_lines: { module: 'WAREHOUSE' },
