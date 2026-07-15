@@ -224,7 +224,6 @@ export function EventLogsPage() {
         onRowClick={(r) => setSelected(r)}
         searchable
         searchPlaceholder={t('logs.search_placeholder')}
-        pageSize={12}
         exportName="event_logs"
         emptyTitle={t('logs.empty.title')}
         emptyHint={t('logs.empty.hint')}

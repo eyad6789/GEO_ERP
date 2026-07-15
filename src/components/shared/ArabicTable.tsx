@@ -52,7 +52,9 @@ export function ArabicTable<T>({
   onRowClick,
   searchable = true,
   searchPlaceholder,
-  pageSize = 10,
+  // 50 rows per page by default — the manager wants long lists visible at once,
+  // with «التالي» stepping 50 at a time.
+  pageSize = 50,
   toolbar,
   actions,
   exportName,

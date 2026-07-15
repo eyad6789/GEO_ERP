@@ -10,7 +10,6 @@ import {
   Calculator,
   Warehouse,
   FolderOpen,
-  ScrollText,
   StickyNote,
   Bug,
   Truck,
@@ -36,11 +35,14 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'warehouse', path: '/warehouse', labelKey: 'nav.warehouse', icon: Warehouse },
   { key: 'archive', path: '/archive', labelKey: 'nav.archive', icon: FolderOpen },
   { key: 'notes', path: '/notes', labelKey: 'nav.notes', icon: StickyNote },
-  { key: 'logs', path: '/logs', labelKey: 'nav.logs', icon: ScrollText },
+  // 'logs' (سجل الأحداث) removed from the sidebar per the accounting manager's
+  // request — the event log itself keeps recording; /logs stays reachable by URL.
   { key: 'debug', path: '/debug', labelKey: 'nav.debug', icon: Bug, variant: 'debug' },
 ]
 
 // Demo gating: only these modules are usable; the rest render a locked screen.
+// 'companies' is intentionally locked again — the module isn't finished; the
+// accountant creates companies/projects from temporary buttons in Accounting.
 export const UNLOCKED_MODULES = new Set<string>(['dashboard', 'accounting', 'fleet', 'notes', 'warehouse', 'hr'])
 export function isModuleLocked(key: string): boolean {
   return !UNLOCKED_MODULES.has(key)

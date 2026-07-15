@@ -613,6 +613,16 @@ accountingRouter.get('/accounting/cash-movements', (req, res) => {
   res.json({ rows })
 })
 
+// GET /api/accounting/next-doc — suggested next document number: highest fully
+// numeric doc_number + 1 (mirrors the legacy software's رقم وثيقة السند تلقائي;
+// the field stays editable in the UI).
+accountingRouter.get('/accounting/next-doc', (_req, res) => {
+  const row = db
+    .prepare(`SELECT MAX(CAST(doc_number AS INTEGER)) AS mx FROM journal_entries WHERE doc_number NOT GLOB '*[^0-9]*' AND doc_number != ''`)
+    .get() as { mx: number | null } | undefined
+  res.json({ next: String((row?.mx ?? 0) + 1) })
+})
+
 // GET /api/accounting/vouchers — ALL entries classified by NET cash movement:
 //   net cash debit -> RECEIPT (قبض), net cash credit -> PAYMENT (صرف),
 //   no net cash change -> JOURNAL (قيد). "Cash" = cash boxes + bank sub-accounts

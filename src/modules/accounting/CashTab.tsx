@@ -230,7 +230,6 @@ export function CashTab() {
           rowKey={(m, i) => `${m.entry_id}-${i}`}
           onRowClick={(m) => { if (!m.entry_id) return; if (canEdit) setEditId(m.entry_id); else setViewId(m.entry_id) }}
           searchable={false}
-          pageSize={8}
           emptyTitle={t('accounting.vouchers.empty')}
         />
       </Card>

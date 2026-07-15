@@ -143,6 +143,14 @@ export function isBalanced(a: number, b: number): boolean {
   return Math.round((a - b) * 100) === 0
 }
 
+/** Today as YYYY-MM-DD from LOCAL date parts. toISOString() is UTC and would
+ *  shift the day back before 03:00 in Iraq (UTC+3). */
+export function localToday(): string {
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+}
+
 // ---- Access control --------------------------------------------------------
 // Editing in the Accounting module is restricted to the Accountant role ONLY.
 // Every other role — including the super admin — gets read-only.

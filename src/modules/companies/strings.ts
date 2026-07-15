@@ -139,4 +139,25 @@ registerStrings({
     en: 'The requested company does not exist or was removed',
   },
   'companies.back_to_list': { ar: 'العودة إلى الشركات', en: 'Back to Companies' },
+
+  // Company management (accountant only)
+  'companies.add_btn': { ar: 'إضافة شركة', en: 'Add Company' },
+  'companies.add_title': { ar: 'إضافة شركة جديدة', en: 'New Company' },
+  'companies.edit_title': { ar: 'تعديل الشركة', en: 'Edit Company' },
+  'companies.edit_btn': { ar: 'تعديل الشركة', en: 'Edit company' },
+  'companies.delete_btn': { ar: 'حذف الشركة', en: 'Delete company' },
+  'companies.saving': { ar: 'جارٍ الحفظ...', en: 'Saving...' },
+  'companies.saved': { ar: 'تم حفظ الشركة', en: 'Company saved' },
+  'companies.deleted': { ar: 'تم حذف الشركة', en: 'Company deleted' },
+  'companies.confirm_delete': {
+    ar: 'هل أنت متأكد من حذف «{name}»؟ سجلات الشركة (موظفون، آليات، قيود...) ستبقى لكن دون شركة. لا يمكن التراجع.',
+    en: 'Delete “{name}”? Its records (employees, vehicles, entries...) remain but without a company. This cannot be undone.',
+  },
+  'companies.f_name_ar': { ar: 'اسم الشركة (عربي)', en: 'Name (Arabic)' },
+  'companies.f_name_en': { ar: 'اسم الشركة (إنجليزي)', en: 'Name (English)' },
+  'companies.f_code': { ar: 'الرمز', en: 'Code' },
+  'companies.f_city': { ar: 'المدينة', en: 'City' },
+  'companies.f_phone': { ar: 'الهاتف', en: 'Phone' },
+  'companies.f_email': { ar: 'البريد الإلكتروني', en: 'Email' },
+  'companies.f_status': { ar: 'الحالة', en: 'Status' },
 })

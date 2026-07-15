@@ -98,7 +98,6 @@ export function PartiesTab() {
             rowKey={(r) => r.code}
             onRowClick={(r) => navigate(`/accounting/accounts/${r.code}`)}
             searchable={false}
-            pageSize={20}
             emptyTitle={t('accounting.parties.empty')}
           />
         </Card>
@@ -111,7 +110,6 @@ export function PartiesTab() {
             rowKey={(r) => r.code}
             onRowClick={(r) => navigate(`/accounting/accounts/${r.code}`)}
             searchable={false}
-            pageSize={20}
             emptyTitle={t('accounting.parties.empty')}
           />
         </Card>
@@ -124,7 +122,6 @@ export function PartiesTab() {
             rowKey={(r) => r.code}
             onRowClick={(r) => navigate(`/accounting/accounts/${r.code}`)}
             searchable={false}
-            pageSize={20}
             emptyTitle={t('accounting.parties.empty')}
           />
         </Card>

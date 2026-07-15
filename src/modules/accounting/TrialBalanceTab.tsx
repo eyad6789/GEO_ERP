@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Scale, Check, AlertTriangle, Download, X, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
-import { Card, CardHeader, Button, LoadingState, SearchSelect } from '../../components/ui'
+import { Scale, Download, Search, X, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
+import { Card, CardHeader, Button, Input, LoadingState, SearchSelect } from '../../components/ui'
 import { EmptyState } from '../../components/shared'
 import { useApi, useResource } from '../../hooks/useResource'
 import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { formatCurrency, exportToExcel, pickName } from '../../lib/format'
-import type { Account, Company, Project } from '../../types'
-import { isBalanced, resolvePostingDescendants, type TrialBalanceResp, type TrialBalanceRow } from './shared'
+import type { Account, AccountType, Company, Project } from '../../types'
+import { resolvePostingDescendants, type TrialBalanceResp, type TrialBalanceRow } from './shared'
 import { FilterBar, type DateRange } from './FilterBar'
 
 export function TrialBalanceTab({
@@ -25,6 +25,10 @@ export function TrialBalanceTab({
   const [companyFilter, setCompanyFilter] = useState('')
   const [projectFilter, setProjectFilter] = useState('')
   const [accountFilter, setAccountFilter] = useState('')
+  // Free search (by code or name) + account-type filter, per the accountant's
+  // request: «بحث برقم أو كلمة مع تحديد النوع».
+  const [query, setQuery] = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
   // Click a column header to re-rank (like Excel). null = the server's order.
   type SortKey = 'code' | 'name' | 'debit' | 'credit' | 'balance'
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' } | null>(null)
@@ -53,6 +57,14 @@ export function TrialBalanceTab({
     [accounts, lang, t],
   )
 
+  const typeOptions = useMemo(
+    () => [
+      { value: '', label: t('accounting.trial.all_types') },
+      ...(['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'] as AccountType[]).map((k) => ({ value: k, label: t(`accounting.type.${k}`) })),
+    ],
+    [t],
+  )
+
   // Page-level company filter takes precedence over the global top-bar company.
   const params = useMemo(() => {
     const p: Record<string, unknown> = {}
@@ -75,10 +87,13 @@ export function TrialBalanceTab({
     set.add(accountFilter)
     return set
   }, [accountFilter, accounts])
-  const displayRows = useMemo(
-    () => (subtreeCodes ? rows.filter((r) => subtreeCodes.has(r.code)) : rows),
-    [rows, subtreeCodes],
-  )
+  const displayRows = useMemo(() => {
+    let out = subtreeCodes ? rows.filter((r) => subtreeCodes.has(r.code)) : rows
+    if (typeFilter) out = out.filter((r) => r.type === typeFilter)
+    const q = query.trim().toLowerCase()
+    if (q) out = out.filter((r) => r.code.includes(q) || r.name_ar?.toLowerCase().includes(q) || r.name_en?.toLowerCase().includes(q))
+    return out
+  }, [rows, subtreeCodes, typeFilter, query])
 
   // Totals follow what's shown, so filtering recomputes them.
   const totals = useMemo(
@@ -94,8 +109,6 @@ export function TrialBalanceTab({
       ),
     [displayRows],
   )
-  const balanced = isBalanced(totals.debit, totals.credit)
-  const balancedUsd = isBalanced(totals.debit_usd, totals.credit_usd)
   const hasUsd = totals.debit_usd !== 0 || totals.credit_usd !== 0
 
   const name = (r: TrialBalanceRow) => (lang === 'en' ? r.name_en || r.name_ar : r.name_ar)
@@ -152,12 +165,23 @@ export function TrialBalanceTab({
       {/* Company / project filters — applied server-side (like the journal page) */}
       <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Search by account code or name */}
+          <div className="relative min-w-[180px] flex-1">
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t('accounting.trial.search_ph')}
+              className="h-10 ps-9"
+            />
+          </div>
+          <div className="w-40 shrink-0"><SearchSelect value={typeFilter} onChange={setTypeFilter} options={typeOptions} placeholder={t('accounting.trial.all_types')} /></div>
           <div className="w-48 shrink-0"><SearchSelect value={companyFilter} onChange={setCompanyFilter} options={companyOptions} placeholder={t('accounting.filter.all_companies')} /></div>
           <div className="w-48 shrink-0"><SearchSelect value={projectFilter} onChange={setProjectFilter} options={projectOptions} placeholder={t('accounting.journal.all_projects')} /></div>
           <div className="w-56 shrink-0"><SearchSelect value={accountFilter} onChange={setAccountFilter} options={accountOptions} placeholder={t('accounting.journal.all_accounts')} /></div>
-          {(companyFilter || projectFilter || accountFilter) && (
+          {(companyFilter || projectFilter || accountFilter || query || typeFilter) && (
             <button
-              onClick={() => { setCompanyFilter(''); setProjectFilter(''); setAccountFilter('') }}
+              onClick={() => { setCompanyFilter(''); setProjectFilter(''); setAccountFilter(''); setQuery(''); setTypeFilter('') }}
               className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-danger"
               title={t('accounting.journal.clear_filters')}
             >
@@ -174,13 +198,10 @@ export function TrialBalanceTab({
           subtitle={t('accounting.trial.subtitle')}
           icon={<Scale className="h-5 w-5" />}
           action={
-            <div className="flex items-center gap-2">
-              <BalancedPill balanced={balanced} t={t} />
-              <Button variant="outline" size="sm" onClick={handleExport} disabled={!displayRows.length}>
-                <Download className="h-4 w-4" />
-                {t('common.export')}
-              </Button>
-            </div>
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={!displayRows.length}>
+              <Download className="h-4 w-4" />
+              {t('common.export')}
+            </Button>
           }
         />
 
@@ -250,34 +271,10 @@ export function TrialBalanceTab({
                       {hasUsd ? <span className="text-[11px] font-semibold text-sky-600">{formatCurrency(totals.credit_usd, 'USD', lang)}</span> : null}
                     </span>
                   </td>
-                  <td className="px-4 py-3.5 text-end">
-                    <span className="inline-flex flex-col items-end gap-0.5">
-                      {balanced ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-700">
-                          <Check className="h-4 w-4" />
-                          {t('accounting.trial.balanced')}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-amber-700">
-                          <AlertTriangle className="h-4 w-4" />
-                          {t('accounting.trial.unbalanced')}
-                        </span>
-                      )}
-                      {hasUsd ? (
-                        balancedUsd ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
-                            <Check className="h-3 w-3" />
-                            {t('accounting.trial.balanced')} ($)
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600">
-                            <AlertTriangle className="h-3 w-3" />
-                            {t('accounting.trial.unbalanced')} ($)
-                          </span>
-                        )
-                      ) : null}
-                    </span>
-                  </td>
+                  {/* No balanced/unbalanced badge here — mixed-currency (tasarif)
+                      entries legitimately unbalance the per-currency totals, and
+                      the accountant asked for the indicator to be removed. */}
+                  <td className="px-4 py-3.5" />
                 </tr>
               </tfoot>
             </table>
@@ -288,18 +285,3 @@ export function TrialBalanceTab({
   )
 }
 
-function BalancedPill({ balanced, t }: { balanced: boolean; t: (k: string) => string }) {
-  return (
-    <span
-      className={
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ' +
-        (balanced
-          ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-          : 'bg-amber-50 text-amber-700 ring-1 ring-amber-200')
-      }
-    >
-      {balanced ? <Check className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
-      {balanced ? t('accounting.trial.balanced') : t('accounting.trial.unbalanced')}
-    </span>
-  )
-}

@@ -81,7 +81,7 @@ registerStrings({
   'fleet.map.full': { ar: 'الخريطة الكاملة', en: 'Full Map' },
   'fleet.map.legend.active': { ar: 'عاملة', en: 'Active' },
   'fleet.map.legend.maintenance': { ar: 'صيانة', en: 'Maintenance' },
-  'fleet.map.legend.idle': { ar: 'متوقفة', en: 'Idle' },
+  'fleet.map.legend.inactive': { ar: 'متوقفة', en: 'Inactive' },
   'fleet.map.legend.site': { ar: 'موقع مشروع', en: 'Project Site' },
   'fleet.map.legend.masterplan': { ar: 'مخطط رئيسي', en: 'Master Plan' },
   'fleet.map.onsite': { ar: 'آليات في المواقع', en: 'On-Site Vehicles' },

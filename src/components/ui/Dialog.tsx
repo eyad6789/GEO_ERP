@@ -10,7 +10,7 @@ export interface DialogProps {
   description?: ReactNode
   children: ReactNode
   footer?: ReactNode
-  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl'
 }
 
 const SIZES = {
@@ -19,6 +19,7 @@ const SIZES = {
   lg: 'max-w-3xl',
   xl: 'max-w-5xl',
   '2xl': 'max-w-[min(1500px,96vw)]',
+  '3xl': 'max-w-[98vw]',
 }
 
 export function Dialog({ open, onClose, title, description, children, footer, size = 'md' }: DialogProps) {

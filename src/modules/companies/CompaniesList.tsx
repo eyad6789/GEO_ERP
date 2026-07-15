@@ -10,12 +10,18 @@ import {
   Network,
   ArrowLeft,
   Layers,
+  Plus,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import { useResource } from '../../hooks/useResource'
 import { useT, useLang } from '../../context/LangContext'
+import { useCompany } from '../../context/CompanyContext'
 import { PageHeader, StatusBadge } from '../../components/shared'
-import { Avatar, Spinner } from '../../components/ui'
+import { Avatar, Button, Spinner, useToast } from '../../components/ui'
 import { formatCompact, formatNumber, pickName } from '../../lib/format'
+import { canEditAccounting } from '../accounting/shared'
+import { CompanyDialog } from './CompanyDialog'
 import type { Company, Employee, Project } from '../../types'
 
 type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE'
@@ -31,12 +37,51 @@ export function CompaniesList() {
   const { lang } = useLang()
   const navigate = useNavigate()
 
-  const { data: companies, loading } = useResource<Company>('companies')
+  const { data: companies, loading, create, update, remove } = useResource<Company>('companies')
   const { data: employees } = useResource<Employee>('employees')
   const { data: projects } = useResource<Project>('projects')
+  const { role } = useCompany()
+  const toast = useToast()
+  // Company management follows the accounting rule: the محاسب role only.
+  const canEdit = canEditAccounting(role.key)
 
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
+  const [dialog, setDialog] = useState<{ open: boolean; company: Company | null }>({ open: false, company: null })
+
+  const handleSubmit = async (data: Partial<Company>) => {
+    try {
+      if (dialog.company) {
+        await update(dialog.company.id, data)
+      } else {
+        // New companies join the group as subsidiaries of the parent.
+        const parentCo = companies.find((c) => c.type === 'PARENT')
+        const colors = ['#0e7490', '#27ae60', '#8e44ad', '#c0392b', '#2980b9', '#d35400']
+        await create({
+          ...data,
+          type: 'SUBSIDIARY',
+          parent_id: parentCo?.id ?? null,
+          country: 'العراق',
+          currency_primary: 'IQD',
+          logo_color: colors[companies.length % colors.length],
+        })
+      }
+      toast.success(t('companies.saved'))
+    } catch (e) {
+      toast.error((e as Error)?.message || t('common.error'))
+      throw e
+    }
+  }
+
+  const handleDelete = async (c: Company) => {
+    if (!window.confirm(t('companies.confirm_delete').replace('{name}', pickName(c, lang)))) return
+    try {
+      await remove(c.id)
+      toast.success(t('companies.deleted'))
+    } catch (e) {
+      toast.error((e as Error)?.message || t('common.error'))
+    }
+  }
 
   // Per-company counts computed once, client-side.
   const stats = useMemo(() => {
@@ -118,6 +163,12 @@ export function CompaniesList() {
         </h2>
 
         <div className="flex flex-wrap items-center gap-2">
+          {canEdit && (
+            <Button variant="primary" size="sm" onClick={() => setDialog({ open: true, company: null })}>
+              <Plus className="h-4 w-4" />
+              {t('companies.add_btn')}
+            </Button>
+          )}
           <div className="relative">
             <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -161,10 +212,19 @@ export function CompaniesList() {
               company={c}
               stat={stats.get(c.id) ?? { employees: 0, projects: 0, contractValue: 0 }}
               onClick={() => navigate(`/companies/${c.id}`)}
+              onEdit={canEdit ? () => setDialog({ open: true, company: c }) : undefined}
+              onDelete={canEdit ? () => handleDelete(c) : undefined}
             />
           ))}
         </div>
       )}
+
+      <CompanyDialog
+        open={dialog.open}
+        company={dialog.company}
+        onClose={() => setDialog((d) => ({ ...d, open: false }))}
+        onSubmit={handleSubmit}
+      />
     </div>
   )
 }
@@ -265,10 +325,14 @@ function SubsidiaryCard({
   company,
   stat,
   onClick,
+  onEdit,
+  onDelete,
 }: {
   company: Company
   stat: CompanyStat
   onClick: () => void
+  onEdit?: () => void
+  onDelete?: () => void
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -289,7 +353,29 @@ function SubsidiaryCard({
             <p className="mt-0.5 font-mono text-xs text-primary">{company.code}</p>
           </div>
         </div>
-        <StatusBadge status={company.status} />
+        <div className="flex items-center gap-1">
+          {onEdit && (
+            <button
+              type="button"
+              title={t('companies.edit_btn')}
+              onClick={(e) => { e.stopPropagation(); onEdit() }}
+              className="rounded-lg p-1.5 text-slate-400 transition hover:bg-primary/10 hover:text-primary"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              title={t('companies.delete_btn')}
+              onClick={(e) => { e.stopPropagation(); onDelete() }}
+              className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-danger"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+          <StatusBadge status={company.status} />
+        </div>
       </div>
 
       <p className="mt-3 flex items-center gap-1 text-sm text-slate-500">

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Plus, Lock, ArrowDownToLine, ArrowUpFromLine, FileText, Search, X, Wallet, Coins } from 'lucide-react'
-import { Button, Badge, Input, SearchSelect } from '../../components/ui'
+import { Plus, Lock, Search, X, Wallet } from 'lucide-react'
+import { Button, Input, SearchSelect } from '../../components/ui'
 import { ArabicTable, KpiCard, type Column } from '../../components/shared'
 import { useApi, useResource } from '../../hooks/useResource'
 import { useLang, useT } from '../../context/LangContext'
@@ -10,7 +10,7 @@ import type { Account, Company, Project } from '../../types'
 import { NewEntryDialog } from './NewEntryDialog'
 import { EntryViewDialog } from './EntryViewDialog'
 import { FilterBar, type DateRange } from './FilterBar'
-import { canEditAccounting, classifyVoucher, resolvePostingDescendants, BANK_ROOTS, type VoucherRow, type VoucherType, type TrialBalanceResp } from './shared'
+import { canEditAccounting, classifyVoucher, resolvePostingDescendants, BANK_ROOTS, CASH_BOX_ROOTS, ADVANCE_ROOTS, type VoucherRow, type VoucherType, type TrialBalanceResp } from './shared'
 
 interface Row extends VoucherRow {
   type: VoucherType
@@ -162,19 +162,24 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allRows, range, types, query, nameMap])
 
-  // Totals are kept STRICTLY per currency — IQD and USD are never summed into one
-  // figure (an entry's amount is in its own currency). Every entry balances, so
-  // amount = total debit = total credit; we surface it as the period movement.
-  const totals = useMemo(() => {
-    // Dinar and dollar are tallied separately and never converted into one another.
+  // Total cash boxes — same figures as the الصندوق tab: cash-box balances plus
+  // the operational advance («شامل سلفة المشاريع»), per currency.
+  const cashTotals = useMemo(() => {
+    const cashCodes = new Set(resolvePostingDescendants(CASH_BOX_ROOTS, accounts))
+    const isUsdBox = (name: string) => /\$|دولار|usd/i.test(name)
     let iqd = 0
     let usd = 0
-    for (const e of rows) {
-      if (e.currency === 'USD') usd += e.amount || 0
-      else iqd += e.amount || 0
+    for (const a of accounts) {
+      if (!cashCodes.has(a.code) || a.archived === 1) continue
+      if (isUsdBox(`${a.name_ar} ${a.name_en}`)) usd += usdMap.get(a.code) ?? 0
+      else iqd += iqdMap.get(a.code) ?? 0
+    }
+    for (const c of resolvePostingDescendants(ADVANCE_ROOTS, accounts)) {
+      iqd += iqdMap.get(c) ?? 0
+      usd += usdMap.get(c) ?? 0
     }
     return { iqd, usd }
-  }, [rows])
+  }, [accounts, iqdMap, usdMap])
 
   // All entries remain editable through the journal-entry editor.
   const openRow = (r: Row) => {
@@ -234,6 +239,14 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
       render: (r) => { const f = cashFlow(r); return f.currency === 'USD' && f.payment ? <span className="tabular-nums font-medium text-rose-700">{formatCurrency(f.payment, 'USD', lang)}</span> : dash },
     },
     {
+      // الملاحظات — like the accountant's Excel cash book, the description sits
+      // between the movement columns and the running balances.
+      key: 'description',
+      header: t('accounting.journal.notes'),
+      accessor: (r) => r.description ?? '',
+      render: (r) => <span className="block max-w-[260px] truncate text-slate-600" title={r.description ?? ''}>{r.description || dash}</span>,
+    },
+    {
       key: 'balance_iqd',
       header: t('accounting.journal.balance_iqd'),
       align: 'end',
@@ -248,19 +261,12 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
       render: (r) => { const c = cashAfter.get(r.entry_id); return c && c.currency === 'USD' ? <span className="tabular-nums font-medium text-slate-700">{formatCurrency(c.value, 'USD', lang)}</span> : dash },
     },
     {
-      key: 'debit',
-      header: t('accounting.journal.debit'),
+      key: 'amount',
+      header: t('accounting.journal.amount'),
       align: 'end',
       sortable: true,
       accessor: (r) => r.amount,
-      render: (r) => <span className="tabular-nums text-emerald-700">{formatCurrency(r.amount, r.currency, lang)}</span>,
-    },
-    {
-      key: 'credit',
-      header: t('accounting.journal.credit'),
-      align: 'end',
-      accessor: (r) => r.amount,
-      render: (r) => <span className="tabular-nums text-sky-700">{formatCurrency(r.amount, r.currency, lang)}</span>,
+      render: (r) => <span className="tabular-nums text-slate-700">{formatCurrency(r.amount, r.currency, lang)}</span>,
     },
   ]
 
@@ -345,11 +351,22 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
         </div>
       </div>
 
-      {/* Two totals only — dinar and dollar, each on its own. The currencies are
-          never summed or converted into one another. */}
+      {/* Total-cash boxes (same as the الصندوق tab) — restored per the manager. */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <KpiCard label={t('accounting.journal.total_iqd')} value={formatCurrency(totals.iqd, 'IQD', lang)} icon={<Wallet className="h-5 w-5" />} accent="info" />
-        <KpiCard label={t('accounting.journal.total_usd')} value={formatCurrency(totals.usd, 'USD', lang)} icon={<Coins className="h-5 w-5" />} accent="success" />
+        <KpiCard
+          label={t('accounting.cash.total_iqd')}
+          value={formatCurrency(cashTotals.iqd, 'IQD', lang)}
+          hint={t('accounting.cash.incl_advance')}
+          icon={<Wallet className="h-5 w-5" />}
+          accent="primary"
+        />
+        <KpiCard
+          label={t('accounting.cash.total_usd')}
+          value={formatCurrency(cashTotals.usd, 'USD', lang)}
+          hint={t('accounting.cash.incl_advance')}
+          icon={<Wallet className="h-5 w-5" />}
+          accent="success"
+        />
       </div>
 
       <ArabicTable
@@ -360,7 +377,6 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
         onRowClick={openRow}
         searchable={false}
         exportName="journal_entries"
-        pageSize={12}
         emptyTitle={t('accounting.journal.empty')}
         emptyHint={t('accounting.journal.empty_hint')}
       />
@@ -371,6 +387,7 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
           editId={entryDialog.editId}
           onClose={() => setEntryDialog((s) => ({ ...s, open: false }))}
           onCreated={refetch}
+          onOpenExisting={(id) => setEntryDialog({ open: true, editId: id })}
         />
       )}
       <EntryViewDialog entryId={viewId} onClose={() => setViewId(null)} />

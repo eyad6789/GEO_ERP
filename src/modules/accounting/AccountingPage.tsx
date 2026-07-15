@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Calculator, BookOpen, ListTree, Scale, ReceiptText, Users, Wallet, Landmark, Truck, Lock } from 'lucide-react'
+import { Calculator, BookOpen, Building2, FolderKanban, ListTree, Scale, ReceiptText, Users, Wallet, Landmark, Truck, UserRound, Lock } from 'lucide-react'
 import { PageHeader } from '../../components/shared'
-import { Tabs, Badge } from '../../components/ui'
+import { Tabs, Badge, Button, useToast } from '../../components/ui'
+import { useResource } from '../../hooks/useResource'
+import { CompanyDialog } from '../companies/CompanyDialog'
+import type { Company } from '../../types'
+import { NewProjectDialog } from './NewProjectDialog'
 import { NotesButton } from '../../components/notes/ModuleNotes'
 import { useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
@@ -14,11 +18,12 @@ import { PartiesTab } from './PartiesTab'
 import { CashTab } from './CashTab'
 import { BankTab } from './BankTab'
 import { VehiclesTab } from './VehiclesTab'
+import { HRTab } from './HRTab'
 import { canEditAccounting } from './shared'
 import type { DateRange } from './FilterBar'
 
-type TabKey = 'journal' | 'chart' | 'trial' | 'vouchers' | 'parties' | 'cash' | 'bank' | 'vehicles'
-const TAB_KEYS: TabKey[] = ['journal', 'chart', 'trial', 'vouchers', 'parties', 'cash', 'bank', 'vehicles']
+type TabKey = 'journal' | 'chart' | 'trial' | 'vouchers' | 'parties' | 'cash' | 'bank' | 'vehicles' | 'hr'
+const TAB_KEYS: TabKey[] = ['journal', 'chart', 'trial', 'vouchers', 'parties', 'cash', 'bank', 'vehicles', 'hr']
 
 const defaultRange = (): DateRange => {
   // Format from LOCAL date parts. Using toISOString() here would convert local
@@ -37,6 +42,32 @@ export default function AccountingPage() {
   const canEdit = canEditAccounting(role.key)
   const [searchParams, setSearchParams] = useSearchParams()
   const [range, setRange] = useState<DateRange>(defaultRange())
+  const toast = useToast()
+
+  // TEMPORARY: the projects/companies modules aren't finished, so the
+  // accountant creates real projects & companies from here. Rows go through
+  // the normal API (real DB + audit log).
+  const [projectOpen, setProjectOpen] = useState(false)
+  const [companyOpen, setCompanyOpen] = useState(false)
+  const { data: companies, create: createCompany } = useResource<Company>('companies')
+  const handleCreateCompany = async (data: Partial<Company>) => {
+    try {
+      const parentCo = companies.find((c) => c.type === 'PARENT')
+      const colors = ['#0e7490', '#27ae60', '#8e44ad', '#c0392b', '#2980b9', '#d35400']
+      await createCompany({
+        ...data,
+        type: 'SUBSIDIARY',
+        parent_id: parentCo?.id ?? null,
+        country: 'العراق',
+        currency_primary: 'IQD',
+        logo_color: colors[companies.length % colors.length],
+      })
+      toast.success(t('companies.saved'))
+    } catch (e) {
+      toast.error((e as Error)?.message || t('common.error'))
+      throw e
+    }
+  }
 
   // Tab lives in the URL (?tab=) so returning from an account detail page
   // restores the tab you were on (e.g. the chart) instead of resetting to journal.
@@ -60,6 +91,10 @@ export default function AccountingPage() {
     { key: 'cash', label: t('accounting.tab.cash'), icon: <Wallet className="h-4 w-4" /> },
     { key: 'bank', label: t('accounting.tab.bank'), icon: <Landmark className="h-4 w-4" /> },
     { key: 'vehicles', label: t('accounting.tab.vehicles'), icon: <Truck className="h-4 w-4" /> },
+    // Salary/advance data — same rule as HR payroll: accountant + HR manager only.
+    ...(role.key === 'accountant' || role.key === 'hr_manager'
+      ? [{ key: 'hr', label: t('accounting.tab.hr'), icon: <UserRound className="h-4 w-4" /> }]
+      : []),
   ]
 
   return (
@@ -75,6 +110,18 @@ export default function AccountingPage() {
                 <Lock className="h-3.5 w-3.5" />
                 {t('accounting.readonly.badge')}
               </Badge>
+            )}
+            {canEdit && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setProjectOpen(true)}>
+                  <FolderKanban className="h-4 w-4" />
+                  {t('accounting.temp.new_project')}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setCompanyOpen(true)}>
+                  <Building2 className="h-4 w-4" />
+                  {t('accounting.temp.new_company')}
+                </Button>
+              </>
             )}
             <NotesButton moduleKey="accounting" moduleLabel={t('accounting.title')} />
           </div>
@@ -103,6 +150,14 @@ export default function AccountingPage() {
       {tab === 'cash' && <CashTab />}
       {tab === 'bank' && <BankTab />}
       {tab === 'vehicles' && <VehiclesTab />}
+      {tab === 'hr' && (role.key === 'accountant' || role.key === 'hr_manager') && <HRTab />}
+
+      {canEdit && (
+        <>
+          <NewProjectDialog open={projectOpen} onClose={() => setProjectOpen(false)} />
+          <CompanyDialog open={companyOpen} company={null} onClose={() => setCompanyOpen(false)} onSubmit={handleCreateCompany} />
+        </>
+      )}
     </div>
   )
 }

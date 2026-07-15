@@ -8,7 +8,6 @@ import { HeroHeader } from './HeroHeader'
 import { KpiGrid } from './KpiGrid'
 import { AlertsRow } from './AlertsRow'
 import { DashboardCharts } from './DashboardCharts'
-import { ActivityFeed } from './ActivityFeed'
 
 export function DashboardPage() {
   const t = useT()
@@ -53,8 +52,6 @@ export function DashboardPage() {
       </section>
 
       <DashboardCharts data={data} />
-
-      <ActivityFeed logs={data.recent_logs} />
     </div>
   )
 }

@@ -218,7 +218,6 @@ export function VouchersTab() {
         rowKey={(r, i) => `${r.entry_id}-${i}`}
         onRowClick={(r) => { if (!r.entry_id) return; if (canEdit) setEditId(r.entry_id); else setViewId(r.entry_id) }}
         exportName="vouchers"
-        pageSize={12}
         emptyTitle={t('accounting.vouchers.empty')}
       />
 

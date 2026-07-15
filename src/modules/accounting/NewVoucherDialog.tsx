@@ -9,7 +9,7 @@ import { useCompany } from '../../context/CompanyContext'
 import { apiPost } from '../../lib/api'
 import { formatCurrency, pickName } from '../../lib/format'
 import { CURRENCIES, type Account, type Company, type Project, type Currency } from '../../types'
-import { CASH_BOX_ROOTS, BANK_ROOTS, resolvePostingDescendants, firstExistingCode } from './shared'
+import { CASH_BOX_ROOTS, BANK_ROOTS, localToday, resolvePostingDescendants, firstExistingCode } from './shared'
 import { DateField } from './DateField'
 
 type VoucherType = 'RECEIPT' | 'PAYMENT'
@@ -36,7 +36,7 @@ export function NewVoucherDialog({
   const { success, error } = useToast()
   const formNav = useFormNav()
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localToday()
   const { data: companies } = useResource<Company>('companies')
   const { data: accounts } = useResource<Account>('accounts')
 

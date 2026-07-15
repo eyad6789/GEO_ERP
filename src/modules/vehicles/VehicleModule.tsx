@@ -283,9 +283,13 @@ export function VehicleModule({
 
   // ── Inline render helpers (plain functions — NOT components — so the inputs
   // keep focus while typing in edit mode). ──
+  // Identifier fields (plate, phone, IDs, license numbers) read left-to-right
+  // even in RTL — same rule the edit inputs and DriverDialog apply.
+  const LTR_FIELDS = new Set<keyof Vehicle>(['plate_number', 'vehicle_license_no', 'driver_phone', 'driver_id_no', 'driver_license_no'])
   const row = (label: string, name: keyof Vehicle, type: FType = 'text', options?: { value: string; label: string }[]): ReactNode => {
     const raw = form[name] as unknown
     if (!editing) {
+      const ltr = type === 'number' || LTR_FIELDS.has(name)
       let display: string
       if (type === 'date') display = raw ? formatDate(String(raw), lang) : '—'
       else if (type === 'select' && options) display = options.find((o) => o.value === String(raw ?? ''))?.label ?? '—'
@@ -293,7 +297,7 @@ export function VehicleModule({
       return (
         <div key={String(name)} className="flex items-start justify-between gap-3 border-b border-slate-50 py-1.5 last:border-0">
           <span className="shrink-0 text-xs text-slate-400">{label}</span>
-          <span className="text-end text-sm font-medium text-slate-700">{display || '—'}</span>
+          <span className="text-end text-sm font-medium text-slate-700" dir={ltr && display !== '—' ? 'ltr' : undefined}>{display || '—'}</span>
         </div>
       )
     }

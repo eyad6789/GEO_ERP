@@ -9,7 +9,7 @@ import { useCompany } from '../../context/CompanyContext'
 import { apiPost, apiPut, apiDelete } from '../../lib/api'
 import { formatCurrency, pickName } from '../../lib/format'
 import { type Account, type Company, type Project, type Vehicle, type Currency } from '../../types'
-import { isBalanced, resolvePostingDescendants, CASH_BOX_ROOTS, type JournalEntryFull } from './shared'
+import { isBalanced, localToday, resolvePostingDescendants, CASH_BOX_ROOTS, type JournalEntryFull } from './shared'
 import { DateField } from './DateField'
 import { printJournalEntry } from './printEntry'
 
@@ -61,11 +61,15 @@ export function NewEntryDialog({
   onClose,
   onCreated,
   editId,
+  onOpenExisting,
 }: {
   open: boolean
   onClose: () => void
   onCreated: () => void
   editId?: string | null
+  /** Called to jump to another journal (typed doc number, or ←/→ browsing).
+   *  null = back to the fresh new-entry form. */
+  onOpenExisting?: (entryId: string | null) => void
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -81,16 +85,38 @@ export function NewEntryDialog({
     open && editId ? `/journal_entries/${editId}/full` : null,
   )
   const isEdit = !!editId
-
-  const today = new Date().toISOString().slice(0, 10)
-  const [date, setDate] = useState(today)
+  // Auto document number (رقم وثيقة السند تلقائي) like the legacy software:
+  // highest numeric doc number + 1, pre-filled but still editable.
+  const { data: nextDoc, refetch: refetchNextDoc } = useApi<{ next: string }>(
+    open && !editId ? '/accounting/next-doc' : null,
+  )
   const [docNumber, setDocNumber] = useState('')
+  // Typing the number of an EXISTING journal offers to jump straight into it —
+  // the accountant can check "what's inside" without leaving the entry screen.
+  const docQuery = docNumber.trim()
+  const { data: existingByDoc } = useApi<Array<{ id: string; doc_number: string }>>(
+    open && !editId && docQuery ? '/journal_entries' : null,
+    open && !editId && docQuery ? { doc_number: docQuery, limit: 1 } : undefined,
+  )
+  const existingEntry = !editId && docQuery && existingByDoc?.length ? existingByDoc[0] : null
+
+  const today = localToday()
+  const [date, setDate] = useState(today)
   const [lines, setLines] = useState<LineState[]>(blankLines(companyId ?? ''))
   const [submitting, setSubmitting] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
   // قيد / سند قبض / سند صرف — all three use the same line editor below.
-  const [mode, setMode] = useState<'JOURNAL' | 'RECEIPT' | 'PAYMENT'>('JOURNAL')
+  // Defaults to سند صرف: most of the office's documents are spent money.
+  const [mode, setMode] = useState<'JOURNAL' | 'RECEIPT' | 'PAYMENT'>('PAYMENT')
+
+  // Browse journals with ← / → while no field is focused: → goes to the older
+  // journal, ← to the newer one; going newer past the newest returns to the
+  // fresh new-entry form (like السابق/التالي in the legacy software).
+  const { data: navList } = useApi<Array<{ id: string; date: string }>>(
+    open ? '/journal_entries' : null,
+    open ? { sort: 'date', order: 'DESC' } : undefined,
+  )
 
   const companyOptions = useMemo(
     () => companies.map((c) => ({ value: c.id, label: pickName(c, lang) })),
@@ -121,20 +147,21 @@ export function NewEntryDialog({
     ]
   }
 
-  // A car can be tagged on ANY expense line (not just fuel/maintenance), so the
-  // manager can record spending on a vehicle through any expense account and it
-  // still posts to that car's real costs. The picker shows on every expense line.
-  const vehicleExpenseCodes = useMemo(
-    () => new Set(accounts.filter((a) => a.type === 'EXPENSE' && a.is_posting === 1).map((a) => a.code)),
-    [accounts],
-  )
-  const vehicleOptions = useMemo(
-    () => vehicles.slice().sort((a, b) => a.code.localeCompare(b.code)).map((v) => ({ value: v.id, label: `${v.code} — ${pickName(v, lang)}` })),
-    [vehicles, lang],
-  )
-  // The vehicle column is hidden entirely until at least one line uses a
-  // vehicle-expense account (بنزين/صيانة/…); then it appears for the whole grid.
-  const showVehicleCol = lines.some((l) => vehicleExpenseCodes.has(l.account_code))
+  // A car can be tagged on ANY line, whatever the account — the tag flows to the
+  // fleet module's المالية tab and the car's own ledger (journal_lines.vehicle_id).
+  // The list is connected to the line's company: its own vehicles come first,
+  // then the rest of the fleet, so nothing is ever un-taggable.
+  const vehicleOptionsFor = (company: string) => {
+    const sorted = vehicles.slice().sort((a, b) => {
+      if (company) {
+        const am = a.company_id === company ? 0 : 1
+        const bm = b.company_id === company ? 0 : 1
+        if (am !== bm) return am - bm
+      }
+      return a.code.localeCompare(b.code)
+    })
+    return sorted.map((v) => ({ value: v.id, label: `${v.code} — ${pickName(v, lang)}` }))
+  }
 
   // First cash box — used to pre-fill the cash line for a receipt (قبض).
   // Resolved from CASH_BOX_ROOTS so it works on any chart (Iraqi demo OR the
@@ -167,6 +194,16 @@ export function NewEntryDialog({
   const balanced = isBalanced(totalDebit, totalCredit) && totalDebit > 0
   const canSubmit = balanced && !!docNumber.trim()
 
+  // Totals display in the lines' own currency when every amount line shares one
+  // (a USD-only entry shows $ totals, not the converted dinar) — same
+  // singleCurrency rule as EntryViewDialog/printEntry. Mixed entries keep the
+  // balanced dinar value.
+  const amountCurrencies = new Set(lines.filter((l) => num(l.debit) > 0 || num(l.credit) > 0).map((l) => l.currency))
+  const displayCurrency: Currency = amountCurrencies.size === 1 ? [...amountCurrencies][0] : 'IQD'
+  const displayDebit = displayCurrency === 'IQD' ? totalDebit : lines.reduce((s, l) => s + num(l.debit), 0)
+  const displayCredit = displayCurrency === 'IQD' ? totalCredit : lines.reduce((s, l) => s + num(l.credit), 0)
+  const displayDiff = displayDebit - displayCredit
+
   const updateLine = (uid: number, patch: Partial<LineState>) =>
     setLines((ls) => ls.map((l) => (l.uid === uid ? { ...l, ...patch } : l)))
   const addLine = () => setLines((ls) => [...ls, blankLine(companyId ?? '')])
@@ -177,7 +214,7 @@ export function NewEntryDialog({
     setDate(today)
     setDocNumber('')
     setLines(blankLines(companyId ?? ''))
-    setMode('JOURNAL')
+    setMode('PAYMENT') // most documents are سند صرف — start there
   }
 
   useEffect(() => {
@@ -206,22 +243,22 @@ export function NewEntryDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editId, editEntry])
 
+  // Pre-fill the auto doc number whenever the field is blank (fresh dialog or
+  // right after a save-and-continue reset). Typing over it always wins.
+  useEffect(() => {
+    if (open && !isEdit && nextDoc?.next) setDocNumber((d) => d || nextDoc.next)
+  }, [open, isEdit, nextDoc])
+
   const handleClose = () => {
     if (submitting || deleting) return
     reset()
     onClose()
   }
 
-  // Keyboard: F5 saves the entry (without reloading the page), Escape exits
-  // without saving. Everything else falls through to the grid navigation.
+  // Keyboard: Escape exits without saving. F5 and Ctrl/Cmd+S are handled at the
+  // document level (see the keydown effect below) so they fire regardless of
+  // which field has focus. Everything else falls through to grid navigation.
   const onFormKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
-    // F5 saves; Escape exits. Ctrl/Cmd+S is handled at the document level (see
-    // the keydown effect below) so it fires regardless of which field has focus.
-    if (e.key === 'F5') {
-      e.preventDefault()
-      if (!submitting && !deleting && canSubmit) handleSubmit()
-      return
-    }
     if (e.key === 'Escape') {
       e.preventDefault()
       handleClose()
@@ -284,19 +321,30 @@ export function NewEntryDialog({
         price: num(rateFor(l.currency, l.price)) || 1,
         debit: num(l.debit),
         credit: num(l.credit),
-        // Only keep a vehicle tag if the account is actually a vehicle expense.
-        vehicle_id: vehicleExpenseCodes.has(l.account_code) ? l.vehicle_id || null : null,
+        // The vehicle tag is kept on any account — it feeds the fleet module's
+        // finance views regardless of where the amount was posted.
+        vehicle_id: l.vehicle_id || null,
       })),
     }
 
     setSubmitting(true)
     try {
-      if (editId) await apiPut(`/journal_entries/${editId}`, body)
-      else await apiPost('/journal_entries', body)
-      success(t('accounting.new.saved'))
-      reset()
-      onCreated()
-      onClose()
+      if (editId) {
+        await apiPut(`/journal_entries/${editId}`, body)
+        success(t('accounting.new.saved'))
+        reset()
+        onCreated()
+        onClose()
+      } else {
+        await apiPost('/journal_entries', body)
+        success(t('accounting.new.saved'))
+        // Like the legacy software: saving opens a fresh document immediately
+        // (dialog stays open, doc number advances) so entries chain without
+        // reaching for the mouse.
+        reset()
+        onCreated()
+        refetchNextDoc()
+      }
     } catch (e) {
       error((e as Error)?.message || t('common.error'))
     } finally {
@@ -304,17 +352,54 @@ export function NewEntryDialog({
     }
   }
 
-  // Ctrl/Cmd+S saves from anywhere in the dialog. Captured at the document level
-  // (capture phase) with preventDefault so the browser's "Save page" never opens.
-  // A ref holds the latest save so a single listener always sees current state.
+  // Ctrl/Cmd+S and F5 save from anywhere in the dialog. Captured at the document
+  // level (capture phase) with preventDefault so the browser's "Save page" /
+  // refresh never fire. e.code covers Windows Arabic keyboard layouts where
+  // e.key is «س» instead of "s". A ref holds the latest handlers so one
+  // listener always sees current state.
   const saveRef = useRef<() => void>(() => {})
   saveRef.current = () => { if (!submitting && !deleting && canSubmit) handleSubmit() }
+  // ← / → journal browsing (only while no input/select/textarea has focus):
+  // → opens the OLDER journal, ← the NEWER one; newer than the newest = the
+  // fresh new-entry form again.
+  const navRef = useRef<(dir: 1 | -1) => void>(() => {})
+  navRef.current = (dir) => {
+    if (submitting || deleting || !onOpenExisting) return
+    const list = navList ?? []
+    if (!list.length) return
+    const idx = editId ? list.findIndex((e) => e.id === editId) : -1
+    const next = idx + dir
+    if (idx === -1 && dir === 1) {
+      // From the new-entry form, → dives into the newest existing journal —
+      // but never throw away amounts the accountant already typed.
+      if (totalDebit > 0 || totalCredit > 0) return
+      onOpenExisting(list[0].id)
+    } else if (next >= 0 && next < list.length) {
+      onOpenExisting(list[next].id)
+    } else if (next === -1 && editId) {
+      onOpenExisting(null) // back to the new-entry form
+    }
+  }
   useEffect(() => {
     if (!open) return
+    const isField = () => {
+      const el = document.activeElement
+      return !!el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)
+    }
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyS' || e.key.toLowerCase() === 's')) {
         e.preventDefault()
         saveRef.current()
+        return
+      }
+      if (e.key === 'F5') {
+        e.preventDefault()
+        saveRef.current()
+        return
+      }
+      if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && !isField()) {
+        e.preventDefault()
+        navRef.current(e.key === 'ArrowRight' ? 1 : -1)
       }
     }
     document.addEventListener('keydown', onKey, true)
@@ -325,7 +410,7 @@ export function NewEntryDialog({
     <Dialog
       open={open}
       onClose={handleClose}
-      size="2xl"
+      size="3xl"
       title={
         <span className="flex items-center gap-2">
           {isEdit ? <Pencil className="h-5 w-5 text-primary" /> : <BookOpen className="h-5 w-5 text-primary" />}
@@ -335,7 +420,10 @@ export function NewEntryDialog({
       description={isEdit ? t('accounting.edit.desc') : t('accounting.new.desc')}
       footer={
         <div className="flex w-full items-center justify-between gap-3">
-          <BalanceIndicator balanced={balanced} totalDebit={totalDebit} totalCredit={totalCredit} diff={diff} lang={lang} t={t} />
+          <div className="flex flex-col gap-1">
+            <BalanceIndicator balanced={balanced} totalDebit={displayDebit} totalCredit={displayCredit} diff={displayDiff} currency={displayCurrency} lang={lang} t={t} />
+            <span className="text-[11px] text-slate-400">{t('accounting.new.shortcuts')}</span>
+          </div>
           <div className="flex items-center gap-2">
             {isEdit && (
               <Button variant="outline" onClick={handleDelete} disabled={submitting || deleting} className="text-danger hover:bg-red-50">
@@ -389,8 +477,31 @@ export function NewEntryDialog({
             <Field label={t('accounting.new.date')} required>
               <DateField value={date} onChange={setDate} />
             </Field>
-            <Field label={t('accounting.new.doc_number')} required hint={t('accounting.new.doc_number_hint')}>
-              <Input value={docNumber} onChange={(e) => setDocNumber(e.target.value)} placeholder={t('accounting.new.doc_number_ph')} className="font-mono" />
+            <Field label={t('accounting.new.doc_number')} required hint={existingEntry ? undefined : t('accounting.new.doc_number_hint')}>
+              <Input
+                value={docNumber}
+                onChange={(e) => setDocNumber(e.target.value)}
+                onKeyDown={(e) => {
+                  // Enter on an existing number jumps into that journal.
+                  if (e.key === 'Enter' && existingEntry && onOpenExisting) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onOpenExisting(existingEntry.id)
+                  }
+                }}
+                placeholder={t('accounting.new.doc_number_ph')}
+                className="font-mono"
+              />
+              {existingEntry && (
+                <button
+                  type="button"
+                  onClick={() => onOpenExisting?.(existingEntry.id)}
+                  className="mt-1.5 flex w-full items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-1.5 text-start text-xs font-medium text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100"
+                >
+                  <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                  {t('accounting.new.doc_exists')}
+                </button>
+              )}
             </Field>
           </div>
         </section>
@@ -406,25 +517,52 @@ export function NewEntryDialog({
             </Button>
           </div>
 
+          {/* Column order mirrors the legacy entry grid the accountant knows:
+              م | مدين | دائن | الحساب | الشركة | المشروع | الآلية | البيان | العملة | سعرها | القيمة */}
           <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <table className="w-full min-w-[1100px] text-sm">
+            <table className="w-full min-w-[1750px] text-sm">
               <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-2 py-2.5 text-start">{t('common.company')}</th>
-                  <th className="px-2 py-2.5 text-start">{t('common.project')}</th>
-                  <th className="px-2 py-2.5 text-start">{t('accounting.new.line_account')}</th>
-                  {showVehicleCol && <th className="w-40 px-2 py-2.5 text-start">{t('accounting.new.line_vehicle')}</th>}
+                  <th className="w-8 px-2 py-2.5 text-center">{t('accounting.new.line_no')}</th>
                   <th className="w-28 px-2 py-2.5 text-start">{t('accounting.new.line_debit')}</th>
                   <th className="w-28 px-2 py-2.5 text-start">{t('accounting.new.line_credit')}</th>
-                  <th className="px-2 py-2.5 text-start">{t('common.description')}</th>
+                  <th className="min-w-[230px] px-2 py-2.5 text-start">{t('accounting.new.line_account')}</th>
+                  <th className="min-w-[200px] px-2 py-2.5 text-start">{t('common.company')}</th>
+                  <th className="min-w-[200px] px-2 py-2.5 text-start">{t('common.project')}</th>
+                  <th className="min-w-[200px] px-2 py-2.5 text-start">{t('accounting.new.line_vehicle')}</th>
+                  <th className="min-w-[260px] px-2 py-2.5 text-start">{t('common.description')}</th>
                   <th className="w-24 px-2 py-2.5 text-start">{t('accounting.new.currency')}</th>
                   <th className="w-28 px-2 py-2.5 text-start">{t('accounting.new.currency_rate')}</th>
+                  <th className="w-32 px-2 py-2.5 text-end">{t('accounting.new.line_value')}</th>
                   <th className="w-10 px-1 py-2.5" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {lines.map((line, idx) => (
                   <tr key={line.uid} className="align-top">
+                    <td className="px-2 py-3.5 text-center text-xs tabular-nums text-slate-400">{idx + 1}</td>
+                    <td className="px-2 py-2">
+                      <NumberInput
+                        className="text-start tabular-nums"
+                        value={line.debit}
+                        onValueChange={(v) => updateLine(line.uid, { debit: v, credit: v ? '' : line.credit })}
+                      />
+                    </td>
+                    <td className="px-2 py-2">
+                      <NumberInput
+                        className="text-start tabular-nums"
+                        value={line.credit}
+                        onValueChange={(v) => updateLine(line.uid, { credit: v, debit: v ? '' : line.debit })}
+                      />
+                    </td>
+                    <td className="px-2 py-2">
+                      <SearchSelect
+                        value={line.account_code}
+                        onChange={(v) => updateLine(line.uid, { account_code: v })}
+                        options={accountOptions}
+                        placeholder={t('accounting.new.line_account_ph')}
+                      />
+                    </td>
                     <td className="px-2 py-2">
                       <SearchSelect
                         value={line.company_id}
@@ -443,40 +581,10 @@ export function NewEntryDialog({
                     </td>
                     <td className="px-2 py-2">
                       <SearchSelect
-                        value={line.account_code}
-                        onChange={(v) => updateLine(line.uid, { account_code: v, vehicle_id: vehicleExpenseCodes.has(v) ? line.vehicle_id : '' })}
-                        options={accountOptions}
-                        placeholder={t('accounting.new.line_account_ph')}
-                      />
-                    </td>
-                    {/* Vehicle column appears only once a line uses a vehicle-expense
-                        account; the picker itself shows only on those lines. */}
-                    {showVehicleCol && (
-                      <td className="px-2 py-2">
-                        {vehicleExpenseCodes.has(line.account_code) ? (
-                          <SearchSelect
-                            value={line.vehicle_id}
-                            onChange={(v) => updateLine(line.uid, { vehicle_id: v })}
-                            options={vehicleOptions}
-                            placeholder={t('accounting.new.line_vehicle_ph')}
-                          />
-                        ) : (
-                          <span className="block px-2 py-2 text-xs text-slate-300">—</span>
-                        )}
-                      </td>
-                    )}
-                    <td className="px-2 py-2">
-                      <NumberInput
-                        className="text-start tabular-nums"
-                        value={line.debit}
-                        onValueChange={(v) => updateLine(line.uid, { debit: v, credit: v ? '' : line.credit })}
-                      />
-                    </td>
-                    <td className="px-2 py-2">
-                      <NumberInput
-                        className="text-start tabular-nums"
-                        value={line.credit}
-                        onValueChange={(v) => updateLine(line.uid, { credit: v, debit: v ? '' : line.debit })}
+                        value={line.vehicle_id}
+                        onChange={(v) => updateLine(line.uid, { vehicle_id: v })}
+                        options={vehicleOptionsFor(line.company_id)}
+                        placeholder={t('accounting.new.line_vehicle_ph')}
                       />
                     </td>
                     <td className="px-2 py-2">
@@ -484,9 +592,19 @@ export function NewEntryDialog({
                         value={line.description}
                         onChange={(e) => {
                           const v = e.target.value
-                          // The first line's البيان fills every line (type once).
-                          if (idx === 0) setLines((ls) => ls.map((l) => ({ ...l, description: v })))
-                          else updateLine(line.uid, { description: v })
+                          // The first line's البيان fills the lines still in sync with
+                          // it (blank or matching) — type once on a fresh entry, but
+                          // never wipe distinct per-line descriptions when editing.
+                          if (idx === 0) {
+                            const prev = line.description
+                            setLines((ls) =>
+                              ls.map((l, i) =>
+                                i === 0 || !l.description.trim() || l.description === prev
+                                  ? { ...l, description: v }
+                                  : l,
+                              ),
+                            )
+                          } else updateLine(line.uid, { description: v })
                         }}
                         placeholder={t('common.description')}
                       />
@@ -496,9 +614,20 @@ export function NewEntryDialog({
                         value={line.currency}
                         onChange={(v) => {
                           const c = v as Currency
-                          // Currency is PER LINE so a tasarif (currency exchange) can
-                          // mix a USD line with an IQD line in the same entry.
-                          updateLine(line.uid, { currency: c, price: rateFor(c, line.price) })
+                          // Changing the FIRST line's currency converts the whole
+                          // entry (lines still sharing its previous currency), and
+                          // every line stays individually editable — so a tasarif
+                          // (currency exchange) can still mix USD and IQD lines.
+                          if (idx === 0) {
+                            const prev = line.currency
+                            setLines((ls) =>
+                              ls.map((l, i) =>
+                                i === 0 || l.currency === prev
+                                  ? { ...l, currency: c, price: rateFor(c, l.price) }
+                                  : l,
+                              ),
+                            )
+                          } else updateLine(line.uid, { currency: c, price: rateFor(c, line.price) })
                         }}
                         // Labels carry the quick-entry digit: type 1 → IQD, 2 → USD.
                         options={CONVERTIBLE.map((c, i) => ({ value: c, label: `${i + 1} — ${c}` }))}
@@ -512,6 +641,12 @@ export function NewEntryDialog({
                         disabled={line.currency === 'IQD'}
                         onValueChange={(v) => updateLine(line.uid, { price: v })}
                       />
+                    </td>
+                    {/* القيمة — the line's dinar value (amount × rate), read-only */}
+                    <td className="px-2 py-3.5 text-end text-xs tabular-nums text-slate-500">
+                      {num(line.debit) || num(line.credit)
+                        ? formatCurrency((num(line.debit) || num(line.credit)) * lineRate(line), 'IQD', lang)
+                        : <span className="text-slate-300">—</span>}
                     </td>
                     <td className="px-1 py-2 text-center">
                       <button
@@ -530,10 +665,12 @@ export function NewEntryDialog({
               </tbody>
               <tfoot className="bg-slate-50 font-semibold text-slate-700">
                 <tr>
-                  <td className="px-2 py-2.5 text-end" colSpan={showVehicleCol ? 4 : 3}>{t('common.total')}</td>
-                  <td className="px-2 py-2.5 tabular-nums text-emerald-700">{formatCurrency(totalDebit, 'IQD', lang)}</td>
-                  <td className="px-2 py-2.5 tabular-nums text-sky-700">{formatCurrency(totalCredit, 'IQD', lang)}</td>
-                  <td colSpan={4} />
+                  <td className="px-2 py-2.5 text-start">{t('common.total')}</td>
+                  <td className="px-2 py-2.5 tabular-nums text-emerald-700">{formatCurrency(displayDebit, displayCurrency, lang)}</td>
+                  <td className="px-2 py-2.5 tabular-nums text-sky-700">{formatCurrency(displayCredit, displayCurrency, lang)}</td>
+                  <td colSpan={7} />
+                  <td className="px-2 py-2.5 text-end tabular-nums">{formatCurrency(totalDebit, 'IQD', lang)}</td>
+                  <td />
                 </tr>
               </tfoot>
             </table>
@@ -549,6 +686,7 @@ function BalanceIndicator({
   totalDebit,
   totalCredit,
   diff,
+  currency,
   lang,
   t,
 }: {
@@ -556,6 +694,7 @@ function BalanceIndicator({
   totalDebit: number
   totalCredit: number
   diff: number
+  currency: Currency
   lang: 'ar' | 'en'
   t: (k: string) => string
 }) {
@@ -563,12 +702,12 @@ function BalanceIndicator({
     <div className="flex flex-wrap items-center gap-3 text-sm">
       <span className="flex items-center gap-1.5 text-slate-500">
         <span className="font-medium text-emerald-700">{t('accounting.new.total_debit')}:</span>
-        <span className="tabular-nums">{formatCurrency(totalDebit, 'IQD', lang)}</span>
+        <span className="tabular-nums">{formatCurrency(totalDebit, currency, lang)}</span>
       </span>
       <span className="text-slate-300">|</span>
       <span className="flex items-center gap-1.5 text-slate-500">
         <span className="font-medium text-sky-700">{t('accounting.new.total_credit')}:</span>
-        <span className="tabular-nums">{formatCurrency(totalCredit, 'IQD', lang)}</span>
+        <span className="tabular-nums">{formatCurrency(totalCredit, currency, lang)}</span>
       </span>
       <span
         className={
@@ -584,7 +723,7 @@ function BalanceIndicator({
         ) : (
           <>
             <AlertTriangle className="h-3.5 w-3.5" />
-            {t('accounting.new.diff')}: {formatCurrency(Math.abs(diff), 'IQD', lang)}
+            {t('accounting.new.diff')}: {formatCurrency(Math.abs(diff), currency, lang)}
           </>
         )}
       </span>

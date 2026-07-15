@@ -388,7 +388,6 @@ export default function AccountDetail() {
             searchable={ledger.length > 8}
             searchPlaceholder={t('common.search')}
             exportName={`ledger-${account?.code}`}
-            pageSize={15}
             emptyTitle={t('accounting.reports.ledger_empty')}
           />
           {ledger.length > 0 && (

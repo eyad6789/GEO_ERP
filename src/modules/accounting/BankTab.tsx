@@ -198,7 +198,6 @@ export function BankTab() {
           loading={loading}
           rowKey={(b) => b.id}
           searchPlaceholder={t('common.search')}
-          pageSize={10}
           emptyTitle={t('accounting.bank.empty')}
           emptyHint={canEdit ? t('accounting.bank.empty_hint') : undefined}
         />

@@ -265,7 +265,6 @@ export function VehiclesTab() {
           onRowClick={(r) => setSelected(r)}
           searchable
           searchPlaceholder={t('accounting.vehicles.list_sub')}
-          pageSize={12}
           emptyTitle={t('accounting.vehicles.empty')}
         />
       </Card>
@@ -346,7 +345,6 @@ export function VehiclesTab() {
           data={data.by_company}
           rowKey={(r, i) => `${r.company_id ?? 'none'}-${i}`}
           searchable={false}
-          pageSize={12}
           emptyTitle={t('accounting.vehicles.empty')}
         />
       </Card>
@@ -490,7 +488,6 @@ function VehicleDetailDialog({ vehicle, onClose, onOpenEntry }: { vehicle: Vehic
                 rowKey={(r, i) => `${r.entry_id ?? 'vc'}-${i}`}
                 onRowClick={(r) => r.entry_id && onOpenEntry(r.entry_id)}
                 searchable={false}
-                pageSize={8}
                 emptyTitle={t('accounting.vehicles.no_costs')}
               />
             ) : (

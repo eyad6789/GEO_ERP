@@ -128,7 +128,6 @@ export function VehicleAccountPanel({ vehicleId, onOpenEntry }: { vehicleId: str
               rowKey={(r, i) => `${r.entry_id ?? 'vc'}-${i}`}
               onRowClick={(r) => r.entry_id && onOpenEntry(r.entry_id)}
               searchable={false}
-              pageSize={10}
               emptyTitle={t('accounting.vehicles.no_costs')}
             />
           ) : (

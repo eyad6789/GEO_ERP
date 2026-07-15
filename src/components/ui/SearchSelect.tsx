@@ -114,6 +114,9 @@ export function SearchSelect({
         type="text"
         disabled={disabled}
         className={cn('input-base pe-9', className)}
+        // Narrow grid cells truncate long names — the tooltip always carries the
+        // full selected label on hover/focus.
+        title={selected?.label}
         placeholder={selected && !open ? undefined : placeholder}
         value={displayValue}
         onChange={(e) => {
