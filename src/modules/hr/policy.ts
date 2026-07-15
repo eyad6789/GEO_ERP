@@ -68,9 +68,12 @@ export function hourlyLeaveRemaining(leaves: LeaveRequest[], month: string): num
 export type LeaveBucket = 'PENDING' | 'INQUIRY' | 'APPROVED' | 'REJECTED'
 
 /** The four board sections. INQUIRY is derived — a pending request on which the
- *  manager asked «لماذا تريد الإجازة؟» and the employee hasn't answered yet. */
+ *  manager asked «لماذا تريد الإجازة؟» and the employee hasn't answered yet, OR
+ *  on which the employee was summoned for a face-to-face talk (استدعاء). A
+ *  summon stays in the inquiry column until the manager decides. */
 export function leaveBucket(l: LeaveRequest): LeaveBucket {
   if (l.status === 'APPROVED' || l.status === 'REJECTED') return l.status
+  if ((l.summoned_at ?? '').trim()) return 'INQUIRY'
   if ((l.manager_question ?? '').trim() && !(l.question_answer ?? '').trim()) return 'INQUIRY'
   return 'PENDING'
 }

@@ -104,6 +104,9 @@ CREATE TABLE IF NOT EXISTS leave_requests (
   decision_note TEXT,        -- why the manager approved/rejected
   manager_question TEXT,     -- manager's inquiry on a pending request (لماذا تريد الإجازة؟)
   question_answer TEXT,      -- the employee's reply to the inquiry
+  summoned_at TEXT,          -- manager summoned the employee for a face-to-face talk
+  recalled_at TEXT,          -- date an approved leave was cut short (عاد للعمل)
+  recall_note TEXT,          -- why the employee was recalled from leave
   created_at TEXT
 );
 

@@ -116,6 +116,10 @@ function migrate(): void {
   addLr('manager_question', 'TEXT')
   addLr('question_answer', 'TEXT')
   addLr('hours_count', 'REAL DEFAULT 0')
+  // Summon-for-a-talk + recall-from-leave (استدعاء للمقابلة / استدعاء من الإجازة).
+  addLr('summoned_at', 'TEXT')
+  addLr('recalled_at', 'TEXT')
+  addLr('recall_note', 'TEXT')
   ensureVehicleAccounts()
 
   // Banks ↔ chart of accounts: each bank links to a GL account under 183 المصارف.

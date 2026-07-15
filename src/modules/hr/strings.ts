@@ -170,6 +170,26 @@ registerStrings({
   'hr.leave.waiting_answer': { ar: 'بانتظار رد الموظف…', en: 'Waiting for the employee’s answer…' },
   'hr.leave.question_label': { ar: 'سؤال المدير', en: 'Manager’s question' },
 
+  // Leaves — summon for a talk (استدعاء للمقابلة)
+  'hr.leave.summon_btn': { ar: 'استدعاء', en: 'Summon' },
+  'hr.leave.summon_title': { ar: 'استدعاء الموظف للمقابلة', en: 'Summon the employee for a talk' },
+  'hr.leave.summon_desc': {
+    ar: 'سيُطلب من الموظف مراجعة مدير الموارد البشرية في المكتب لمناقشة طلب الإجازة وجهاً لوجه، ثم يعود إلى عمله. يبقى الطلب في عمود الاستفسار حتى يُتخذ القرار.',
+    en: 'The employee will be asked to visit the HR manager’s office to discuss this leave face to face, then return to work. The request stays in the inquiry column until a decision is made.',
+  },
+  'hr.leave.summon_sent': { ar: 'تم استدعاء الموظف للمقابلة', en: 'Employee summoned for a talk' },
+  'hr.leave.summoned_since': { ar: 'مستدعى للمقابلة — بانتظار حضوره للمكتب منذ {date}', en: 'Summoned — awaiting office visit since {date}' },
+
+  // Leaves — recall from an approved leave (استدعاء من الإجازة)
+  'hr.leave.recall_btn': { ar: 'استدعاء من الإجازة', en: 'Recall from leave' },
+  'hr.leave.recall_title': { ar: 'استدعاء الموظف من الإجازة', en: 'Recall the employee from leave' },
+  'hr.leave.recall_date': { ar: 'تاريخ العودة للعمل', en: 'Return-to-work date' },
+  'hr.leave.recall_note': { ar: 'سبب الاستدعاء', en: 'Reason for the recall' },
+  'hr.leave.recall_note_ph': { ar: 'مثال: حاجة العمل في المشروع', en: 'e.g. project workload requires him' },
+  'hr.leave.recall_days_hint': { ar: 'تُحتسب الأيام المستهلكة فقط ويعود الباقي إلى رصيده', en: 'Only the used days count; the rest returns to his balance' },
+  'hr.leave.recall_done': { ar: 'تمت إعادة الموظف للعمل وتحديث رصيده', en: 'Employee recalled — balance updated' },
+  'hr.leave.recalled_badge': { ar: 'أُعيد للعمل في {date}', en: 'Back to work on {date}' },
+
   // Leaves — balances (detail page tiles)
   'hr.leave.account_title': { ar: 'رصيد الإجازات', en: 'Leave Account' },
   'hr.leave.days_this_year': { ar: 'يوماً معتمداً في {year}', en: 'approved days in {year}' },

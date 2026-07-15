@@ -131,6 +131,9 @@ export interface LeaveRequest {
   decision_note?: string | null // why the manager approved/rejected
   manager_question?: string | null // manager's inquiry on a pending request
   question_answer?: string | null // the employee's reply
+  summoned_at?: string | null // manager summoned the employee for a face-to-face talk
+  recalled_at?: string | null // date an approved leave was cut short (returned to work)
+  recall_note?: string | null // why the employee was recalled from leave
 }
 
 export type AdvanceStatus = 'PENDING' | 'APPROVED' | 'REPAYING' | 'SETTLED'

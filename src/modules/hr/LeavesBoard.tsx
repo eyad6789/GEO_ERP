@@ -10,8 +10,10 @@ import {
   Clock,
   HelpCircle,
   MessageCircleQuestion,
+  PhoneCall,
   Plus,
   Reply,
+  Undo2,
   X,
 } from 'lucide-react'
 import { EmptyState } from '../../components/shared'
@@ -75,6 +77,10 @@ export function LeavesBoard({
   const [askText, setAskText] = useState('')
   const [answer, setAnswer] = useState<LeaveRequest | null>(null)
   const [answerText, setAnswerText] = useState('')
+  const [summon, setSummon] = useState<LeaveRequest | null>(null)
+  const [recall, setRecall] = useState<LeaveRequest | null>(null)
+  const [recallDate, setRecallDate] = useState(todayKey())
+  const [recallNote, setRecallNote] = useState('')
   const [busy, setBusy] = useState(false)
 
   const buckets = useMemo(() => {
@@ -147,6 +153,8 @@ export function LeavesBoard({
                       onReject={() => { setDecisionNote(''); setDecision({ leave: l, status: 'REJECTED' }) }}
                       onAsk={() => { setAskText(''); setAsk(l) }}
                       onAnswer={() => { setAnswerText(''); setAnswer(l) }}
+                      onSummon={() => setSummon(l)}
+                      onRecall={() => { setRecallDate(todayKey()); setRecallNote(''); setRecall(l) }}
                     />
                   ))
                 )}
@@ -273,8 +281,110 @@ export function LeavesBoard({
           <Textarea value={answerText} onChange={(e) => setAnswerText(e.target.value)} placeholder={t('hr.leave.answer_ph')} rows={3} />
         </Field>
       </Dialog>
+
+      {/* Summon — the manager calls the employee in for a face-to-face talk */}
+      <Dialog
+        open={!!summon}
+        onClose={() => !busy && setSummon(null)}
+        size="md"
+        title={t('hr.leave.summon_title')}
+        description={summon ? `${pickName(empMap.get(summon.employee_id), lang)} · ${leaveAmount(summon, t, lang)} · ${summon.reason || ''}` : undefined}
+        footer={
+          <div className="flex w-full items-center justify-end gap-2">
+            <Button variant="outline" onClick={() => setSummon(null)} disabled={busy}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              disabled={busy}
+              onClick={() =>
+                summon &&
+                run(
+                  () => apiPut(`/leave_requests/${summon.id}`, { summoned_at: todayKey() }),
+                  t('hr.leave.summon_sent'),
+                  () => setSummon(null),
+                )
+              }
+            >
+              <PhoneCall className="h-4 w-4" />
+              {t('hr.leave.summon_btn')}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm leading-relaxed text-slate-600">{t('hr.leave.summon_desc')}</p>
+      </Dialog>
+
+      {/* Recall from leave — cut an ongoing approved leave; unused days return */}
+      <Dialog
+        open={!!recall}
+        onClose={() => !busy && setRecall(null)}
+        size="md"
+        title={t('hr.leave.recall_title')}
+        description={
+          recall
+            ? `${pickName(empMap.get(recall.employee_id), lang)} · ${formatDate(recall.start_date, lang)} – ${formatDate(recall.end_date, lang)} · ${formatNumber(recall.days_count, lang)} ${t('hr.board.days_unit')}`
+            : undefined
+        }
+        footer={
+          <div className="flex w-full items-center justify-end gap-2">
+            <Button variant="outline" onClick={() => setRecall(null)} disabled={busy}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              disabled={busy || !recall || !recallDate || !recallNote.trim() || recallDate < recall.start_date || recallDate > recall.end_date}
+              onClick={() => {
+                if (!recall) return
+                // Days actually consumed = start .. the day BEFORE he returns.
+                const usedDays = Math.max(
+                  0,
+                  Math.round((new Date(recallDate).getTime() - new Date(recall.start_date).getTime()) / 86400000),
+                )
+                void run(
+                  () =>
+                    apiPut(`/leave_requests/${recall.id}`, {
+                      end_date: usedDays > 0 ? addDaysISO(recall.start_date, usedDays - 1) : recall.start_date,
+                      days_count: usedDays,
+                      recalled_at: recallDate,
+                      recall_note: recallNote.trim(),
+                    }),
+                  t('hr.leave.recall_done'),
+                  () => setRecall(null),
+                )
+              }}
+            >
+              <Undo2 className="h-4 w-4" />
+              {t('hr.leave.recall_btn')}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <Field label={t('hr.leave.recall_date')} hint={t('hr.leave.recall_days_hint')}>
+            <Input
+              type="date"
+              value={recallDate}
+              min={recall?.start_date}
+              max={recall?.end_date}
+              onChange={(e) => setRecallDate(e.target.value)}
+              dir="ltr"
+            />
+          </Field>
+          <Field label={t('hr.leave.recall_note')} required>
+            <Textarea value={recallNote} onChange={(e) => setRecallNote(e.target.value)} placeholder={t('hr.leave.recall_note_ph')} rows={2} />
+          </Field>
+        </div>
+      </Dialog>
     </div>
   )
+}
+
+/** ISO date + n days → ISO date (local, calendar arithmetic only). */
+function addDaysISO(iso: string, n: number): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  dt.setDate(dt.getDate() + n)
+  const pad = (x: number) => String(x).padStart(2, '0')
+  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`
 }
 
 // ---------------------------------------------------------------------------
@@ -294,6 +404,8 @@ function LeaveCard({
   onReject,
   onAsk,
   onAnswer,
+  onSummon,
+  onRecall,
 }: {
   leave: LeaveRequest
   bucket: LeaveBucket
@@ -303,10 +415,17 @@ function LeaveCard({
   onReject: () => void
   onAsk: () => void
   onAnswer: () => void
+  onSummon: () => void
+  onRecall: () => void
 }) {
   const t = useT()
   const { lang } = useLang()
   const hourly = isHourlyLeave(leave)
+  const summoned = (leave.summoned_at ?? '').trim() !== ''
+  const recalled = (leave.recalled_at ?? '').trim() !== ''
+  // An approved day-leave that hasn't finished yet can be cut short.
+  const recallable =
+    canManage && bucket === 'APPROVED' && !hourly && !recalled && leave.end_date >= todayKey()
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:shadow-card">
@@ -346,6 +465,27 @@ function LeaveCard({
         </p>
       )}
 
+      {/* Summoned marker — the employee must visit the office for a talk */}
+      {summoned && bucket !== 'APPROVED' && bucket !== 'REJECTED' && (
+        <div className="mt-2 flex items-center gap-1.5 rounded-lg border-s-2 border-violet-300 bg-violet-50 px-2.5 py-1.5">
+          <PhoneCall className="h-3.5 w-3.5 shrink-0 text-violet-500" />
+          <p className="text-xs leading-relaxed text-violet-800">
+            {t('hr.leave.summoned_since').replace('{date}', formatDate(leave.summoned_at!, lang))}
+          </p>
+        </div>
+      )}
+
+      {/* Recalled marker — leave was cut short; he is back at work */}
+      {recalled && (
+        <div className="mt-2 rounded-lg border-s-2 border-teal-300 bg-teal-50 px-2.5 py-1.5">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-teal-700">
+            <Undo2 className="h-3.5 w-3.5 shrink-0" />
+            {t('hr.leave.recalled_badge').replace('{date}', formatDate(leave.recalled_at!, lang))}
+          </p>
+          {leave.recall_note && <p className="mt-0.5 text-xs leading-relaxed text-slate-600">{leave.recall_note}</p>}
+        </div>
+      )}
+
       {/* Q&A thread */}
       {(leave.manager_question ?? '').trim() !== '' && (
         <div className="mt-2 space-y-1.5">
@@ -377,15 +517,15 @@ function LeaveCard({
       )}
 
       {/* Actions */}
-      {(bucket === 'INQUIRY' || (canManage && bucket === 'PENDING')) && (
+      {(bucket === 'INQUIRY' || (canManage && bucket === 'PENDING') || recallable) && (
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-2.5">
-          {bucket === 'INQUIRY' && (
+          {bucket === 'INQUIRY' && !summoned && (
             <Button size="sm" onClick={onAnswer}>
               <Reply className="h-3.5 w-3.5" />
               {t('hr.leave.answer_btn')}
             </Button>
           )}
-          {canManage && (
+          {canManage && (bucket === 'PENDING' || bucket === 'INQUIRY') && (
             <>
               <Button size="sm" variant="subtle" onClick={onApprove}>
                 <Check className="h-3.5 w-3.5" />
@@ -396,12 +536,24 @@ function LeaveCard({
                 {t('hr.leave.reject')}
               </Button>
               {bucket === 'PENDING' && (
-                <Button size="sm" variant="outline" onClick={onAsk}>
-                  <MessageCircleQuestion className="h-3.5 w-3.5" />
-                  {t('hr.leave.ask_btn')}
-                </Button>
+                <>
+                  <Button size="sm" variant="outline" onClick={onAsk}>
+                    <MessageCircleQuestion className="h-3.5 w-3.5" />
+                    {t('hr.leave.ask_btn')}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={onSummon}>
+                    <PhoneCall className="h-3.5 w-3.5" />
+                    {t('hr.leave.summon_btn')}
+                  </Button>
+                </>
               )}
             </>
+          )}
+          {recallable && (
+            <Button size="sm" variant="outline" onClick={onRecall}>
+              <Undo2 className="h-3.5 w-3.5" />
+              {t('hr.leave.recall_btn')}
+            </Button>
           )}
         </div>
       )}
