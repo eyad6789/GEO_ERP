@@ -51,9 +51,14 @@ registerStrings({
   'hr.card.hourly_left': { ar: 'رصيد الزمنية المتبقي', en: 'Hourly leave remaining' },
   'hr.card.of_hours': { ar: '{x} من {y} ساعة', en: '{x} of {y} hours' },
   'hr.card.of_days': { ar: '{x} من {y} يوم', en: '{x} of {y} days' },
-  'hr.card.hours_of': { ar: 'من {y} ساعة هذا الشهر', en: 'of {y}h this month' },
-  'hr.card.leave_pill': { ar: 'إجازات {n}', en: '{n} leave days' },
-  'hr.card.hourly_short': { ar: 'رصيد الزمنية', en: 'Hourly left' },
+  'hr.card.hours_of_short': { ar: 'من {y} ساعة', en: 'of {y}h' },
+  'hr.card.of_n': { ar: 'من {y}', en: 'of {y}' },
+  'hr.card.num_chip': { ar: 'رقم {n}', en: '#{n}' },
+  'hr.card.present_days': { ar: 'حضور', en: 'Present' },
+  'hr.card.absent_days': { ar: 'غياب', en: 'Absent' },
+  'hr.card.leave_left_short': { ar: 'إجازة متبقية', en: 'Leave left' },
+  'hr.card.hours_complete': { ar: 'أكمل ساعات الشهر المطلوبة', en: 'Completed the month’s required hours' },
+  'hr.board.month_highlights': { ar: 'أبرز الشهر', en: 'Month Highlights' },
 
   // Leaderboards
   'hr.board.top_hours': { ar: 'الأكثر ساعات عمل', en: 'Most Worked Hours' },

@@ -176,7 +176,6 @@ export default function HrShell() {
             employees={employees}
             loading={loading}
             refetch={refetchEmployees}
-            deptMap={deptMap}
             companies={companies}
             canManage={isHR}
             month={month}

@@ -8,7 +8,7 @@ import { Avatar, Button, Input } from '../../components/ui'
 import { useLang, useT } from '../../context/LangContext'
 import { apiPost } from '../../lib/api'
 import { formatNumber, pickName } from '../../lib/format'
-import type { Company, Department, Employee } from '../../types'
+import type { Company, Employee } from '../../types'
 import { EmployeeCard } from './EmployeeCard'
 import { emptyStats, type MonthStats } from './useHrStats'
 
@@ -17,7 +17,6 @@ export function EmployeeCardsSection({
   employees,
   loading,
   refetch,
-  deptMap,
   companies,
   canManage,
   month,
@@ -29,7 +28,6 @@ export function EmployeeCardsSection({
   employees: Employee[]
   loading: boolean
   refetch: () => void
-  deptMap: Map<string, Department>
   companies: Company[]
   canManage: boolean
   month: string
@@ -105,34 +103,7 @@ export function EmployeeCardsSection({
         )}
       </div>
 
-      {/* Leaderboards */}
-      {(topHours.length > 0 || topLeaves.length > 0) && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Leaderboard
-            title={t('hr.board.top_hours')}
-            icon={<Clock className="h-5 w-5" />}
-            rows={topHours.map(({ e, v }) => ({
-              emp: e,
-              value: `${formatNumber(v, lang, 1)} ${t('hr.board.hours_unit')}`,
-            }))}
-            empty={t('hr.board.empty')}
-          />
-          <Leaderboard
-            title={t('hr.board.top_leaves')}
-            icon={<CalendarClock className="h-5 w-5" />}
-            rows={topLeaves.map(({ e, v, h }) => ({
-              emp: e,
-              value:
-                v > 0
-                  ? `${formatNumber(v, lang)} ${t('hr.board.days_unit')}`
-                  : `${formatNumber(h, lang, 1)} ${t('hr.board.hours_unit')}`,
-            }))}
-            empty={t('hr.board.empty')}
-          />
-        </div>
-      )}
-
-      {/* Cards */}
+      {/* The roster IS the content — it sits right under the toolbar */}
       {loading ? (
         <p className="py-10 text-center text-sm text-slate-400">{t('common.loading')}</p>
       ) : filtered.length === 0 ? (
@@ -143,17 +114,46 @@ export function EmployeeCardsSection({
           hint={employees.length === 0 ? (companyId ? t('hr.emp.empty_company') : t('hr.emp.empty_hint')) : undefined}
         />
       ) : (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {filtered.map((e) => (
             <EmployeeCard
               key={e.id}
               emp={e}
-              dept={e.department_id ? deptMap.get(e.department_id) : undefined}
               stats={statsOf(e)}
               photoDocId={photoMap.get(e.id)}
               onClick={() => navigate(`/hr/employees/${e.id}`)}
             />
           ))}
+        </div>
+      )}
+
+      {/* Month highlights — commentary AFTER the people, never above them */}
+      {(topHours.length > 0 || topLeaves.length > 0) && (
+        <div>
+          <h3 className="mb-3 text-sm font-bold text-slate-500">{t('hr.board.month_highlights')}</h3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Leaderboard
+              title={t('hr.board.top_hours')}
+              icon={<Clock className="h-5 w-5" />}
+              rows={topHours.map(({ e, v }) => ({
+                emp: e,
+                value: `${formatNumber(v, lang, 1)} ${t('hr.board.hours_unit')}`,
+              }))}
+              empty={t('hr.board.empty')}
+            />
+            <Leaderboard
+              title={t('hr.board.top_leaves')}
+              icon={<CalendarClock className="h-5 w-5" />}
+              rows={topLeaves.map(({ e, v, h }) => ({
+                emp: e,
+                value:
+                  v > 0
+                    ? `${formatNumber(v, lang)} ${t('hr.board.days_unit')}`
+                    : `${formatNumber(h, lang, 1)} ${t('hr.board.hours_unit')}`,
+              }))}
+              empty={t('hr.board.empty')}
+            />
+          </div>
         </div>
       )}
 
