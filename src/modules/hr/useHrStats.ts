@@ -16,6 +16,8 @@ export interface MonthStats {
   workedMinutes: number
   workedHours: number // Σ(check_out − check_in) inside the month, 1 decimal
   presentDays: number
+  absentDays: number // attendance rows marked ABSENT inside the month
+  leaveDays: number // attendance rows marked LEAVE inside the month
   requiredHours: number // policy.requiredHoursForMonth
   hoursRemaining: number // max(0, required − worked)
   leaveDaysTakenMonth: number // approved day-leaves starting in the month
@@ -30,9 +32,13 @@ export interface MonthStats {
 export function computeMonthStats(attendance: Attendance[], leaves: LeaveRequest[], month: string): MonthStats {
   let minutes = 0
   let presentDays = 0
+  let absentDays = 0
+  let leaveDays = 0
   for (const a of attendance) {
     if (!inMonth(a.date, month)) continue
     if (a.status === 'PRESENT') presentDays++
+    else if (a.status === 'ABSENT') absentDays++
+    else if (a.status === 'LEAVE') leaveDays++
     minutes += workedMinutes(a.check_in, a.check_out)
   }
   let leaveDaysTakenMonth = 0
@@ -50,6 +56,8 @@ export function computeMonthStats(attendance: Attendance[], leaves: LeaveRequest
     workedMinutes: minutes,
     workedHours,
     presentDays,
+    absentDays,
+    leaveDays,
     requiredHours,
     hoursRemaining: Math.max(0, Math.round((requiredHours - workedHours) * 10) / 10),
     leaveDaysTakenMonth,

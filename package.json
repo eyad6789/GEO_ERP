@@ -8,6 +8,7 @@
     "seed": "tsx server/seed/seed.ts",
     "seed:fleet": "tsx server/seed/seedFleetOnly.ts",
     "seed:hr": "tsx server/seed/seedRealEmployees.ts",
+    "seed:hr:history": "tsx server/seed/seedHrHistory.ts",
     "seed:warehouse": "tsx server/seed/seedWarehouseOnly.ts",
     "server": "tsx watch server/index.ts",
     "client": "vite",

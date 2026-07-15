@@ -2,14 +2,14 @@
 // every card and two leaderboards (most worked hours / most leave days).
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CalendarClock, Clock, Phone, Search, Trophy, UserPlus } from 'lucide-react'
-import { EmptyState, FormDialog, Card, CardBody, CardHeader, StatusBadge } from '../../components/shared'
+import { CalendarClock, Clock, Search, Trophy, UserPlus } from 'lucide-react'
+import { EmptyState, FormDialog, Card, CardBody, CardHeader } from '../../components/shared'
 import { Avatar, Button, Input } from '../../components/ui'
 import { useLang, useT } from '../../context/LangContext'
 import { apiPost } from '../../lib/api'
 import { formatNumber, pickName } from '../../lib/format'
 import type { Company, Department, Employee } from '../../types'
-import { MiniBar } from './lib'
+import { EmployeeCard } from './EmployeeCard'
 import { emptyStats, type MonthStats } from './useHrStats'
 
 export function EmployeeCardsSection({
@@ -143,7 +143,7 @@ export function EmployeeCardsSection({
           hint={employees.length === 0 ? (companyId ? t('hr.emp.empty_company') : t('hr.emp.empty_hint')) : undefined}
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
           {filtered.map((e) => (
             <EmployeeCard
               key={e.id}
@@ -206,87 +206,6 @@ export function EmployeeCardsSection({
           refetch()
         }}
       />
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-
-function EmployeeCard({
-  emp,
-  dept,
-  stats,
-  photoDocId,
-  onClick,
-}: {
-  emp: Employee
-  dept?: Department
-  stats: MonthStats
-  photoDocId?: string
-  onClick: () => void
-}) {
-  const t = useT()
-  const { lang } = useLang()
-  const name = pickName(emp, lang)
-  const secondary = [emp.job_title, dept ? pickName(dept, lang) : ''].filter(Boolean).join(' · ')
-
-  return (
-    <div
-      onClick={onClick}
-      className="card group cursor-pointer overflow-hidden transition hover:-translate-y-0.5 hover:shadow-card-hover"
-    >
-      <div className="h-1" style={{ backgroundColor: emp.photo_color || '#1a5f7a' }} />
-      <div className="p-4">
-        <div className="flex items-start gap-3">
-          {photoDocId ? (
-            <img
-              src={`/api/employee-documents/${photoDocId}/file`}
-              alt={name}
-              className="h-14 w-14 shrink-0 rounded-2xl object-cover ring-1 ring-slate-200"
-            />
-          ) : (
-            <Avatar name={name} color={emp.photo_color} size="lg" />
-          )}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <p className="truncate font-bold text-slate-800 group-hover:text-primary">{name}</p>
-              <StatusBadge status={emp.status} />
-            </div>
-            {secondary && <p className="mt-0.5 truncate text-xs text-slate-400">{secondary}</p>}
-            {emp.phone_primary && (
-              <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
-                <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                <span dir="ltr" className="tabular-nums">{emp.phone_primary}</span>
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-4 space-y-3">
-          <div>
-            <div className="mb-1 flex items-baseline justify-between gap-2">
-              <span className="text-xs text-slate-500">{t('hr.card.worked_hours')}</span>
-              <span className="text-xs font-semibold tabular-nums text-slate-700">
-                {t('hr.card.of_hours')
-                  .replace('{x}', formatNumber(stats.workedHours, lang, 1))
-                  .replace('{y}', formatNumber(stats.requiredHours, lang))}
-              </span>
-            </div>
-            <MiniBar value={stats.workedHours} max={stats.requiredHours} tone="primary" />
-          </div>
-          <div>
-            <div className="mb-1 flex items-baseline justify-between gap-2">
-              <span className="text-xs text-slate-500">{t('hr.card.leave_left')}</span>
-              <span className="text-xs font-semibold tabular-nums text-slate-700">
-                {t('hr.card.of_days')
-                  .replace('{x}', formatNumber(stats.leaveDaysRemaining, lang))
-                  .replace('{y}', formatNumber(stats.leaveDaysEntitled, lang))}
-              </span>
-            </div>
-            <MiniBar value={stats.leaveDaysRemaining} max={stats.leaveDaysEntitled} tone="auto" />
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

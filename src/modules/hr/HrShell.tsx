@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CalendarCheck, CalendarClock, Clock, Layers, Users } from 'lucide-react'
+import { CalendarCheck, CalendarClock, ClipboardList, Clock, Layers, Users } from 'lucide-react'
 import { KpiCard, PageHeader } from '@/components/shared'
 import { Badge, SearchSelect, Tabs } from '@/components/ui'
 import type { TabItem } from '@/components/ui'
@@ -11,13 +11,14 @@ import type { Attendance, EmployeeDoc, LeaveRequest } from '@/types'
 import { useHrLookups } from './lib'
 import { AttendanceSection, DepartmentsSection } from './sections'
 import { EmployeeCardsSection } from './EmployeeCards'
+import { FollowUpSection } from './FollowUpSection'
 import { LeavesBoard } from './LeavesBoard'
 import { MonthPicker, monthLabel } from './MonthPicker'
 import { currentMonthKey, minutesToHours, todayKey } from './hours'
 import { leaveBucket } from './policy'
 import { useHrStats } from './useHrStats'
 
-type TabKey = 'employees' | 'departments' | 'attendance' | 'leaves'
+type TabKey = 'employees' | 'followup' | 'departments' | 'attendance' | 'leaves'
 
 export default function HrShell() {
   const t = useT()
@@ -100,6 +101,7 @@ export default function HrShell() {
 
   const tabs: TabItem[] = [
     { key: 'employees', label: t('hr.tab.employees'), icon: <Users className="h-4 w-4" /> },
+    { key: 'followup', label: t('hr.tab.followup'), icon: <ClipboardList className="h-4 w-4" /> },
     { key: 'departments', label: t('hr.tab.departments'), icon: <Layers className="h-4 w-4" /> },
     { key: 'attendance', label: t('hr.tab.attendance'), icon: <CalendarCheck className="h-4 w-4" /> },
     {
@@ -181,6 +183,15 @@ export default function HrShell() {
             empFilter={empFilter}
             stats={stats}
             photoMap={photoMap}
+          />
+        )}
+        {tab === 'followup' && (
+          <FollowUpSection
+            employees={employees}
+            stats={stats}
+            month={month}
+            empFilter={empFilter}
+            loading={loading || attLoading || lvLoading}
           />
         )}
         {tab === 'departments' && (

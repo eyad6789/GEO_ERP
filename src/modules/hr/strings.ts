@@ -8,7 +8,14 @@ registerStrings({
 
   // Tabs
   'hr.tab.employees': { ar: 'قائمة الموظفين', en: 'Employees' },
+  'hr.tab.followup': { ar: 'المتابعة', en: 'Follow-up' },
   'hr.tab.departments': { ar: 'الأقسام', en: 'Departments' },
+
+  // Follow-up table
+  'hr.fu.present': { ar: 'أيام الحضور', en: 'Present Days' },
+  'hr.fu.absent': { ar: 'أيام الغياب', en: 'Absent Days' },
+  'hr.fu.leave': { ar: 'أيام الإجازة', en: 'Leave Days' },
+  'hr.fu.empty': { ar: 'لا توجد بيانات متابعة لهذا الشهر', en: 'No follow-up data for this month' },
   'hr.tab.attendance': { ar: 'الحضور', en: 'Attendance' },
   'hr.tab.leaves': { ar: 'الإجازات', en: 'Leaves' },
 
@@ -44,6 +51,9 @@ registerStrings({
   'hr.card.hourly_left': { ar: 'رصيد الزمنية المتبقي', en: 'Hourly leave remaining' },
   'hr.card.of_hours': { ar: '{x} من {y} ساعة', en: '{x} of {y} hours' },
   'hr.card.of_days': { ar: '{x} من {y} يوم', en: '{x} of {y} days' },
+  'hr.card.hours_of': { ar: 'من {y} ساعة هذا الشهر', en: 'of {y}h this month' },
+  'hr.card.leave_pill': { ar: 'إجازات {n}', en: '{n} leave days' },
+  'hr.card.hourly_short': { ar: 'رصيد الزمنية', en: 'Hourly left' },
 
   // Leaderboards
   'hr.board.top_hours': { ar: 'الأكثر ساعات عمل', en: 'Most Worked Hours' },
