@@ -1,199 +1,18 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Building2, Check, Star, UserPlus, Wallet, X } from 'lucide-react'
-import {
-  ArabicTable,
-  Card,
-  CardBody,
-  CardHeader,
-  FormDialog,
-  KpiCard,
-  OrgTree,
-  StatusBadge,
-  buildOrgTree,
-} from '@/components/shared'
+import { CalendarCheck, Fingerprint } from 'lucide-react'
+import { ArabicTable, StatusBadge } from '@/components/shared'
 import type { Column } from '@/components/shared'
-import { Button, useToast } from '@/components/ui'
+import { Button, Dialog, useToast } from '@/components/ui'
 import { useLang, useT } from '@/context/LangContext'
-import { useResource } from '@/hooks/useResource'
-import { formatCurrency, formatDate, pickName } from '@/lib/format'
-import type {
-  Advance,
-  Attendance,
-  Company,
-  Department,
-  Employee,
-  Gift,
-  LeaveRequest,
-  Payroll,
-  PerformanceReview,
-} from '@/types'
-import { EmployeeCell, StarRating } from './lib'
+import { apiPost } from '@/lib/api'
+import { formatDate, formatNumber, pickName } from '@/lib/format'
+import type { Attendance, Company, Department, Employee } from '@/types'
+import { EmployeeCell } from './lib'
+import { inMonth, minutesToHours, workedMinutes } from './hours'
 
 // ---------------------------------------------------------------------------
-// 1. Employees list
-// ---------------------------------------------------------------------------
-export function EmployeesSection({
-  companyId,
-  employees,
-  loading,
-  refetch,
-  deptMap,
-  coMap,
-  companies,
-}: {
-  companyId: string | null
-  employees: Employee[]
-  loading: boolean
-  refetch: () => void
-  deptMap: Map<string, Department>
-  coMap: Map<string, Company>
-  companies: Company[]
-}) {
-  const t = useT()
-  const { lang } = useLang()
-  const navigate = useNavigate()
-  const { create } = useResource<Employee>('employees')
-  const [open, setOpen] = useState(false)
-
-  const columns: Column<Employee>[] = [
-    {
-      key: 'name',
-      header: t('hr.emp.employee'),
-      accessor: (e) => pickName(e, lang),
-      render: (e) => <EmployeeCell employee={e} />,
-      sortable: true,
-    },
-    { key: 'employee_number', header: t('hr.emp.number'), sortable: true },
-    { key: 'job_title', header: t('hr.emp.job_title'), sortable: true },
-    {
-      key: 'department',
-      header: t('hr.emp.department'),
-      accessor: (e) => (e.department_id ? pickName(deptMap.get(e.department_id), lang) : ''),
-      render: (e) => (e.department_id ? pickName(deptMap.get(e.department_id), lang) : '—'),
-    },
-    {
-      key: 'company',
-      header: t('common.company'),
-      accessor: (e) => pickName(coMap.get(e.company_id), lang),
-      render: (e) => pickName(coMap.get(e.company_id), lang),
-    },
-    {
-      key: 'status',
-      header: t('common.status'),
-      accessor: (e) => e.status,
-      render: (e) => <StatusBadge status={e.status} />,
-      align: 'center',
-    },
-  ]
-
-  return (
-    <>
-      <ArabicTable<Employee>
-        columns={columns}
-        data={employees}
-        loading={loading}
-        rowKey={(e) => e.id}
-        onRowClick={(e) => navigate(`/hr/employees/${e.id}`)}
-        searchPlaceholder={t('hr.emp.search')}
-        exportName="employees"
-        emptyTitle={t('hr.emp.empty')}
-        emptyHint={t('hr.emp.empty_hint')}
-        toolbar={
-          <Button onClick={() => setOpen(true)}>
-            <UserPlus className="h-4 w-4" />
-            {t('hr.emp.new')}
-          </Button>
-        }
-      />
-
-      <FormDialog
-        open={open}
-        onClose={() => setOpen(false)}
-        title={t('hr.emp.new')}
-        size="lg"
-        initial={{ company_id: companyId ?? '', status: 'ACTIVE', employment_type: 'FULL' }}
-        fields={[
-          { name: 'full_name_ar', label: t('hr.emp.full_name_ar'), required: true, dir: 'rtl' },
-          { name: 'full_name_en', label: t('hr.emp.full_name_en'), dir: 'ltr' },
-          { name: 'employee_number', label: t('hr.emp.number'), required: true },
-          { name: 'national_id', label: t('hr.f.national_id'), dir: 'ltr' },
-          { name: 'job_title', label: t('hr.emp.job_title'), required: true },
-          { name: 'phone_primary', label: t('hr.f.phone_primary'), dir: 'ltr' },
-          { name: 'address', label: t('hr.f.address'), colSpan: 2 },
-          {
-            name: 'company_id',
-            label: t('common.company'),
-            type: 'select',
-            required: true,
-            options: companies.map((c) => ({ value: c.id, label: pickName(c, lang) })),
-          },
-          { name: 'basic_salary', label: t('hr.emp.basic_salary'), type: 'number' },
-          {
-            name: 'employment_type',
-            label: t('hr.emp.employment_type'),
-            type: 'select',
-            options: (['FULL', 'PART', 'CONTRACT', 'TEMP'] as const).map((v) => ({
-              value: v,
-              label: t(`hr.etype.${v}`),
-            })),
-          },
-          {
-            name: 'status',
-            label: t('common.status'),
-            type: 'select',
-            options: (['ACTIVE', 'ON_LEAVE', 'SUSPENDED', 'TERMINATED'] as const).map((v) => ({
-              value: v,
-              label: t(`status.${v}`),
-            })),
-          },
-          { name: 'hire_date', label: t('hr.emp.hire_date'), type: 'date' },
-        ]}
-        onSubmit={async (values) => {
-          await create(values as Partial<Employee>)
-          refetch()
-        }}
-      />
-    </>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// 2. Org chart
-// ---------------------------------------------------------------------------
-export function OrgSection({ employees, loading }: { employees: Employee[]; loading: boolean }) {
-  const t = useT()
-  const { lang } = useLang()
-  const roots = useMemo(
-    () =>
-      buildOrgTree(employees, {
-        id: (e) => e.id,
-        parentId: (e) => e.manager_id,
-        name: (e) => pickName(e, lang),
-        title: (e) => e.job_title,
-        color: (e) => e.photo_color,
-      }),
-    [employees, lang],
-  )
-
-  return (
-    <Card>
-      <CardHeader title={t('hr.tab.org')} icon={<Building2 className="h-5 w-5" />} />
-      <CardBody className="overflow-x-auto">
-        {loading ? (
-          <p className="py-10 text-center text-sm text-slate-400">{t('common.loading')}</p>
-        ) : roots.length === 0 ? (
-          <p className="py-10 text-center text-sm text-slate-400">{t('common.empty')}</p>
-        ) : (
-          <OrgTree roots={roots} />
-        )}
-      </CardBody>
-    </Card>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// 3. Departments
+// 1. Departments
 // ---------------------------------------------------------------------------
 export function DepartmentsSection({
   departments,
@@ -219,12 +38,20 @@ export function DepartmentsSection({
     return m
   }, [employees])
 
+  // Click a department to open its people — the drill-down the manager asked for.
+  const navigate = useNavigate()
+  const [sel, setSel] = useState<Department | null>(null)
+  const selEmployees = useMemo(
+    () => (sel ? employees.filter((e) => e.department_id === sel.id) : []),
+    [sel, employees],
+  )
+
   const columns: Column<Department>[] = [
     {
       key: 'name',
       header: t('common.name'),
       accessor: (d) => pickName(d, lang),
-      render: (d) => <span className="font-medium text-slate-800">{pickName(d, lang)}</span>,
+      render: (d) => <span className="font-medium text-primary group-hover:underline">{pickName(d, lang)}</span>,
       sortable: true,
     },
     {
@@ -250,35 +77,135 @@ export function DepartmentsSection({
   ]
 
   return (
-    <ArabicTable<Department>
-      columns={columns}
-      data={departments}
-      loading={loading}
-      rowKey={(d) => d.id}
-      exportName="departments"
-      emptyTitle={t('hr.dept.empty')}
-    />
+    <>
+      <ArabicTable<Department>
+        columns={columns}
+        data={departments}
+        loading={loading}
+        rowKey={(d) => d.id}
+        onRowClick={(d) => setSel(d)}
+        exportName="departments"
+        emptyTitle={t('hr.dept.empty')}
+      />
+
+      {/* Department drill-down: who works inside it, click-through to each file */}
+      <Dialog
+        open={!!sel}
+        onClose={() => setSel(null)}
+        size="lg"
+        title={sel ? pickName(sel, lang) : ''}
+        description={sel ? `${pickName(coMap.get(sel.company_id), lang)} · ${selEmployees.length} ${t('hr.dept.employees')}` : undefined}
+      >
+        {selEmployees.length === 0 ? (
+          <p className="py-8 text-center text-sm text-slate-400">{t('hr.dept.no_employees')}</p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {selEmployees.map((e) => (
+              <li
+                key={e.id}
+                onClick={() => { setSel(null); navigate(`/hr/employees/${e.id}`) }}
+                className="flex cursor-pointer items-center justify-between gap-3 px-2 py-2.5 transition hover:bg-primary/5"
+              >
+                <EmployeeCell employee={e} />
+                <span className="flex items-center gap-3">
+                  {e.job_title && <span className="text-xs text-slate-400">{e.job_title}</span>}
+                  <StatusBadge status={e.status} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Dialog>
+    </>
   )
 }
 
 // ---------------------------------------------------------------------------
-// 4. Attendance
+// 2. Attendance (month + employee filtered; worked hours from the fingerprint
+//    check-in/out; import button feeds /api/hr/attendance-import)
 // ---------------------------------------------------------------------------
 export function AttendanceSection({
-  companyId,
   empMap,
+  attendance,
+  loading,
+  refetch,
+  canManage,
+  month,
+  empFilter,
 }: {
-  companyId: string | null
   empMap: Map<string, Employee>
+  attendance: Attendance[]
+  loading: boolean
+  refetch: () => void
+  canManage: boolean
+  month: string
+  empFilter: string
 }) {
   const t = useT()
   const { lang } = useLang()
-  const { data, loading } = useResource<Attendance>('attendance', { sort: 'date', order: 'DESC' })
+  const toast = useToast()
 
-  const rows = useMemo(() => {
-    if (!companyId) return data
-    return data.filter((a) => empMap.get(a.employee_id)?.company_id === companyId)
-  }, [data, companyId, empMap])
+  // Import a fingerprint-machine export (.xlsx / .csv): rows become PRESENT
+  // days matched by employee number (or exact name), upserted per day.
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [importing, setImporting] = useState(false)
+  const handleImport = async (file: File) => {
+    setImporting(true)
+    try {
+      const data64 = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader()
+        r.onload = () => resolve(String(r.result))
+        r.onerror = () => reject(new Error('read failed'))
+        r.readAsDataURL(file)
+      })
+      const res = await apiPost<{ imported: number; updated: number; unmatched_count: number; unmatched: string[] }>(
+        '/hr/attendance-import',
+        { file_name: file.name, data: data64 },
+      )
+      let msg = t('hr.att.import_done')
+        .replace('{new}', formatNumber(res.imported, lang))
+        .replace('{upd}', formatNumber(res.updated, lang))
+      if (res.unmatched_count) msg += ` — ${t('hr.att.import_unmatched').replace('{n}', formatNumber(res.unmatched_count, lang))}`
+      toast.success(msg)
+      refetch()
+    } catch (e) {
+      toast.error((e as Error)?.message || t('common.error'))
+    } finally {
+      setImporting(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  // Click any row to open that employee's full history: every day they came,
+  // were absent, on leave, on mission — with counts.
+  const [selEmp, setSelEmp] = useState<Employee | null>(null)
+
+  const rows = useMemo(
+    () => attendance.filter((a) => inMonth(a.date, month) && (!empFilter || a.employee_id === empFilter)),
+    [attendance, month, empFilter],
+  )
+
+  // Per-status counts for the filtered month (chips above the table).
+  const monthCounts = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const a of rows) m.set(a.status, (m.get(a.status) ?? 0) + 1)
+    return [...m.entries()]
+  }, [rows])
+
+  const history = useMemo(
+    () => (selEmp ? attendance.filter((a) => a.employee_id === selEmp.id) : []),
+    [selEmp, attendance],
+  )
+  const historyCounts = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const a of history) m.set(a.status, (m.get(a.status) ?? 0) + 1)
+    return [...m.entries()]
+  }, [history])
+
+  const hoursCell = (a: Attendance) => {
+    const min = workedMinutes(a.check_in, a.check_out)
+    return min > 0 ? formatNumber(minutesToHours(min), lang, 1) : '—'
+  }
 
   const columns: Column<Attendance>[] = [
     {
@@ -303,414 +230,101 @@ export function AttendanceSection({
     },
     { key: 'check_in', header: t('hr.att.check_in'), render: (a) => a.check_in ?? '—', align: 'center' },
     { key: 'check_out', header: t('hr.att.check_out'), render: (a) => a.check_out ?? '—', align: 'center' },
-  ]
-
-  return (
-    <ArabicTable<Attendance>
-      columns={columns}
-      data={rows}
-      loading={loading}
-      rowKey={(a) => a.id}
-      exportName="attendance"
-      emptyTitle={t('hr.att.empty')}
-    />
-  )
-}
-
-// ---------------------------------------------------------------------------
-// 5. Leaves (with approve/reject actions)
-// ---------------------------------------------------------------------------
-export function LeavesSection({
-  companyId,
-  empMap,
-}: {
-  companyId: string | null
-  empMap: Map<string, Employee>
-}) {
-  const t = useT()
-  const { lang } = useLang()
-  const toast = useToast()
-  const { data, loading, update } = useResource<LeaveRequest>('leave_requests')
-
-  const rows = useMemo(() => {
-    if (!companyId) return data
-    return data.filter((l) => empMap.get(l.employee_id)?.company_id === companyId)
-  }, [data, companyId, empMap])
-
-  const setStatus = async (l: LeaveRequest, status: 'APPROVED' | 'REJECTED') => {
-    try {
-      await update(l.id, { status })
-      toast.success(t(status === 'APPROVED' ? 'hr.leave.approved_toast' : 'hr.leave.rejected_toast'))
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('common.error'))
-    }
-  }
-
-  const columns: Column<LeaveRequest>[] = [
     {
-      key: 'employee',
-      header: t('hr.emp.employee'),
-      accessor: (l) => pickName(empMap.get(l.employee_id), lang),
-      render: (l) => <EmployeeCell employee={empMap.get(l.employee_id)} />,
-    },
-    { key: 'type', header: t('hr.leave.type'), sortable: true },
-    {
-      key: 'period',
-      header: `${t('hr.leave.start')} – ${t('hr.leave.end')}`,
-      accessor: (l) => l.start_date,
-      render: (l) => (
-        <span className="whitespace-nowrap tabular-nums text-slate-600">
-          {formatDate(l.start_date, lang)} – {formatDate(l.end_date, lang)}
-        </span>
-      ),
-    },
-    {
-      key: 'days_count',
-      header: t('hr.leave.days'),
-      render: (l) => <span className="tabular-nums">{l.days_count}</span>,
+      key: 'worked',
+      header: t('hr.att.worked_hours'),
+      accessor: (a) => workedMinutes(a.check_in, a.check_out),
+      render: (a) => <span className="tabular-nums font-semibold text-primary">{hoursCell(a)}</span>,
       align: 'center',
       sortable: true,
     },
-    {
-      key: 'status',
-      header: t('common.status'),
-      accessor: (l) => l.status,
-      render: (l) => <StatusBadge status={l.status} />,
-      align: 'center',
-    },
   ]
 
   return (
-    <ArabicTable<LeaveRequest>
-      columns={columns}
-      data={rows}
-      loading={loading}
-      rowKey={(l) => l.id}
-      exportName="leave_requests"
-      emptyTitle={t('hr.leave.empty')}
-      actions={(l) =>
-        l.status === 'PENDING' ? (
-          <>
-            <Button size="sm" variant="subtle" onClick={() => setStatus(l, 'APPROVED')}>
-              <Check className="h-4 w-4" />
-              {t('hr.leave.approve')}
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setStatus(l, 'REJECTED')}>
-              <X className="h-4 w-4 text-danger" />
-              {t('hr.leave.reject')}
-            </Button>
-          </>
-        ) : (
-          <span className="text-xs text-slate-300">—</span>
-        )
-      }
-    />
-  )
-}
+    <>
+      {monthCounts.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {monthCounts.map(([status, count]) => (
+            <span key={status} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              <StatusBadge status={status} />
+              <span className="tabular-nums">{formatNumber(count, lang)}</span> {t('hr.att.days')}
+            </span>
+          ))}
+        </div>
+      )}
 
-// ---------------------------------------------------------------------------
-// 6. Gifts
-// ---------------------------------------------------------------------------
-export function GiftsSection({
-  companyId,
-  empMap,
-}: {
-  companyId: string | null
-  empMap: Map<string, Employee>
-}) {
-  const t = useT()
-  const { lang } = useLang()
-  const { data, loading } = useResource<Gift>('gifts', { sort: 'date', order: 'DESC' })
-
-  const rows = useMemo(() => {
-    if (!companyId) return data
-    return data.filter((g) => empMap.get(g.employee_id)?.company_id === companyId)
-  }, [data, companyId, empMap])
-
-  const columns: Column<Gift>[] = [
-    {
-      key: 'employee',
-      header: t('hr.emp.employee'),
-      accessor: (g) => pickName(empMap.get(g.employee_id), lang),
-      render: (g) => <EmployeeCell employee={empMap.get(g.employee_id)} />,
-    },
-    {
-      key: 'date',
-      header: t('common.date'),
-      accessor: (g) => g.date,
-      render: (g) => formatDate(g.date, lang),
-      sortable: true,
-    },
-    { key: 'occasion', header: t('hr.gift.occasion') },
-    {
-      key: 'type',
-      header: t('hr.gift.type'),
-      accessor: (g) => g.type,
-      render: (g) => t(`hr.gift.${g.type}`),
-      align: 'center',
-    },
-    {
-      key: 'value',
-      header: t('hr.gift.value'),
-      accessor: (g) => g.value,
-      render: (g) => (
-        <span className="tabular-nums font-medium text-slate-700">{formatCurrency(g.value, g.currency, lang)}</span>
-      ),
-      align: 'end',
-      sortable: true,
-    },
-  ]
-
-  return (
-    <ArabicTable<Gift>
-      columns={columns}
-      data={rows}
-      loading={loading}
-      rowKey={(g) => g.id}
-      exportName="gifts"
-      emptyTitle={t('hr.gift.empty')}
-    />
-  )
-}
-
-// ---------------------------------------------------------------------------
-// 7. Payroll
-// ---------------------------------------------------------------------------
-export function PayrollSection({
-  companyId,
-  empMap,
-}: {
-  companyId: string | null
-  empMap: Map<string, Employee>
-}) {
-  const t = useT()
-  const { lang } = useLang()
-  const { data, loading } = useResource<Payroll>('payroll', { sort: 'period', order: 'DESC' })
-
-  const rows = useMemo(() => {
-    if (!companyId) return data
-    return data.filter((p) => empMap.get(p.employee_id)?.company_id === companyId)
-  }, [data, companyId, empMap])
-
-  const totalNet = useMemo(() => rows.reduce((s, p) => s + (p.net_salary ?? 0), 0), [rows])
-  const allowances = (p: Payroll) =>
-    (p.housing_allowance ?? 0) + (p.transport_allowance ?? 0) + (p.phone_allowance ?? 0) + (p.overtime ?? 0)
-  const deductions = (p: Payroll) =>
-    (p.deductions_absence ?? 0) + (p.deductions_advance ?? 0) + (p.other_deductions ?? 0)
-
-  const columns: Column<Payroll>[] = [
-    {
-      key: 'employee',
-      header: t('hr.emp.employee'),
-      accessor: (p) => pickName(empMap.get(p.employee_id), lang),
-      render: (p) => <EmployeeCell employee={empMap.get(p.employee_id)} />,
-    },
-    { key: 'period', header: t('hr.pay.period'), sortable: true, align: 'center' },
-    {
-      key: 'basic',
-      header: t('hr.pay.basic'),
-      accessor: (p) => p.basic_salary,
-      render: (p) => <span className="tabular-nums">{formatCurrency(p.basic_salary, p.currency, lang)}</span>,
-      align: 'end',
-    },
-    {
-      key: 'allowances',
-      header: t('hr.pay.allowances'),
-      accessor: (p) => allowances(p),
-      render: (p) => (
-        <span className="tabular-nums text-success">+{formatCurrency(allowances(p), p.currency, lang)}</span>
-      ),
-      align: 'end',
-    },
-    {
-      key: 'deductions',
-      header: t('hr.pay.deductions'),
-      accessor: (p) => deductions(p),
-      render: (p) => (
-        <span className="tabular-nums text-danger">−{formatCurrency(deductions(p), p.currency, lang)}</span>
-      ),
-      align: 'end',
-    },
-    {
-      key: 'net',
-      header: t('hr.pay.net'),
-      accessor: (p) => p.net_salary,
-      render: (p) => (
-        <span className="tabular-nums font-bold text-primary">{formatCurrency(p.net_salary, p.currency, lang)}</span>
-      ),
-      align: 'end',
-      sortable: true,
-    },
-  ]
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <KpiCard
-          label={t('hr.pay.total_net')}
-          value={formatCurrency(totalNet, 'IQD', lang)}
-          icon={<Wallet className="h-5 w-5" />}
-          accent="success"
-          hint={`${rows.length} ${t('common.results')}`}
-        />
-      </div>
-      <ArabicTable<Payroll>
+      <ArabicTable<Attendance>
         columns={columns}
         data={rows}
         loading={loading}
-        rowKey={(p) => p.id}
-        exportName="payroll"
-        emptyTitle={t('hr.pay.empty')}
+        rowKey={(a) => a.id}
+        onRowClick={(a) => setSelEmp(empMap.get(a.employee_id) ?? null)}
+        exportName="attendance"
+        emptyTitle={t('hr.att.empty')}
+        emptyHint={t('hr.att.empty_hint')}
+        toolbar={
+          canManage ? (
+            <>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".xlsx,.csv,.txt"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleImport(f) }}
+              />
+              <Button onClick={() => fileRef.current?.click()} disabled={importing}>
+                <Fingerprint className="h-4 w-4" />
+                {importing ? t('hr.att.importing') : t('hr.att.import_btn')}
+              </Button>
+            </>
+          ) : undefined
+        }
       />
-    </div>
-  )
-}
 
-// ---------------------------------------------------------------------------
-// 8. Advances
-// ---------------------------------------------------------------------------
-export function AdvancesSection({
-  companyId,
-  empMap,
-}: {
-  companyId: string | null
-  empMap: Map<string, Employee>
-}) {
-  const t = useT()
-  const { lang } = useLang()
-  const { data, loading } = useResource<Advance>('advances', { sort: 'date', order: 'DESC' })
-
-  const rows = useMemo(() => {
-    if (!companyId) return data
-    return data.filter((a) => empMap.get(a.employee_id)?.company_id === companyId)
-  }, [data, companyId, empMap])
-
-  const columns: Column<Advance>[] = [
-    {
-      key: 'employee',
-      header: t('hr.emp.employee'),
-      accessor: (a) => pickName(empMap.get(a.employee_id), lang),
-      render: (a) => <EmployeeCell employee={empMap.get(a.employee_id)} />,
-    },
-    {
-      key: 'date',
-      header: t('common.date'),
-      accessor: (a) => a.date,
-      render: (a) => formatDate(a.date, lang),
-      sortable: true,
-    },
-    {
-      key: 'amount',
-      header: t('hr.adv.amount'),
-      accessor: (a) => a.amount,
-      render: (a) => <span className="tabular-nums font-medium">{formatCurrency(a.amount, a.currency, lang)}</span>,
-      align: 'end',
-      sortable: true,
-    },
-    {
-      key: 'monthly_deduction',
-      header: t('hr.adv.monthly'),
-      accessor: (a) => a.monthly_deduction,
-      render: (a) => <span className="tabular-nums">{formatCurrency(a.monthly_deduction, a.currency, lang)}</span>,
-      align: 'end',
-    },
-    {
-      key: 'balance_remaining',
-      header: t('hr.adv.balance'),
-      accessor: (a) => a.balance_remaining,
-      render: (a) => (
-        <span className="tabular-nums font-semibold text-danger">
-          {formatCurrency(a.balance_remaining, a.currency, lang)}
-        </span>
-      ),
-      align: 'end',
-    },
-    {
-      key: 'status',
-      header: t('common.status'),
-      accessor: (a) => a.status,
-      render: (a) => <StatusBadge status={a.status} />,
-      align: 'center',
-    },
-  ]
-
-  return (
-    <ArabicTable<Advance>
-      columns={columns}
-      data={rows}
-      loading={loading}
-      rowKey={(a) => a.id}
-      exportName="advances"
-      emptyTitle={t('hr.adv.empty')}
-    />
-  )
-}
-
-// ---------------------------------------------------------------------------
-// 9. Performance reviews
-// ---------------------------------------------------------------------------
-export function ReviewsSection({
-  companyId,
-  empMap,
-}: {
-  companyId: string | null
-  empMap: Map<string, Employee>
-}) {
-  const t = useT()
-  const { lang } = useLang()
-  const { data, loading } = useResource<PerformanceReview>('performance_reviews')
-
-  const rows = useMemo(() => {
-    if (!companyId) return data
-    return data.filter((r) => empMap.get(r.employee_id)?.company_id === companyId)
-  }, [data, companyId, empMap])
-
-  if (loading) {
-    return <p className="py-10 text-center text-sm text-slate-400">{t('common.loading')}</p>
-  }
-  if (rows.length === 0) {
-    return (
-      <Card>
-        <CardBody>
-          <p className="py-10 text-center text-sm text-slate-400">{t('hr.rev.empty')}</p>
-        </CardBody>
-      </Card>
-    )
-  }
-
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {rows.map((r) => {
-        const emp = empMap.get(r.employee_id)
-        return (
-          <Card key={r.id} className="transition hover:shadow-card-hover">
-            <CardHeader
-              title={pickName(emp, lang)}
-              subtitle={emp?.job_title}
-              icon={<Star className="h-5 w-5" />}
-              action={<span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{r.period}</span>}
-            />
-            <CardBody className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500">{t('hr.rev.rating')}</span>
-                <StarRating value={r.rating_overall} />
-              </div>
-              {r.manager_comments && (
-                <div>
-                  <p className="mb-1 text-xs font-medium text-slate-400">{t('hr.rev.comments')}</p>
-                  <p className="text-sm leading-relaxed text-slate-700">{r.manager_comments}</p>
-                </div>
-              )}
-              {r.goals && (
-                <div className="rounded-lg bg-primary/5 p-2.5">
-                  <p className="mb-1 text-xs font-medium text-primary">{t('hr.rev.goals')}</p>
-                  <p className="text-sm leading-relaxed text-slate-600">{r.goals}</p>
-                </div>
-              )}
-            </CardBody>
-          </Card>
-        )
-      })}
-    </div>
+      <Dialog
+        open={!!selEmp}
+        onClose={() => setSelEmp(null)}
+        size="lg"
+        title={
+          <span className="flex items-center gap-2">
+            <CalendarCheck className="h-5 w-5 text-primary" />
+            {t('hr.att.history_title')} — {selEmp ? pickName(selEmp, lang) : ''}
+          </span>
+        }
+      >
+        <div className="mb-4 flex flex-wrap gap-2">
+          {historyCounts.map(([status, count]) => (
+            <span key={status} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              <StatusBadge status={status} />
+              <span className="tabular-nums">{formatNumber(count, lang)}</span> {t('hr.att.days')}
+            </span>
+          ))}
+        </div>
+        <div className="max-h-[50vh] overflow-y-auto rounded-xl border border-slate-200">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <tr>
+                <th className="px-3 py-2 text-start">{t('common.date')}</th>
+                <th className="px-3 py-2 text-center">{t('common.status')}</th>
+                <th className="px-3 py-2 text-center">{t('hr.att.check_in')}</th>
+                <th className="px-3 py-2 text-center">{t('hr.att.check_out')}</th>
+                <th className="px-3 py-2 text-center">{t('hr.att.worked_hours')}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {history.map((a) => (
+                <tr key={a.id}>
+                  <td className="px-3 py-2 tabular-nums text-slate-600">{formatDate(a.date, lang)}</td>
+                  <td className="px-3 py-2 text-center"><StatusBadge status={a.status} /></td>
+                  <td className="px-3 py-2 text-center tabular-nums">{a.check_in ?? '—'}</td>
+                  <td className="px-3 py-2 text-center tabular-nums">{a.check_out ?? '—'}</td>
+                  <td className="px-3 py-2 text-center tabular-nums font-semibold text-primary">{hoursCell(a)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Dialog>
+    </>
   )
 }

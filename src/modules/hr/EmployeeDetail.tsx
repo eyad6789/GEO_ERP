@@ -1,20 +1,21 @@
-import { type ReactNode, useRef, useState } from 'react'
+import { type ReactNode, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import {
   ArrowRight,
-  Award,
   CalendarCheck,
   CalendarClock,
+  Camera,
+  Clock,
   FileText,
   FolderOpen,
-  HandCoins,
+  Hourglass,
   IdCard,
   Pencil,
-  Star,
   Trash2,
   Upload,
   User,
   Wallet,
+  X,
   ZoomIn,
 } from 'lucide-react'
 import {
@@ -29,26 +30,22 @@ import {
 import type { Column, FormFieldConfig } from '@/components/shared'
 import { Avatar, Badge, Button, Dialog, SearchSelect, Spinner, Tabs, useToast } from '@/components/ui'
 import type { TabItem } from '@/components/ui'
+import { useCompany } from '@/context/CompanyContext'
 import { useLang, useT } from '@/context/LangContext'
 import { useApi, useRecord, useResource } from '@/hooks/useResource'
 import { apiDelete, apiPost, apiPut } from '@/lib/api'
-import { formatCurrency, formatDate, pickName } from '@/lib/format'
-import type {
-  Advance,
-  Attendance,
-  Company,
-  Department,
-  Employee,
-  EmployeeDoc,
-  LeaveRequest,
-  Payroll,
-  PerformanceReview,
-} from '@/types'
-import { StarRating } from './lib'
+import { formatCurrency, formatDate, formatNumber, pickName } from '@/lib/format'
+import type { Attendance, Company, Department, Employee, EmployeeDoc, LeaveRequest } from '@/types'
+import { MiniBar } from './lib'
+import { typeLabel } from './LeavesBoard'
+import { MonthPicker } from './MonthPicker'
+import { currentMonthKey, minutesToHours, workedMinutes } from './hours'
+import { isHourlyLeave } from './policy'
+import { computeMonthStats } from './useHrStats'
 
-type DetailTab = 'info' | 'documents' | 'attendance' | 'leaves' | 'payroll' | 'advances' | 'reviews'
+type DetailTab = 'info' | 'documents' | 'attendance' | 'leaves'
 
-const EMPLOYEE_DOC_TYPES = ['NATIONAL_ID', 'DRIVER_LICENSE', 'PASSPORT', 'CONTRACT', 'CERTIFICATE', 'OTHER'] as const
+const EMPLOYEE_DOC_TYPES = ['PHOTO', 'NATIONAL_ID', 'DRIVER_LICENSE', 'PASSPORT', 'CONTRACT', 'CERTIFICATE', 'OTHER'] as const
 
 function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -72,9 +69,66 @@ export default function EmployeeDetail() {
   const { id } = useParams<{ id: string }>()
   const t = useT()
   const { lang } = useLang()
+  const { role } = useCompany()
   const toast = useToast()
   const [tab, setTab] = useState<DetailTab>('info')
   const [editing, setEditing] = useState(false)
+
+  // HR management actions (photo, edit) — same gate as the shell.
+  const isHR = role.key === 'hr_manager'
+
+  // Profile photo — stored as an employee document of type PHOTO; the newest
+  // one is shown instead of the initials avatar. HR manager can replace/remove.
+  const { data: allDocs, refetch: refetchDocs } = useApi<EmployeeDoc[]>(
+    '/employee-documents',
+    id ? { employee_id: id } : undefined,
+  )
+  const photoDoc = (allDocs ?? []).find((d) => d.doc_type === 'PHOTO')
+  const photoInputRef = useRef<HTMLInputElement>(null)
+  const [photoBusy, setPhotoBusy] = useState(false)
+  const uploadPhoto = async (file: File) => {
+    if (!id) return
+    setPhotoBusy(true)
+    try {
+      const data64 = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader()
+        r.onload = () => resolve(String(r.result))
+        r.onerror = () => reject(new Error('read failed'))
+        r.readAsDataURL(file)
+      })
+      // Upload the replacement FIRST — deleting first would lose the old photo
+      // for good if the POST fails.
+      await apiPost('/employee-documents', {
+        employee_id: id,
+        doc_type: 'PHOTO',
+        title: t('hr.doc.PHOTO'),
+        file_name: file.name,
+        mime: file.type || 'image/jpeg',
+        data: data64,
+      })
+      if (photoDoc) await apiDelete(`/employee-documents/${photoDoc.id}`).catch(() => undefined)
+      refetchDocs()
+      toast.success(t('hr.photo.saved'))
+    } catch (e) {
+      toast.error((e as Error)?.message || t('common.error'))
+    } finally {
+      setPhotoBusy(false)
+      if (photoInputRef.current) photoInputRef.current.value = ''
+    }
+  }
+  const removePhoto = async () => {
+    if (!photoDoc || !window.confirm(t('hr.photo.confirm_delete'))) return
+    setPhotoBusy(true)
+    try {
+      await apiDelete(`/employee-documents/${photoDoc.id}`)
+      refetchDocs()
+      toast.success(t('hr.photo.deleted'))
+    } catch (e) {
+      toast.error((e as Error)?.message || t('common.error'))
+    } finally {
+      setPhotoBusy(false)
+    }
+  }
 
   const { data: emp, loading, refetch } = useRecord<Employee>('employees', id)
   const { data: company } = useRecord<Company>('companies', emp?.company_id)
@@ -83,6 +137,21 @@ export default function EmployeeDetail() {
     emp?.department_id ?? undefined,
   )
   const { data: manager } = useRecord<Employee>('employees', emp?.manager_id ?? undefined)
+
+  // Attendance + leaves fetched once at page level: the month-stats row and the
+  // sub-tabs read the same rows.
+  const { data: attendance, loading: attLoading } = useResource<Attendance>('attendance', {
+    employee_id: id ?? '—',
+    sort: 'date',
+    order: 'DESC',
+  })
+  const { data: leaves, loading: lvLoading } = useResource<LeaveRequest>('leave_requests', {
+    employee_id: id ?? '—',
+  })
+
+  // «هذا الشهر» balances — independent month picker for this page.
+  const [month, setMonth] = useState(currentMonthKey())
+  const stats = useMemo(() => computeMonthStats(attendance, leaves, month), [attendance, leaves, month])
 
   if (loading) {
     return (
@@ -108,10 +177,10 @@ export default function EmployeeDetail() {
     { key: 'documents', label: t('hr.detail.tab.documents'), icon: <FolderOpen className="h-4 w-4" /> },
     { key: 'attendance', label: t('hr.detail.tab.attendance'), icon: <CalendarCheck className="h-4 w-4" /> },
     { key: 'leaves', label: t('hr.detail.tab.leaves'), icon: <CalendarClock className="h-4 w-4" /> },
-    { key: 'payroll', label: t('hr.detail.tab.payroll'), icon: <Wallet className="h-4 w-4" /> },
-    { key: 'advances', label: t('hr.detail.tab.advances'), icon: <HandCoins className="h-4 w-4" /> },
-    { key: 'reviews', label: t('hr.detail.tab.reviews'), icon: <Award className="h-4 w-4" /> },
   ]
+
+  const fmtOf = (x: number, y: number, key: string, dec = 0) =>
+    t(key).replace('{x}', formatNumber(x, lang, dec)).replace('{y}', formatNumber(y, lang))
 
   return (
     <div>
@@ -125,15 +194,56 @@ export default function EmployeeDetail() {
       </Link>
 
       {/* Profile header */}
-      <Card className="mb-6">
+      <Card className="mb-5">
         <CardBody className="flex flex-wrap items-center gap-5">
-          <Avatar name={pickName(emp, lang)} color={emp.photo_color} size="xl" />
+          <div className="relative">
+            {photoDoc ? (
+              <img
+                src={`/api/employee-documents/${photoDoc.id}/file`}
+                alt={pickName(emp, lang)}
+                className="h-20 w-20 rounded-2xl object-cover shadow ring-1 ring-slate-200"
+              />
+            ) : (
+              <Avatar name={pickName(emp, lang)} color={emp.photo_color} size="xl" />
+            )}
+            {isHR && (
+              <>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadPhoto(f) }}
+                />
+                <button
+                  type="button"
+                  title={t('hr.photo.upload')}
+                  disabled={photoBusy}
+                  onClick={() => photoInputRef.current?.click()}
+                  className="absolute -bottom-1.5 -end-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-white shadow transition hover:bg-primary-dark disabled:opacity-50"
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                </button>
+                {photoDoc && (
+                  <button
+                    type="button"
+                    title={t('hr.photo.delete')}
+                    disabled={photoBusy}
+                    onClick={() => void removePhoto()}
+                    className="absolute -top-1.5 -end-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white text-slate-400 shadow ring-1 ring-slate-200 transition hover:text-danger"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </>
+            )}
+          </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-2xl font-bold text-slate-800">{pickName(emp, lang)}</h1>
               <StatusBadge status={emp.status} />
             </div>
-            <p className="mt-1 text-primary">{emp.job_title}</p>
+            {emp.job_title && <p className="mt-1 text-primary">{emp.job_title}</p>}
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
               <span className="inline-flex items-center gap-1.5">
                 <IdCard className="h-4 w-4" />
@@ -153,6 +263,47 @@ export default function EmployeeDetail() {
         </CardBody>
       </Card>
 
+      {/* This-month balances: worked hours, hours left, leave days left, زمنية left */}
+      <Card className="mb-6">
+        <CardHeader
+          title={t('hr.detail.month_stats')}
+          icon={<Clock className="h-5 w-5" />}
+          action={<MonthPicker value={month} onChange={setMonth} />}
+        />
+        <CardBody>
+          {attLoading || lvLoading ? (
+            <p className="py-4 text-center text-sm text-slate-400">{t('common.loading')}</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <StatTile
+                label={t('hr.card.worked_hours')}
+                value={fmtOf(stats.workedHours, stats.requiredHours, 'hr.card.of_hours', 1)}
+                bar={<MiniBar value={stats.workedHours} max={stats.requiredHours} tone="primary" />}
+                icon={<Clock className="h-4 w-4" />}
+              />
+              <StatTile
+                label={t('hr.card.hours_left')}
+                value={`${formatNumber(stats.hoursRemaining, lang, 1)} ${t('hr.board.hours_unit')}`}
+                bar={<MiniBar value={stats.hoursRemaining} max={stats.requiredHours} tone="auto" />}
+                icon={<Hourglass className="h-4 w-4" />}
+              />
+              <StatTile
+                label={t('hr.card.leave_left')}
+                value={fmtOf(stats.leaveDaysRemaining, stats.leaveDaysEntitled, 'hr.card.of_days')}
+                bar={<MiniBar value={stats.leaveDaysRemaining} max={stats.leaveDaysEntitled} tone="auto" />}
+                icon={<CalendarClock className="h-4 w-4" />}
+              />
+              <StatTile
+                label={t('hr.card.hourly_left')}
+                value={fmtOf(stats.hourlyRemaining, stats.hourlyAllowance, 'hr.card.of_hours', 1)}
+                bar={<MiniBar value={stats.hourlyRemaining} max={stats.hourlyAllowance} tone="auto" />}
+                icon={<Clock className="h-4 w-4" />}
+              />
+            </div>
+          )}
+        </CardBody>
+      </Card>
+
       <div className="mb-5">
         <Tabs tabs={tabs} value={tab} onChange={(k) => setTab(k as DetailTab)} variant="underline" />
       </div>
@@ -165,7 +316,7 @@ export default function EmployeeDetail() {
             <InfoRow label={t('hr.f.place_of_birth')} value={emp.place_of_birth} />
             <InfoRow label={t('hr.f.nationality')} value={emp.nationality} />
             <InfoRow label={t('hr.f.religion')} value={emp.religion} />
-            <InfoRow label={t('hr.f.gender')} value={t(`hr.gender.${emp.gender}`)} />
+            <InfoRow label={t('hr.f.gender')} value={emp.gender ? t(`hr.gender.${emp.gender}`) : '—'} />
             <InfoRow label={t('hr.f.marital_status')} value={emp.marital_status} />
             <InfoRow label={t('hr.f.children_count')} value={emp.children_count} />
           </InfoCard>
@@ -184,7 +335,7 @@ export default function EmployeeDetail() {
             <InfoRow label={t('hr.f.company')} value={pickName(company, lang)} />
             <InfoRow label={t('hr.f.department')} value={department ? pickName(department, lang) : '—'} />
             <InfoRow label={t('hr.f.job_title')} value={emp.job_title} />
-            <InfoRow label={t('hr.f.employment_type')} value={t(`hr.etype.${emp.employment_type}`)} />
+            <InfoRow label={t('hr.f.employment_type')} value={emp.employment_type ? t(`hr.etype.${emp.employment_type}`) : '—'} />
             <InfoRow label={t('hr.f.hire_date')} value={formatDate(emp.hire_date, lang)} />
             <InfoRow label={t('hr.f.contract_end')} value={emp.contract_end_date ? formatDate(emp.contract_end_date, lang) : '—'} />
             <InfoRow label={t('hr.f.manager')} value={manager ? pickName(manager, lang) : '—'} />
@@ -207,11 +358,8 @@ export default function EmployeeDetail() {
       )}
 
       {tab === 'documents' && <EmployeeDocuments employeeId={emp.id} />}
-      {tab === 'attendance' && <EmployeeAttendance employeeId={emp.id} />}
-      {tab === 'leaves' && <EmployeeLeaves employeeId={emp.id} />}
-      {tab === 'payroll' && <EmployeePayroll employeeId={emp.id} />}
-      {tab === 'advances' && <EmployeeAdvances employeeId={emp.id} />}
-      {tab === 'reviews' && <EmployeeReviews employeeId={emp.id} />}
+      {tab === 'attendance' && <EmployeeAttendance data={attendance} loading={attLoading} />}
+      {tab === 'leaves' && <EmployeeLeaves data={leaves} loading={lvLoading} />}
 
       {editing && (
         <FormDialog
@@ -223,17 +371,28 @@ export default function EmployeeDetail() {
           fields={EDIT_FIELDS(t)}
           submitLabel={t('common.save')}
           onSubmit={async (values) => {
-            try {
-              await apiPut(`/employees/${emp.id}`, values)
-              toast.success(t('common.saved'))
-              setEditing(false)
-              refetch()
-            } catch (e) {
-              toast.error((e as Error)?.message || t('common.error'))
-            }
+            // Let errors propagate — FormDialog toasts and keeps the dialog
+            // open on failure, closes + toasts success otherwise.
+            await apiPut(`/employees/${emp.id}`, values)
+            refetch()
           }}
         />
       )}
+    </div>
+  )
+}
+
+function StatTile({ label, value, bar, icon }: { label: string; value: string; bar: ReactNode; icon: ReactNode }) {
+  return (
+    <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-xs text-slate-500">
+          <span className="text-slate-400">{icon}</span>
+          {label}
+        </span>
+        <span className="text-sm font-bold tabular-nums text-slate-800">{value}</span>
+      </div>
+      {bar}
     </div>
   )
 }
@@ -264,7 +423,7 @@ function EDIT_FIELDS(t: (k: string) => string): FormFieldConfig[] {
     { name: 'address', label: t('hr.f.address'), colSpan: 2 },
     { name: 'emergency_name', label: t('hr.f.emergency_name') },
     { name: 'emergency_phone', label: t('hr.f.emergency_phone'), dir: 'ltr' },
-    { name: 'job_title', label: t('hr.f.job_title'), required: true },
+    { name: 'job_title', label: t('hr.f.job_title') },
     sel('employment_type', t('hr.f.employment_type'), ['FULL', 'PART', 'CONTRACT', 'TEMP'], 'hr.etype.'),
     sel('status', t('hr.f.status'), ['ACTIVE', 'ON_LEAVE', 'SUSPENDED', 'TERMINATED'], 'status.'),
     { name: 'hire_date', label: t('hr.f.hire_date'), type: 'date' },
@@ -279,7 +438,6 @@ function EDIT_FIELDS(t: (k: string) => string): FormFieldConfig[] {
 
 function EmployeeDocuments({ employeeId }: { employeeId: string }) {
   const t = useT()
-  const { lang } = useLang()
   const toast = useToast()
   const { data: docs, refetch } = useApi<EmployeeDoc[]>('/employee-documents', { employee_id: employeeId })
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -397,14 +555,9 @@ function EmployeeDocuments({ employeeId }: { employeeId: string }) {
 
 // --- per-employee sub-tables ------------------------------------------------
 
-function EmployeeAttendance({ employeeId }: { employeeId: string }) {
+function EmployeeAttendance({ data, loading }: { data: Attendance[]; loading: boolean }) {
   const t = useT()
   const { lang } = useLang()
-  const { data, loading } = useResource<Attendance>('attendance', {
-    employee_id: employeeId,
-    sort: 'date',
-    order: 'DESC',
-  })
   const columns: Column<Attendance>[] = [
     {
       key: 'date',
@@ -422,6 +575,21 @@ function EmployeeAttendance({ employeeId }: { employeeId: string }) {
     },
     { key: 'check_in', header: t('hr.att.check_in'), render: (a) => a.check_in ?? '—', align: 'center' },
     { key: 'check_out', header: t('hr.att.check_out'), render: (a) => a.check_out ?? '—', align: 'center' },
+    {
+      key: 'worked',
+      header: t('hr.att.worked_hours'),
+      accessor: (a) => workedMinutes(a.check_in, a.check_out),
+      render: (a) => {
+        const min = workedMinutes(a.check_in, a.check_out)
+        return (
+          <span className="tabular-nums font-semibold text-primary">
+            {min > 0 ? formatNumber(minutesToHours(min), lang, 1) : '—'}
+          </span>
+        )
+      },
+      align: 'center',
+      sortable: true,
+    },
     { key: 'notes', header: t('common.notes'), render: (a) => a.notes || '—' },
   ]
   return (
@@ -436,29 +604,76 @@ function EmployeeAttendance({ employeeId }: { employeeId: string }) {
   )
 }
 
-function EmployeeLeaves({ employeeId }: { employeeId: string }) {
+function EmployeeLeaves({ data, loading }: { data: LeaveRequest[]; loading: boolean }) {
   const t = useT()
   const { lang } = useLang()
-  const { data, loading } = useResource<LeaveRequest>('leave_requests', { employee_id: employeeId })
+
+  // Balance tiles: approved days this year / all time / days pending.
+  const balance = useMemo(() => {
+    const thisYear = String(new Date().getFullYear())
+    let approvedYear = 0
+    let approvedAll = 0
+    let pending = 0
+    for (const l of data) {
+      if (isHourlyLeave(l)) continue
+      if (l.status === 'APPROVED') {
+        approvedAll += l.days_count || 0
+        if ((l.start_date || '').startsWith(thisYear)) approvedYear += l.days_count || 0
+      } else if (l.status === 'PENDING') pending += l.days_count || 0
+    }
+    return { approvedYear, approvedAll, pending, year: thisYear }
+  }, [data])
+
   const columns: Column<LeaveRequest>[] = [
-    { key: 'type', header: t('hr.leave.type'), sortable: true },
+    {
+      key: 'type',
+      header: t('hr.leave.type'),
+      accessor: (l) => l.type,
+      render: (l) =>
+        isHourlyLeave(l) ? (
+          <Badge color="purple">
+            {t('hr.leave.hourly_badge').replace('{n}', formatNumber(l.hours_count ?? 0, lang, 1))}
+          </Badge>
+        ) : (
+          typeLabel(l.type, t)
+        ),
+      sortable: true,
+    },
     {
       key: 'period',
       header: `${t('hr.leave.start')} – ${t('hr.leave.end')}`,
       accessor: (l) => l.start_date,
       render: (l) => (
         <span className="whitespace-nowrap tabular-nums text-slate-600">
-          {formatDate(l.start_date, lang)} – {formatDate(l.end_date, lang)}
+          {isHourlyLeave(l)
+            ? formatDate(l.start_date, lang)
+            : `${formatDate(l.start_date, lang)} – ${formatDate(l.end_date, lang)}`}
+        </span>
+      ),
+      sortable: true,
+    },
+    {
+      key: 'amount',
+      header: `${t('hr.leave.days')} / ${t('hr.leave.hours')}`,
+      accessor: (l) => (isHourlyLeave(l) ? l.hours_count ?? 0 : l.days_count),
+      render: (l) => (
+        <span className="tabular-nums">
+          {isHourlyLeave(l)
+            ? `${formatNumber(l.hours_count ?? 0, lang, 1)} ${t('hr.board.hours_unit')}`
+            : `${formatNumber(l.days_count, lang)} ${t('hr.board.days_unit')}`}
+        </span>
+      ),
+      align: 'center',
+    },
+    {
+      key: 'reason',
+      header: t('hr.leave.reason'),
+      render: (l) => (
+        <span className="block max-w-[240px] truncate text-slate-600" title={l.reason ?? ''}>
+          {l.reason || '—'}
         </span>
       ),
     },
-    {
-      key: 'days_count',
-      header: t('hr.leave.days'),
-      render: (l) => <span className="tabular-nums">{l.days_count}</span>,
-      align: 'center',
-    },
-    { key: 'reason', header: t('hr.leave.reason'), render: (l) => l.reason || '—' },
     {
       key: 'status',
       header: t('common.status'),
@@ -466,176 +681,46 @@ function EmployeeLeaves({ employeeId }: { employeeId: string }) {
       render: (l) => <StatusBadge status={l.status} />,
       align: 'center',
     },
-  ]
-  return (
-    <ArabicTable<LeaveRequest>
-      columns={columns}
-      data={data}
-      loading={loading}
-      rowKey={(l) => l.id}
-      exportName="employee_leaves"
-      emptyTitle={t('hr.leave.empty')}
-    />
-  )
-}
-
-function EmployeePayroll({ employeeId }: { employeeId: string }) {
-  const t = useT()
-  const { lang } = useLang()
-  const { data, loading } = useResource<Payroll>('payroll', {
-    employee_id: employeeId,
-    sort: 'period',
-    order: 'DESC',
-  })
-  const allowances = (p: Payroll) =>
-    (p.housing_allowance ?? 0) + (p.transport_allowance ?? 0) + (p.phone_allowance ?? 0) + (p.overtime ?? 0)
-  const deductions = (p: Payroll) =>
-    (p.deductions_absence ?? 0) + (p.deductions_advance ?? 0) + (p.other_deductions ?? 0)
-  const columns: Column<Payroll>[] = [
-    { key: 'period', header: t('hr.pay.period'), sortable: true, align: 'center' },
     {
-      key: 'basic',
-      header: t('hr.pay.basic'),
-      accessor: (p) => p.basic_salary,
-      render: (p) => <span className="tabular-nums">{formatCurrency(p.basic_salary, p.currency, lang)}</span>,
-      align: 'end',
-    },
-    {
-      key: 'allowances',
-      header: t('hr.pay.allowances'),
-      accessor: (p) => allowances(p),
-      render: (p) => <span className="tabular-nums text-success">+{formatCurrency(allowances(p), p.currency, lang)}</span>,
-      align: 'end',
-    },
-    {
-      key: 'deductions',
-      header: t('hr.pay.deductions'),
-      accessor: (p) => deductions(p),
-      render: (p) => <span className="tabular-nums text-danger">−{formatCurrency(deductions(p), p.currency, lang)}</span>,
-      align: 'end',
-    },
-    {
-      key: 'net',
-      header: t('hr.pay.net'),
-      accessor: (p) => p.net_salary,
-      render: (p) => <span className="tabular-nums font-bold text-primary">{formatCurrency(p.net_salary, p.currency, lang)}</span>,
-      align: 'end',
-      sortable: true,
-    },
-  ]
-  return (
-    <ArabicTable<Payroll>
-      columns={columns}
-      data={data}
-      loading={loading}
-      rowKey={(p) => p.id}
-      exportName="employee_payroll"
-      emptyTitle={t('hr.pay.empty')}
-    />
-  )
-}
-
-function EmployeeAdvances({ employeeId }: { employeeId: string }) {
-  const t = useT()
-  const { lang } = useLang()
-  const { data, loading } = useResource<Advance>('advances', {
-    employee_id: employeeId,
-    sort: 'date',
-    order: 'DESC',
-  })
-  const columns: Column<Advance>[] = [
-    {
-      key: 'date',
-      header: t('common.date'),
-      accessor: (a) => a.date,
-      render: (a) => formatDate(a.date, lang),
-      sortable: true,
-    },
-    {
-      key: 'amount',
-      header: t('hr.adv.amount'),
-      accessor: (a) => a.amount,
-      render: (a) => <span className="tabular-nums font-medium">{formatCurrency(a.amount, a.currency, lang)}</span>,
-      align: 'end',
-    },
-    {
-      key: 'monthly_deduction',
-      header: t('hr.adv.monthly'),
-      accessor: (a) => a.monthly_deduction,
-      render: (a) => <span className="tabular-nums">{formatCurrency(a.monthly_deduction, a.currency, lang)}</span>,
-      align: 'end',
-    },
-    {
-      key: 'balance_remaining',
-      header: t('hr.adv.balance'),
-      accessor: (a) => a.balance_remaining,
-      render: (a) => (
-        <span className="tabular-nums font-semibold text-danger">
-          {formatCurrency(a.balance_remaining, a.currency, lang)}
+      key: 'decision_note',
+      header: t('hr.leave.decision'),
+      accessor: (l) => l.decision_note ?? '',
+      render: (l) => (
+        <span className="block max-w-[220px] truncate text-slate-500" title={l.decision_note ?? ''}>
+          {l.decision_note || '—'}
         </span>
       ),
-      align: 'end',
-    },
-    {
-      key: 'status',
-      header: t('common.status'),
-      accessor: (a) => a.status,
-      render: (a) => <StatusBadge status={a.status} />,
-      align: 'center',
     },
   ]
   return (
-    <ArabicTable<Advance>
-      columns={columns}
-      data={data}
-      loading={loading}
-      rowKey={(a) => a.id}
-      exportName="employee_advances"
-      emptyTitle={t('hr.adv.empty')}
-    />
-  )
-}
-
-function EmployeeReviews({ employeeId }: { employeeId: string }) {
-  const t = useT()
-  const { data, loading } = useResource<PerformanceReview>('performance_reviews', { employee_id: employeeId })
-
-  if (loading) return <p className="py-10 text-center text-sm text-slate-400">{t('common.loading')}</p>
-  if (data.length === 0) {
-    return (
-      <Card>
-        <CardBody>
-          <p className="py-10 text-center text-sm text-slate-400">{t('hr.rev.empty')}</p>
-        </CardBody>
-      </Card>
-    )
-  }
-
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      {data.map((r) => (
-        <Card key={r.id}>
-          <CardHeader
-            title={r.period}
-            icon={<Star className="h-5 w-5" />}
-            action={<StarRating value={r.rating_overall} />}
-          />
-          <CardBody className="space-y-3">
-            {r.manager_comments && (
-              <div>
-                <p className="mb-1 text-xs font-medium text-slate-400">{t('hr.rev.comments')}</p>
-                <p className="text-sm leading-relaxed text-slate-700">{r.manager_comments}</p>
-              </div>
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-xl bg-primary/5 p-3 text-center">
+          <p className="text-2xl font-bold tabular-nums text-primary">{formatNumber(balance.approvedYear, lang)}</p>
+          <p className="text-xs text-slate-500">
+            {t('hr.leave.days_this_year').replace(
+              '{year}',
+              new Intl.NumberFormat(lang === 'ar' ? 'ar-IQ' : 'en-US', { useGrouping: false }).format(Number(balance.year)),
             )}
-            {r.goals && (
-              <div className="rounded-lg bg-primary/5 p-2.5">
-                <p className="mb-1 text-xs font-medium text-primary">{t('hr.rev.goals')}</p>
-                <p className="text-sm leading-relaxed text-slate-600">{r.goals}</p>
-              </div>
-            )}
-          </CardBody>
-        </Card>
-      ))}
+          </p>
+        </div>
+        <div className="rounded-xl bg-slate-50 p-3 text-center">
+          <p className="text-2xl font-bold tabular-nums text-slate-700">{formatNumber(balance.approvedAll, lang)}</p>
+          <p className="text-xs text-slate-500">{t('hr.leave.days_all_time')}</p>
+        </div>
+        <div className="rounded-xl bg-amber-50 p-3 text-center">
+          <p className="text-2xl font-bold tabular-nums text-amber-700">{formatNumber(balance.pending, lang)}</p>
+          <p className="text-xs text-slate-500">{t('hr.leave.days_pending')}</p>
+        </div>
+      </div>
+      <ArabicTable<LeaveRequest>
+        columns={columns}
+        data={data}
+        loading={loading}
+        rowKey={(l) => l.id}
+        exportName="employee_leaves"
+        emptyTitle={t('hr.leave.empty')}
+      />
     </div>
   )
 }

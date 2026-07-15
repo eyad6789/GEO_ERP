@@ -97,9 +97,13 @@ CREATE TABLE IF NOT EXISTS leave_requests (
   start_date TEXT,
   end_date TEXT,
   days_count INTEGER DEFAULT 0,
+  hours_count REAL DEFAULT 0, -- hourly (زمنية) leave: > 0 with days_count = 0
   reason TEXT,
   status TEXT,               -- PENDING | APPROVED | REJECTED
   approved_by TEXT,
+  decision_note TEXT,        -- why the manager approved/rejected
+  manager_question TEXT,     -- manager's inquiry on a pending request (لماذا تريد الإجازة؟)
+  question_answer TEXT,      -- the employee's reply to the inquiry
   created_at TEXT
 );
 

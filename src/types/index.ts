@@ -124,9 +124,13 @@ export interface LeaveRequest {
   start_date: ISODate
   end_date: ISODate
   days_count: number
+  hours_count?: number | null // hourly (زمنية) leave: > 0 with days_count = 0
   reason: string
   status: LeaveStatus
   approved_by: ID | null
+  decision_note?: string | null // why the manager approved/rejected
+  manager_question?: string | null // manager's inquiry on a pending request
+  question_answer?: string | null // the employee's reply
 }
 
 export type AdvanceStatus = 'PENDING' | 'APPROVED' | 'REPAYING' | 'SETTLED'

@@ -106,6 +106,16 @@ function migrate(): void {
     expiry TEXT,
     created_at TEXT
   )`)
+  // HR leaves: decision note, manager inquiry (لماذا تريد الإجازة؟) + employee
+  // answer, and hourly (زمنية) leaves measured in hours instead of days.
+  const lrCols = db.prepare(`PRAGMA table_info(leave_requests)`).all() as Array<{ name: string }>
+  const addLr = (n: string, type: string) => {
+    if (!lrCols.some((c) => c.name === n)) db.exec(`ALTER TABLE leave_requests ADD COLUMN ${n} ${type}`)
+  }
+  addLr('decision_note', 'TEXT')
+  addLr('manager_question', 'TEXT')
+  addLr('question_answer', 'TEXT')
+  addLr('hours_count', 'REAL DEFAULT 0')
   ensureVehicleAccounts()
 
   // Banks ↔ chart of accounts: each bank links to a GL account under 183 المصارف.

@@ -53,16 +53,29 @@ export function EmployeeCell({ employee }: { employee?: Employee }) {
   )
 }
 
-/** Compact star rating for performance reviews (0..5). */
-export function StarRating({ value }: { value: number }) {
-  const full = Math.round(value)
+/** Thin progress bar for hour/leave balances. `tone` colours the fill; 'auto'
+ *  goes success → amber (<25% left) → danger (empty) based on the value. */
+export function MiniBar({
+  value,
+  max,
+  tone = 'primary',
+}: {
+  value: number
+  max: number
+  tone?: 'primary' | 'auto'
+}) {
+  const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0
+  const fill =
+    tone === 'primary'
+      ? 'bg-primary'
+      : value <= 0
+        ? 'bg-danger'
+        : pct < 25
+          ? 'bg-amber-400'
+          : 'bg-success'
   return (
-    <span className="inline-flex items-center gap-1">
-      <span className="text-accent" aria-hidden>
-        {'★'.repeat(Math.min(5, Math.max(0, full)))}
-        <span className="text-slate-200">{'★'.repeat(Math.max(0, 5 - full))}</span>
-      </span>
-      <span className="text-xs font-semibold text-slate-600 tabular-nums">{value.toFixed(1)}</span>
-    </span>
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+      <div className={`h-full rounded-full transition-all ${fill}`} style={{ width: `${pct}%` }} />
+    </div>
   )
 }
