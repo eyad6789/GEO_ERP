@@ -14,9 +14,12 @@ registerStrings({
   'dashboard.kpi.companies': { ar: 'عدد الشركات', en: 'Companies' },
   'dashboard.kpi.companies_hint': { ar: 'شركات المجموعة', en: 'Group entities' },
   'dashboard.kpi.active_projects': { ar: 'المشاريع النشطة', en: 'Active Projects' },
-  'dashboard.kpi.active_projects_hint': { ar: 'من إجمالي', en: 'out of' },
   'dashboard.kpi.employees': { ar: 'الموظفون', en: 'Employees' },
   'dashboard.kpi.employees_hint': { ar: 'القوى العاملة', en: 'Total workforce' },
+  'dashboard.kpi.net_profit': { ar: 'صافي الربح', en: 'Net Profit' },
+  'dashboard.kpi.net_profit_hint': { ar: 'الإيرادات ناقص المصروفات', en: 'Revenue minus expense' },
+  'dashboard.kpi.revenue': { ar: 'إجمالي الإيرادات', en: 'Total Revenue' },
+  'dashboard.kpi.revenue_hint': { ar: 'الإيرادات المحققة', en: 'Realized revenue' },
   'dashboard.kpi.contracts': { ar: 'قيمة العقود', en: 'Contracts Value' },
   'dashboard.kpi.contracts_hint': { ar: 'إجمالي قيمة العقود', en: 'Total contract value' },
   'dashboard.kpi.fleet_spend': { ar: 'مصاريف الآليات', en: 'Fleet Spend' },
@@ -42,6 +45,24 @@ registerStrings({
   'dashboard.chart.employees_by_company': { ar: 'الموظفون حسب الشركة', en: 'Employees by Company' },
   'dashboard.chart.employees_by_company_sub': { ar: 'توزيع القوى العاملة', en: 'Workforce distribution' },
   'dashboard.chart.projects': { ar: 'مشروع', en: 'projects' },
+
+  // Activity feed
+  'dashboard.activity.title': { ar: 'النشاط الأخير', en: 'Recent Activity' },
+  'dashboard.activity.subtitle': { ar: 'أحدث العمليات في النظام', en: 'Latest operations across the system' },
+  'dashboard.activity.empty': { ar: 'لا يوجد نشاط حديث', en: 'No recent activity' },
+  'dashboard.activity.empty_hint': { ar: 'ستظهر العمليات هنا فور حدوثها', en: 'Operations will appear here as they happen' },
+  'dashboard.activity.view_all': { ar: 'عرض الكل', en: 'View all' },
+
+  // Actions / log verbs
+  'dashboard.action.CREATE': { ar: 'إنشاء', en: 'Created' },
+  'dashboard.action.UPDATE': { ar: 'تعديل', en: 'Updated' },
+  'dashboard.action.DELETE': { ar: 'حذف', en: 'Deleted' },
+  'dashboard.action.APPROVE': { ar: 'اعتماد', en: 'Approved' },
+  'dashboard.action.REJECT': { ar: 'رفض', en: 'Rejected' },
+  'dashboard.action.EXPORT': { ar: 'تصدير', en: 'Exported' },
+  'dashboard.action.PRINT': { ar: 'طباعة', en: 'Printed' },
+  'dashboard.action.LOGIN': { ar: 'تسجيل دخول', en: 'Logged in' },
+  'dashboard.action.LOGOUT': { ar: 'تسجيل خروج', en: 'Logged out' },
 
   // State
   'dashboard.loading': { ar: 'جارٍ تحميل لوحة التحكم...', en: 'Loading dashboard...' },
