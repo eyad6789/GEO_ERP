@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Landmark, Coins, Plus, Pencil, Trash2, Lock } from 'lucide-react'
-import { Card, CardHeader, Button, Badge } from '../../components/ui'
-import { ArabicTable, KpiCard, EmptyState, type Column } from '../../components/shared'
+import { Card, CardHeader, Button } from '../../components/ui'
+import { ArabicTable, KpiCard, type Column } from '../../components/shared'
 import { useApi, useResource } from '../../hooks/useResource'
 import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
@@ -127,52 +127,6 @@ export function BankTab() {
         <KpiCard label={t('accounting.bank.total_iqd')} value={formatCurrency(totals.iqd, 'IQD', lang)} icon={<Landmark className="h-5 w-5" />} accent="info" />
         <KpiCard label={t('accounting.bank.total_usd')} value={formatCurrency(totals.usd, 'USD', lang)} icon={<Coins className="h-5 w-5" />} accent="success" />
       </div>
-
-      {/* Bank accounts from the chart of accounts — one live card each, linking to
-          the account ledger. Mirrors the Cash tab's boxes. */}
-      <Card>
-        <CardHeader
-          title={t('accounting.bank.accounts')}
-          icon={<Landmark className="h-5 w-5" />}
-          action={
-            <Link
-              to="/accounting?tab=chart"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 transition hover:border-primary hover:text-primary"
-            >
-              {t('accounting.bank.accounts_hint')}
-            </Link>
-          }
-        />
-        {bankAccounts.length === 0 ? (
-          <div className="p-4">
-            <EmptyState title={t('accounting.bank.no_accounts')} />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2">
-            {bankAccounts.map((b) => (
-              <Link
-                key={b.code}
-                to={`/accounting/accounts/${b.code}`}
-                className="group rounded-2xl border border-slate-200 dark:border-slate-700 p-6 transition hover:border-primary hover:shadow-card-hover"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 font-mono text-sm text-slate-400 dark:text-slate-400">
-                    <Landmark className="h-4 w-4" />
-                    {b.code}
-                  </span>
-                  {b.branch && <Badge color="blue">{b.branch}</Badge>}
-                </div>
-                <p className="mt-1.5 text-lg font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary">{b.name}</p>
-                <p className="mt-3 text-2xl font-bold tabular-nums text-primary">{formatCurrency(b.iqd, 'IQD', lang)}</p>
-                {b.usd !== 0 && (
-                  <p className="mt-1 text-base font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">{formatCurrency(b.usd, 'USD', lang)}</p>
-                )}
-                <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">{t('accounting.bank.current_balance')}</p>
-              </Link>
-            ))}
-          </div>
-        )}
-      </Card>
 
       <Card className="overflow-hidden">
         <CardHeader
