@@ -155,7 +155,7 @@ export function DriverDialog({
                 { icon: <CalendarClock className="h-3.5 w-3.5" />, label: t('fleet.driver.license_exp'), value: profile.license_expiry ? formatDate(profile.license_expiry, lang) : '' },
                 { icon: <Car className="h-3.5 w-3.5" />, label: t('fleet.driver.address'), value: profile.address },
               ].map((f, i) => (
-                <div key={i} className="flex items-start justify-between gap-3 border-b border-slate-50 py-1.5 last:border-0">
+                <div key={i} className="flex items-start justify-between gap-3 border-b border-slate-50 dark:border-slate-700/70 py-1.5 last:border-0">
                   <span className="flex shrink-0 items-center gap-1.5 text-xs text-slate-400 dark:text-slate-400">{f.icon}{f.label}</span>
                   <span className={'text-sm font-medium text-slate-700 dark:text-slate-200 ' + (f.value ? '' : 'text-slate-300')} dir={f.ltr ? 'ltr' : undefined}>
                     {f.value || '—'}

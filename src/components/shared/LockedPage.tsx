@@ -17,7 +17,7 @@ export function LockedPage({ moduleKey }: { moduleKey: string }) {
         <span className="flex h-24 w-24 items-center justify-center rounded-3xl bg-primary/5 text-primary/40">
           <Icon className="h-12 w-12" />
         </span>
-        <span className="absolute -bottom-1 -end-1 flex h-9 w-9 items-center justify-center rounded-full bg-accent text-white shadow-lg ring-4 ring-slate-50">
+        <span className="absolute -bottom-1 -end-1 flex h-9 w-9 items-center justify-center rounded-full bg-accent text-white shadow-lg ring-4 ring-slate-50 dark:ring-slate-800">
           <Clock3 className="h-4 w-4" />
         </span>
       </div>

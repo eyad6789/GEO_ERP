@@ -295,7 +295,7 @@ export function VehicleModule({
       else if (type === 'select' && options) display = options.find((o) => o.value === String(raw ?? ''))?.label ?? '—'
       else display = raw === 0 || raw ? String(raw) : '—'
       return (
-        <div key={String(name)} className="flex items-start justify-between gap-3 border-b border-slate-50 py-1.5 last:border-0">
+        <div key={String(name)} className="flex items-start justify-between gap-3 border-b border-slate-50 dark:border-slate-700/70 py-1.5 last:border-0">
           <span className="shrink-0 text-xs text-slate-400 dark:text-slate-400">{label}</span>
           <span className="text-end text-sm font-medium text-slate-700 dark:text-slate-200" dir={ltr && display !== '—' ? 'ltr' : undefined}>{display || '—'}</span>
         </div>
@@ -480,7 +480,7 @@ export function VehicleModule({
             {editing && row(t('common.currency'), 'sale_currency', 'select', currencyOptions)}
             {row(t('fleet.mod.sale_date'), 'sale_date', 'date')}
             {!editing && (
-              <div className="flex items-start justify-between gap-3 border-b border-slate-50 py-1.5 last:border-0">
+              <div className="flex items-start justify-between gap-3 border-b border-slate-50 dark:border-slate-700/70 py-1.5 last:border-0">
                 <span className="shrink-0 text-xs text-slate-400 dark:text-slate-400">{t('fleet.mod.spent')}</span>
                 <span className="inline-flex flex-col items-end">
                   <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(spent.iqd, 'IQD', lang)}</span>

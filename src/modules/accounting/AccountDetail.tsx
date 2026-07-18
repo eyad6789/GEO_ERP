@@ -163,7 +163,7 @@ export default function AccountDetail() {
       render: (a) => (
         <span className="inline-flex items-center gap-2">
           {a.is_posting ? (
-            <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+            <span className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
           ) : (
             <Layers className="h-3.5 w-3.5 text-slate-400 dark:text-slate-400" />
           )}
@@ -440,7 +440,7 @@ export default function AccountDetail() {
 
 function Row({ label, value }: { label: ReactNode; value: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-slate-50 pb-2 last:border-0 last:pb-0">
+    <div className="flex items-center justify-between gap-3 border-b border-slate-50 dark:border-slate-700/70 pb-2 last:border-0 last:pb-0">
       <span className="text-slate-400 dark:text-slate-400">{label}</span>
       <span className="font-medium text-slate-700 dark:text-slate-200">{value ?? '—'}</span>
     </div>

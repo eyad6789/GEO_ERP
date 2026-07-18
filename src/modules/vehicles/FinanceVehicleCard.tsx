@@ -99,11 +99,11 @@ export function FinanceVehicleCard({ vehicle }: { vehicle: VehFinRow }) {
           onClick={(e) => e.stopPropagation()}
         >
           <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-slate-50 dark:divide-slate-700/70">
               <DetailStat label={t('fleet.acc.col.maint_iqd')}><IqdValue value={vehicle.maint_iqd} /></DetailStat>
               <DetailStat label={t('fleet.acc.col.maint_usd')}><UsdValue value={vehicle.maint_usd} /></DetailStat>
             </div>
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-slate-50 dark:divide-slate-700/70">
               <DetailStat label={t('fleet.acc.col.fuel_iqd')}><IqdValue value={vehicle.fuel_iqd} /></DetailStat>
               <DetailStat label={t('fleet.acc.col.fuel_usd')}><UsdValue value={vehicle.fuel_usd} /></DetailStat>
             </div>

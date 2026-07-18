@@ -322,7 +322,7 @@ export function ChartTab() {
               <span className="w-28 shrink-0 text-end">{t('accounting.bank.balance_usd')}</span>
               {canEdit && <span className="w-16 shrink-0" />}
             </div>
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-slate-50 dark:divide-slate-700/70">
             {filtered.map((node) => (
               <AccountRow
                 key={node.code}

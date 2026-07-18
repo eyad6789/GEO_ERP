@@ -49,7 +49,7 @@ const EMPLOYEE_DOC_TYPES = ['PHOTO', 'NATIONAL_ID', 'DRIVER_LICENSE', 'PASSPORT'
 
 function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-slate-50 py-2 last:border-0">
+    <div className="flex items-start justify-between gap-4 border-b border-slate-50 dark:border-slate-700/70 py-2 last:border-0">
       <span className="shrink-0 text-sm text-slate-400 dark:text-slate-400">{label}</span>
       <span className="text-end text-sm font-medium text-slate-700 dark:text-slate-200">{value || '—'}</span>
     </div>

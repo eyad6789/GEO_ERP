@@ -54,7 +54,7 @@ export const FALLBACK_CATEGORY_META: CategoryMeta = {
   tile: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400',
   text: 'text-slate-600 dark:text-slate-300',
   chip: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-slate-200 dark:ring-slate-700',
-  bar: 'bg-slate-300',
+  bar: 'bg-slate-300 dark:bg-slate-600',
 }
 
 export function categoryMeta(id: string): CategoryMeta {

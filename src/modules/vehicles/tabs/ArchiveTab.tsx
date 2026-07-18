@@ -38,7 +38,7 @@ function VehicleTypeIcon({ type, className }: { type: VehicleType; className?: s
 function ListItem({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
   return (
     <div
-      className={'flex items-center gap-3 border-b border-slate-50 px-5 py-2.5 last:border-0 hover:bg-slate-50/60' + (onClick ? ' cursor-pointer' : '')}
+      className={'flex items-center gap-3 border-b border-slate-50 dark:border-slate-700/70 px-5 py-2.5 last:border-0 hover:bg-slate-50/60 dark:hover:bg-slate-800/40' + (onClick ? ' cursor-pointer' : '')}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
