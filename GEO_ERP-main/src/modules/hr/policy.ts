@@ -1,7 +1,15 @@
-// HR business rules — the numbers management can change live here.
-// All balance math in the module goes through these functions.
+// HR business rules — the numbers and access rules management can change live
+// here. All balance math in the module goes through these functions.
 import type { LeaveRequest } from '../../types'
 import { inMonth, inYear, splitMonthKey, todayKey, workingDaysInMonth } from './hours'
+
+// ---- Access control --------------------------------------------------------
+// Managing HR (adding employees, importing attendance, deciding leaves, editing
+// an employee file) is open to the HR Manager and the Super Admin. Everyone else
+// reads. Mirrors canEditFleet(); Accounting deliberately excludes super_admin.
+export function canManageHr(roleKey: string): boolean {
+  return roleKey === 'super_admin' || roleKey === 'hr_manager'
+}
 
 /** ساعات الدوام اليومي */
 export const WORK_HOURS_PER_DAY = 8

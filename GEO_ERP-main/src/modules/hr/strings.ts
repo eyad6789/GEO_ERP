@@ -57,7 +57,20 @@ registerStrings({
   'hr.card.present_days': { ar: 'حضور', en: 'Present' },
   'hr.card.absent_days': { ar: 'غياب', en: 'Absent' },
   'hr.card.leave_left_short': { ar: 'إجازة متبقية', en: 'Leave left' },
+  // Short forms — the footer cells are ~55-100px wide at 11px; the long
+  // 'hr.card.*_left' labels wrap there.
+  'hr.card.hours_left_short': { ar: 'ساعات متبقية', en: 'Hours left' },
+  'hr.card.hourly_left_short': { ar: 'زمنية متبقية', en: 'Hourly left' },
   'hr.card.hours_complete': { ar: 'أكمل ساعات الشهر المطلوبة', en: 'Completed the month’s required hours' },
+
+  // Card field picker («الحقول المعروضة»)
+  'hr.card.fields': { ar: 'الحقول المعروضة', en: 'Displayed fields' },
+  'hr.card.fields_hint': { ar: 'اختر ما يظهر على بطاقة كل موظف', en: 'Choose what appears on every employee card' },
+  'hr.card.fields_max': { ar: '(حتى {n})', en: '(up to {n})' },
+  'hr.card.fields_reset': { ar: 'استعادة الافتراضي', en: 'Reset to default' },
+  'hr.card.group_chips': { ar: 'الشارة', en: 'Badge' },
+  'hr.card.group_lines': { ar: 'التفاصيل', en: 'Details' },
+  'hr.card.group_metrics': { ar: 'هذا الشهر', en: 'This month' },
   'hr.board.month_highlights': { ar: 'أبرز الشهر', en: 'Month Highlights' },
 
   // Leaderboards
@@ -207,6 +220,35 @@ registerStrings({
 
   // Edit employee
   'hr.edit.title': { ar: 'تعديل بيانات الموظف', en: 'Edit Employee' },
+
+  // Delete / archive / restore an employee
+  'hr.emp.delete': { ar: 'حذف الموظف', en: 'Delete employee' },
+  'hr.emp.restore': { ar: 'استرجاع من الأرشيف', en: 'Restore from archive' },
+  'hr.emp.show_archived': { ar: 'الأرشيف', en: 'Archived' },
+  'hr.delete.title': { ar: 'حذف الموظف', en: 'Delete Employee' },
+  'hr.delete.archive_option': { ar: 'نقل إلى الأرشيف', en: 'Move to archive' },
+  'hr.delete.archive_hint': {
+    ar: 'يُخفى الموظف من القائمة النشطة مع الاحتفاظ بجميع سجلاته، ويمكن استرجاعه لاحقاً.',
+    en: 'Hides the employee from the active roster but keeps all their records — restorable later.',
+  },
+  'hr.delete.permanent_option': { ar: 'حذف نهائي', en: 'Delete permanently' },
+  'hr.delete.permanent_hint': {
+    ar: 'يُحذف الموظف وجميع سجلاته (الحضور، الإجازات، السلف، الرواتب، الهدايا، التقييمات، المستندات) نهائياً ولا يمكن التراجع.',
+    en: 'Permanently removes the employee and ALL their records (attendance, leaves, advances, payroll, gifts, reviews, documents). This cannot be undone.',
+  },
+  'hr.delete.permanent_confirm': {
+    ar: 'أفهم أنّ هذا سيحذف الموظف وكل سجلاته نهائياً.',
+    en: 'I understand this permanently deletes the employee and all their records.',
+  },
+  'hr.delete.archived': { ar: 'تم نقل الموظف إلى الأرشيف', en: 'Employee moved to archive' },
+  'hr.delete.deleted': { ar: 'تم حذف الموظف نهائياً', en: 'Employee permanently deleted' },
+  'hr.restore.done': { ar: 'تم استرجاع الموظف', en: 'Employee restored' },
+  'hr.archived.badge': { ar: 'مؤرشف', en: 'Archived' },
+  'hr.archived.empty': { ar: 'لا يوجد موظفون مؤرشفون', en: 'No archived employees' },
+  'hr.archived.hint': {
+    ar: 'الموظفون المنقولون إلى الأرشيف يظهرون هنا ويمكن استرجاعهم أو حذفهم نهائياً.',
+    en: 'Employees you move to the archive appear here — restore them or delete them permanently.',
+  },
 
   // Profile photo
   'hr.photo.upload': { ar: 'تغيير الصورة الشخصية', en: 'Change profile photo' },

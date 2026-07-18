@@ -100,8 +100,10 @@ resourceRouter.get('/:resource', (req, res) => {
     }
   }
 
-  // Accounts are soft-deleted: hide archived ones unless explicitly asked.
-  if (table === 'accounts' && req.query.include_archived !== '1' && !('archived' in req.query)) {
+  // Soft-deletable tables (any with an `archived` column, e.g. accounts,
+  // employees): hide archived rows unless explicitly asked (?include_archived=1
+  // shows all; ?archived=1 fetches only the archived ones).
+  if (cols.has('archived') && req.query.include_archived !== '1' && !('archived' in req.query)) {
     where.push('(archived IS NULL OR archived = 0)')
   }
 

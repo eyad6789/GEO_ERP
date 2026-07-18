@@ -33,6 +33,16 @@ function migrate(): void {
     db.exec(`UPDATE accounts SET sort_order = CAST(code AS REAL) WHERE sort_order = 0 OR sort_order IS NULL`)
   }
 
+  // Employees gained a soft-delete/archive flag (نقل إلى الأرشيف) — hidden from
+  // the active roster but kept in the DB, restorable. Mirrors accounts.archived.
+  const empCols = db.prepare(`PRAGMA table_info(employees)`).all() as Array<{ name: string }>
+  if (empCols.length && !empCols.some((c) => c.name === 'archived')) {
+    db.exec(`ALTER TABLE employees ADD COLUMN archived INTEGER DEFAULT 0`)
+  }
+  if (empCols.length && !empCols.some((c) => c.name === 'archived_at')) {
+    db.exec(`ALTER TABLE employees ADD COLUMN archived_at TEXT`)
+  }
+
   // Journal entries gained a manual exchange rate (IQD<->USD conversion).
   const jeCols = db.prepare(`PRAGMA table_info(journal_entries)`).all() as Array<{ name: string }>
   if (!jeCols.some((c) => c.name === 'exchange_rate')) {

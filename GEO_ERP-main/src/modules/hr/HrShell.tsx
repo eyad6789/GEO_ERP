@@ -15,7 +15,7 @@ import { FollowUpSection } from './FollowUpSection'
 import { LeavesBoard } from './LeavesBoard'
 import { MonthPicker, monthLabel } from './MonthPicker'
 import { currentMonthKey, minutesToHours, todayKey } from './hours'
-import { leaveBucket } from './policy'
+import { canManageHr, leaveBucket } from './policy'
 import { useHrStats } from './useHrStats'
 
 type TabKey = 'employees' | 'followup' | 'departments' | 'attendance' | 'leaves'
@@ -27,7 +27,7 @@ export default function HrShell() {
   const [tab, setTab] = useState<TabKey>('employees')
 
   // HR management actions (add employee, decide leaves, import attendance).
-  const isHR = role.key === 'hr_manager'
+  const canManage = canManageHr(role.key)
 
   const { employees, departments, companies, empMap, deptMap, coMap, refetchEmployees, loading } =
     useHrLookups(companyId)
@@ -177,7 +177,8 @@ export default function HrShell() {
             loading={loading}
             refetch={refetchEmployees}
             companies={companies}
-            canManage={isHR}
+            deptMap={deptMap}
+            canManage={canManage}
             month={month}
             empFilter={empFilter}
             stats={stats}
@@ -208,7 +209,7 @@ export default function HrShell() {
             attendance={attendance}
             loading={attLoading}
             refetch={refetchAtt}
-            canManage={isHR}
+            canManage={canManage}
             month={month}
             empFilter={empFilter}
           />
@@ -220,7 +221,7 @@ export default function HrShell() {
             leaves={leaves}
             loading={lvLoading}
             refetch={refetchLeaves}
-            canManage={isHR}
+            canManage={canManage}
             month={month}
             empFilter={empFilter}
           />

@@ -15,6 +15,7 @@ import { vehicleAccountingRouter } from './routes/vehicleAccounting.js'
 import { vehicleDocsRouter } from './routes/vehicleDocs.js'
 import { employeeDocsRouter } from './routes/employeeDocs.js'
 import { hrImportRouter } from './routes/hrImport.js'
+import { hrRouter } from './routes/hr.js'
 import { resourceRouter } from './routes/resource.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -39,6 +40,7 @@ app.use('/api', vehicleAccountingRouter)
 app.use('/api', vehicleDocsRouter)
 app.use('/api', employeeDocsRouter)
 app.use('/api', hrImportRouter)
+app.use('/api', hrRouter)
 
 // Generic CRUD last.
 app.use('/api', resourceRouter)

@@ -89,6 +89,9 @@ export interface Employee {
   bank_account: string
   iban: string
   created_at?: string
+  /** Soft-delete: 1 = archived (hidden from the active roster, restorable). */
+  archived?: number
+  archived_at?: string | null
 }
 
 // A scanned employee document (ID card, license, contract, …). Bytes are stored

@@ -1,5 +1,5 @@
 import { type ReactNode, useMemo, useRef, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowRight,
   CalendarCheck,
@@ -27,7 +27,7 @@ import {
   NoteWidget,
   StatusBadge,
 } from '@/components/shared'
-import type { Column, FormFieldConfig } from '@/components/shared'
+import type { Column } from '@/components/shared'
 import { Avatar, Badge, Button, Dialog, SearchSelect, Spinner, Tabs, useToast } from '@/components/ui'
 import type { TabItem } from '@/components/ui'
 import { useCompany } from '@/context/CompanyContext'
@@ -36,11 +36,13 @@ import { useApi, useRecord, useResource } from '@/hooks/useResource'
 import { apiDelete, apiPost, apiPut } from '@/lib/api'
 import { formatCurrency, formatDate, formatNumber, pickName } from '@/lib/format'
 import type { Attendance, Company, Department, Employee, EmployeeDoc, LeaveRequest } from '@/types'
+import { DeleteEmployeeDialog } from './DeleteEmployeeDialog'
+import { EDIT_FIELDS } from './employeeForm'
 import { MiniBar } from './lib'
 import { typeLabel } from './LeavesBoard'
 import { MonthPicker } from './MonthPicker'
 import { currentMonthKey, minutesToHours, workedMinutes } from './hours'
-import { isHourlyLeave } from './policy'
+import { canManageHr, isHourlyLeave } from './policy'
 import { computeMonthStats } from './useHrStats'
 
 type DetailTab = 'info' | 'documents' | 'attendance' | 'leaves'
@@ -71,11 +73,13 @@ export default function EmployeeDetail() {
   const { lang } = useLang()
   const { role } = useCompany()
   const toast = useToast()
+  const navigate = useNavigate()
   const [tab, setTab] = useState<DetailTab>('info')
   const [editing, setEditing] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   // HR management actions (photo, edit) — same gate as the shell.
-  const isHR = role.key === 'hr_manager'
+  const canManage = canManageHr(role.key)
 
   // Profile photo — stored as an employee document of type PHOTO; the newest
   // one is shown instead of the initials avatar. HR manager can replace/remove.
@@ -206,7 +210,7 @@ export default function EmployeeDetail() {
             ) : (
               <Avatar name={pickName(emp, lang)} color={emp.photo_color} size="xl" />
             )}
-            {isHR && (
+            {canManage && (
               <>
                 <input
                   ref={photoInputRef}
@@ -254,10 +258,18 @@ export default function EmployeeDetail() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-              <Pencil className="h-4 w-4" />
-              {t('common.edit')}
-            </Button>
+            {canManage && (
+              <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                <Pencil className="h-4 w-4" />
+                {t('common.edit')}
+              </Button>
+            )}
+            {canManage && (
+              <Button variant="outline" size="sm" onClick={() => setDeleting(true)} title={t('hr.emp.delete')}>
+                <Trash2 className="h-4 w-4" />
+                {t('common.delete')}
+              </Button>
+            )}
             <NoteWidget recordType="employee" recordId={emp.id} moduleId="hr" />
           </div>
         </CardBody>
@@ -378,6 +390,17 @@ export default function EmployeeDetail() {
           }}
         />
       )}
+
+      {deleting && (
+        <DeleteEmployeeDialog
+          employee={emp}
+          open={deleting}
+          onClose={() => setDeleting(false)}
+          // The record is now gone (or archived out of the roster) — leave the
+          // detail page and return to the HR list.
+          onDone={() => navigate('/hr')}
+        />
+      )}
     </div>
   )
 }
@@ -395,43 +418,6 @@ function StatTile({ label, value, bar, icon }: { label: string; value: string; b
       {bar}
     </div>
   )
-}
-
-// Editable fields for an existing employee — identity, contact/address,
-// employment and financial. Company/department are set at creation (a transfer),
-// so they are intentionally not edited here.
-function EDIT_FIELDS(t: (k: string) => string): FormFieldConfig[] {
-  const sel = (name: string, label: string, values: string[], prefix: string): FormFieldConfig => ({
-    name,
-    label,
-    type: 'select',
-    options: values.map((v) => ({ value: v, label: t(`${prefix}${v}`) })),
-  })
-  return [
-    { name: 'full_name_ar', label: t('hr.emp.full_name_ar'), required: true, dir: 'rtl' },
-    { name: 'full_name_en', label: t('hr.emp.full_name_en'), dir: 'ltr' },
-    { name: 'national_id', label: t('hr.f.national_id'), dir: 'ltr' },
-    { name: 'dob', label: t('hr.f.dob'), type: 'date' },
-    { name: 'place_of_birth', label: t('hr.f.place_of_birth') },
-    { name: 'nationality', label: t('hr.f.nationality') },
-    sel('gender', t('hr.f.gender'), ['MALE', 'FEMALE'], 'hr.gender.'),
-    { name: 'marital_status', label: t('hr.f.marital_status') },
-    { name: 'phone_primary', label: t('hr.f.phone_primary'), dir: 'ltr' },
-    { name: 'phone_secondary', label: t('hr.f.phone_secondary'), dir: 'ltr' },
-    { name: 'email_work', label: t('hr.f.email_work'), type: 'email', dir: 'ltr' },
-    { name: 'email_personal', label: t('hr.f.email_personal'), type: 'email', dir: 'ltr' },
-    { name: 'address', label: t('hr.f.address'), colSpan: 2 },
-    { name: 'emergency_name', label: t('hr.f.emergency_name') },
-    { name: 'emergency_phone', label: t('hr.f.emergency_phone'), dir: 'ltr' },
-    { name: 'job_title', label: t('hr.f.job_title') },
-    sel('employment_type', t('hr.f.employment_type'), ['FULL', 'PART', 'CONTRACT', 'TEMP'], 'hr.etype.'),
-    sel('status', t('hr.f.status'), ['ACTIVE', 'ON_LEAVE', 'SUSPENDED', 'TERMINATED'], 'status.'),
-    { name: 'hire_date', label: t('hr.f.hire_date'), type: 'date' },
-    { name: 'basic_salary', label: t('hr.f.basic_salary'), type: 'number' },
-    { name: 'bank_name', label: t('hr.f.bank_name') },
-    { name: 'bank_account', label: t('hr.f.bank_account'), dir: 'ltr' },
-    { name: 'iban', label: t('hr.f.iban'), dir: 'ltr' },
-  ]
 }
 
 // --- Employee documents (ID / license / contract scans) ---------------------
