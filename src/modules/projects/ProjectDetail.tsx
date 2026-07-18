@@ -111,12 +111,12 @@ export function ProjectDetail() {
         subtitle={t('projects.detail.subtitle')}
         icon={<FolderKanban className="h-6 w-6" />}
         breadcrumb={
-          <nav className="flex items-center gap-1.5 text-sm text-slate-400">
+          <nav className="flex items-center gap-1.5 text-sm text-slate-400 dark:text-slate-400">
             <Link to="/projects" className="hover:text-primary">
               {t('projects.title')}
             </Link>
             <ChevronLeft className="h-3.5 w-3.5 rtl:rotate-180" />
-            <span className="font-mono text-slate-500">{project.code}</span>
+            <span className="font-mono text-slate-500 dark:text-slate-400">{project.code}</span>
           </nav>
         }
         actions={
@@ -138,43 +138,43 @@ export function ProjectDetail() {
               <span className="font-mono text-sm font-semibold text-primary">{project.code}</span>
               <StatusBadge status={project.status} />
               {project.contract_number && (
-                <span className="text-xs text-slate-400">
-                  {t('projects.field.contract_number')}: <span className="font-mono text-slate-500">{project.contract_number}</span>
+                <span className="text-xs text-slate-400 dark:text-slate-400">
+                  {t('projects.field.contract_number')}: <span className="font-mono text-slate-500 dark:text-slate-400">{project.contract_number}</span>
                 </span>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
               <span className="inline-flex items-center gap-1.5">
-                <UserRound className="h-4 w-4 text-slate-400" />
-                {t('projects.field.client')}: <span className="font-medium text-slate-700">{project.client || '—'}</span>
+                <UserRound className="h-4 w-4 text-slate-400 dark:text-slate-400" />
+                {t('projects.field.client')}: <span className="font-medium text-slate-700 dark:text-slate-200">{project.client || '—'}</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Building2 className="h-4 w-4 text-slate-400" />
+                <Building2 className="h-4 w-4 text-slate-400 dark:text-slate-400" />
                 {pickName(company, lang)}
               </span>
               {project.location && (
                 <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4 text-slate-400" />
+                  <MapPin className="h-4 w-4 text-slate-400 dark:text-slate-400" />
                   {project.location}
                 </span>
               )}
               <span className="inline-flex items-center gap-1.5">
-                <CalendarRange className="h-4 w-4 text-slate-400" />
+                <CalendarRange className="h-4 w-4 text-slate-400 dark:text-slate-400" />
                 {formatDate(project.start_date, lang)} – {formatDate(project.end_date, lang)}
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <UserRound className="h-4 w-4 text-slate-400" />
-                {t('projects.field.manager')}: <span className="font-medium text-slate-700">{manager ? pickName(manager, lang) : t('projects.field.unassigned')}</span>
+                <UserRound className="h-4 w-4 text-slate-400 dark:text-slate-400" />
+                {t('projects.field.manager')}: <span className="font-medium text-slate-700 dark:text-slate-200">{manager ? pickName(manager, lang) : t('projects.field.unassigned')}</span>
               </span>
             </div>
-            {project.description && <p className="max-w-3xl text-sm leading-relaxed text-slate-500">{project.description}</p>}
+            {project.description && <p className="max-w-3xl text-sm leading-relaxed text-slate-500 dark:text-slate-400">{project.description}</p>}
           </div>
 
           {/* Progress dial */}
-          <div className="w-full max-w-xs shrink-0 rounded-xl bg-slate-50 p-4 sm:w-64">
+          <div className="w-full max-w-xs shrink-0 rounded-xl bg-slate-50 dark:bg-slate-800/60 p-4 sm:w-64">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm font-medium text-slate-500">{t('projects.field.progress')}</span>
-              <span className="text-xl font-bold tabular-nums text-slate-800">{Math.round(project.progress)}%</span>
+              <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{t('projects.field.progress')}</span>
+              <span className="text-xl font-bold tabular-nums text-slate-800 dark:text-slate-100">{Math.round(project.progress)}%</span>
             </div>
             <ProgressBar value={project.progress} />
           </div>

@@ -81,7 +81,7 @@ export function EventLogsPage() {
         sortable: true,
         width: '170px',
         render: (r) => (
-          <span className="whitespace-nowrap tabular-nums text-slate-600">
+          <span className="whitespace-nowrap tabular-nums text-slate-600 dark:text-slate-300">
             {formatDateTime(r.timestamp, lang)}
           </span>
         ),
@@ -93,8 +93,8 @@ export function EventLogsPage() {
         sortable: true,
         render: (r) => (
           <div className="min-w-0">
-            <p className="truncate font-medium text-slate-700">{r.user_name || '—'}</p>
-            {r.user_role && <p className="truncate text-xs text-slate-400">{r.user_role}</p>}
+            <p className="truncate font-medium text-slate-700 dark:text-slate-200">{r.user_name || '—'}</p>
+            {r.user_role && <p className="truncate text-xs text-slate-400 dark:text-slate-400">{r.user_role}</p>}
           </div>
         ),
       },
@@ -111,7 +111,7 @@ export function EventLogsPage() {
               <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${meta.className}`}>
                 <Icon className="h-3.5 w-3.5" />
               </span>
-              <span className="text-sm text-slate-600">{t(`logs.module.${r.module}`)}</span>
+              <span className="text-sm text-slate-600 dark:text-slate-300">{t(`logs.module.${r.module}`)}</span>
             </span>
           )
         },
@@ -130,7 +130,7 @@ export function EventLogsPage() {
         header: t('logs.col.description'),
         accessor: (r) => r.record_description,
         render: (r) => (
-          <span className="block max-w-[280px] truncate text-slate-600" title={r.record_description}>
+          <span className="block max-w-[280px] truncate text-slate-600 dark:text-slate-300" title={r.record_description}>
             {r.record_description || '—'}
           </span>
         ),
@@ -147,7 +147,7 @@ export function EventLogsPage() {
         key: 'ip_address',
         header: t('logs.col.ip'),
         accessor: (r) => r.ip_address,
-        render: (r) => <span className="font-mono text-xs text-slate-500">{r.ip_address || '—'}</span>,
+        render: (r) => <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{r.ip_address || '—'}</span>,
       },
     ],
     [t, lang],
@@ -175,11 +175,11 @@ export function EventLogsPage() {
       />
 
       {/* Immutable notice banner */}
-      <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-        <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+      <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/15 px-4 py-3">
+        <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300" />
         <div>
-          <p className="text-sm font-semibold text-amber-800">{t('logs.immutable')}</p>
-          <p className="mt-0.5 text-xs text-amber-700/80">{t('logs.immutable_hint')}</p>
+          <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">{t('logs.immutable')}</p>
+          <p className="mt-0.5 text-xs text-amber-700/80 dark:text-amber-300">{t('logs.immutable_hint')}</p>
         </div>
       </div>
 

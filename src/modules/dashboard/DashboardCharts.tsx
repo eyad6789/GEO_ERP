@@ -13,20 +13,19 @@ import {
 import { BarChart3, PieChart as PieIcon, Users } from 'lucide-react'
 import { ChartCard, CHART_COLORS, STATUS_CHART_COLORS, EmptyState } from '../../components/shared'
 import { useT, useLang } from '../../context/LangContext'
+import { useChartTheme } from '../../hooks/useChartTheme'
 import { formatCurrency, formatCompact, formatNumber } from '../../lib/format'
 import type { DashboardData } from '../../types'
 import type { Lang as I18nLang } from '../../i18n/strings'
-
-const AXIS = { fontSize: 12, fill: '#64748b' }
 
 // ---- Tooltips --------------------------------------------------------------
 function CurrencyTooltip({ active, payload, label, lang }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-card" dir="ltr">
-      <p className="mb-1 font-semibold text-slate-700">{label}</p>
+    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs shadow-card" dir="ltr">
+      <p className="mb-1 font-semibold text-slate-700 dark:text-slate-200">{label}</p>
       {payload.map((p: any) => (
-        <p key={p.dataKey} className="flex items-center gap-1.5 text-slate-600">
+        <p key={p.dataKey} className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
           <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />
           <span>{p.name}:</span>
           <span className="font-medium tabular-nums">{formatCurrency(p.value, 'IQD', lang as I18nLang)}</span>
@@ -39,9 +38,9 @@ function CurrencyTooltip({ active, payload, label, lang }: any) {
 function CountTooltip({ active, payload, label, lang, suffix }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-card" dir="ltr">
-      <p className="mb-0.5 font-semibold text-slate-700">{label ?? payload[0]?.name}</p>
-      <p className="font-medium tabular-nums text-slate-600">
+    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs shadow-card" dir="ltr">
+      <p className="mb-0.5 font-semibold text-slate-700 dark:text-slate-200">{label ?? payload[0]?.name}</p>
+      <p className="font-medium tabular-nums text-slate-600 dark:text-slate-300">
         {formatNumber(payload[0].value, lang as I18nLang)} {suffix}
       </p>
     </div>
@@ -53,6 +52,8 @@ export function DashboardCharts({ data }: { data: DashboardData }) {
   const t = useT()
   const { lang } = useLang()
   const l = lang as I18nLang
+  const ct = useChartTheme()
+  const AXIS = { fontSize: 12, fill: ct.axis }
 
   const revenueData = data.revenue_expense_by_month ?? []
   const statusData = (data.projects_by_status ?? []).filter((d) => d.count > 0)
@@ -69,8 +70,8 @@ export function DashboardCharts({ data }: { data: DashboardData }) {
         >
           {revenueData.length ? (
             <BarChart data={revenueData} margin={{ top: 8, right: 12, left: 4, bottom: 0 }} barGap={4}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis dataKey="month" tick={AXIS} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} vertical={false} />
+              <XAxis dataKey="month" tick={AXIS} tickLine={false} axisLine={{ stroke: ct.axisLine }} />
               <YAxis
                 tick={AXIS}
                 tickLine={false}
@@ -122,7 +123,7 @@ export function DashboardCharts({ data }: { data: DashboardData }) {
               innerRadius={58}
               outerRadius={92}
               paddingAngle={2}
-              stroke="#fff"
+              stroke={ct.pieStroke}
               strokeWidth={2}
             >
               {statusData.map((entry) => (

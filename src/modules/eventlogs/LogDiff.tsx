@@ -39,16 +39,16 @@ export function LogDiff({ oldValues, newValues }: { oldValues: string | null; ne
 
   if (keys.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-400">
+      <div className="rounded-lg border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-4 py-6 text-center text-sm text-slate-400 dark:text-slate-400">
         {t('logs.diff.none')}
       </div>
     )
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200">
+    <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
       <table className="w-full border-collapse text-sm">
-        <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
           <tr>
             <th className="px-4 py-2.5 text-start">{t('logs.diff.field')}</th>
             <th className="px-4 py-2.5 text-start">{t('logs.diff.before')}</th>
@@ -58,20 +58,20 @@ export function LogDiff({ oldValues, newValues }: { oldValues: string | null; ne
             <th className="px-4 py-2.5 text-start">{t('logs.diff.after')}</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
           {keys.map((key) => {
             const bv = before ? before[key] : undefined
             const av = after ? after[key] : undefined
             const changed = display(bv) !== display(av)
             return (
-              <tr key={key} className={changed ? 'bg-amber-50/40' : ''}>
-                <td className="px-4 py-2.5 font-medium text-slate-600">{key}</td>
+              <tr key={key} className={changed ? 'bg-amber-50/40 dark:bg-amber-500/15' : ''}>
+                <td className="px-4 py-2.5 font-medium text-slate-600 dark:text-slate-300">{key}</td>
                 <td className="px-4 py-2.5">
                   <span
                     className={
                       changed
-                        ? 'rounded bg-red-50 px-1.5 py-0.5 text-red-700 line-through decoration-red-300'
-                        : 'text-slate-500'
+                        ? 'rounded bg-red-50 dark:bg-red-500/15 px-1.5 py-0.5 text-red-700 dark:text-red-300 line-through decoration-red-300'
+                        : 'text-slate-500 dark:text-slate-400'
                     }
                   >
                     {display(bv)}
@@ -82,8 +82,8 @@ export function LogDiff({ oldValues, newValues }: { oldValues: string | null; ne
                   <span
                     className={
                       changed
-                        ? 'rounded bg-emerald-50 px-1.5 py-0.5 font-medium text-emerald-700'
-                        : 'text-slate-500'
+                        ? 'rounded bg-emerald-50 dark:bg-emerald-500/15 px-1.5 py-0.5 font-medium text-emerald-700 dark:text-emerald-300'
+                        : 'text-slate-500 dark:text-slate-400'
                     }
                   >
                     {display(av)}

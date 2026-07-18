@@ -14,6 +14,21 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <title>Alkebis GEO_ERP System</title>
+    <!-- Anti-FOUC: apply the saved (or OS) theme before first paint so the page
+         never flashes light before React mounts. Mirrors src/context/ThemeContext.tsx. -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('geo-erp-theme');
+          var dark = saved
+            ? saved === 'dark'
+            : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var root = document.documentElement;
+          root.classList.toggle('dark', dark);
+          root.style.colorScheme = dark ? 'dark' : 'light';
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

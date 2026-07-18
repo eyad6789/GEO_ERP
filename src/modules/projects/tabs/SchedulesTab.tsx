@@ -37,7 +37,7 @@ export function SchedulesTab({ projectId }: { projectId: string }) {
       header: t('projects.sched.milestone'),
       accessor: (m) => m.name_ar,
       sortable: true,
-      render: (m) => <span className="font-medium text-slate-800">{m.name_ar}</span>,
+      render: (m) => <span className="font-medium text-slate-800 dark:text-slate-100">{m.name_ar}</span>,
     },
     { key: 'start_date', header: t('projects.field.start_date'), accessor: (m) => m.start_date, sortable: true, render: (m) => formatDate(m.start_date, lang) },
     { key: 'end_date', header: t('projects.field.end_date'), accessor: (m) => m.end_date, sortable: true, render: (m) => formatDate(m.end_date, lang) },
@@ -47,7 +47,7 @@ export function SchedulesTab({ projectId }: { projectId: string }) {
       accessor: (m) => durationDays(m.start_date, m.end_date),
       sortable: true,
       align: 'center',
-      render: (m) => <span className="tabular-nums text-slate-600">{formatNumber(durationDays(m.start_date, m.end_date), lang)}</span>,
+      render: (m) => <span className="tabular-nums text-slate-600 dark:text-slate-300">{formatNumber(durationDays(m.start_date, m.end_date), lang)}</span>,
     },
     {
       key: 'percent_complete',
@@ -61,7 +61,7 @@ export function SchedulesTab({ projectId }: { projectId: string }) {
       key: 'depends_on',
       header: t('projects.sched.depends'),
       accessor: (m) => (m.depends_on ? nameById.get(m.depends_on) ?? m.depends_on : ''),
-      render: (m) => (m.depends_on ? <span className="text-slate-500">{nameById.get(m.depends_on) ?? m.depends_on}</span> : <span className="text-slate-300">—</span>),
+      render: (m) => (m.depends_on ? <span className="text-slate-500 dark:text-slate-400">{nameById.get(m.depends_on) ?? m.depends_on}</span> : <span className="text-slate-300">—</span>),
     },
   ]
 

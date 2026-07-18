@@ -9,7 +9,7 @@ const LEVEL_STYLE: Record<LogLevel, string> = {
   ERROR: 'text-red-400',
   WARN: 'text-amber-400',
   INFO: 'text-sky-400',
-  DEBUG: 'text-slate-500',
+  DEBUG: 'text-slate-500 dark:text-slate-400',
 }
 
 const LEVELS: LogLevel[] = ['ERROR', 'WARN', 'INFO', 'DEBUG']
@@ -59,7 +59,7 @@ export function LogsPanel() {
                 onClick={() => setFilter(lv)}
                 className={cn(
                   'rounded-md px-2 py-1 font-mono text-[11px] font-semibold transition',
-                  filter === lv ? 'bg-debug-line text-slate-100' : 'text-slate-500 hover:text-slate-300',
+                  filter === lv ? 'bg-debug-line text-slate-100' : 'text-slate-500 dark:text-slate-400 hover:text-slate-300',
                   lv !== 'ALL' && filter !== lv && LEVEL_STYLE[lv as LogLevel],
                 )}
               >
@@ -91,13 +91,13 @@ export function LogsPanel() {
         style={{ direction: 'ltr' }}
       >
         {shown.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-slate-600">
+          <div className="flex h-full items-center justify-center text-slate-600 dark:text-slate-300">
             <span className="font-mono">— {t('debug.logs.empty')} —</span>
           </div>
         ) : (
           shown.map((l) => (
             <div key={l.id} className="flex gap-2 whitespace-pre-wrap break-words py-0.5 hover:bg-white/[0.02]">
-              <span className="shrink-0 text-slate-600">{stamp(l.ts)}</span>
+              <span className="shrink-0 text-slate-600 dark:text-slate-300">{stamp(l.ts)}</span>
               <span className={cn('w-12 shrink-0 font-bold', LEVEL_STYLE[l.level])}>{l.level}</span>
               <span className="shrink-0 text-purple-400/80">[{l.source}]</span>
               <span className="text-slate-300">{l.message}</span>
@@ -105,7 +105,7 @@ export function LogsPanel() {
           ))
         )}
         {!paused && shown.length > 0 && (
-          <div className="flex gap-2 py-0.5 text-slate-600">
+          <div className="flex gap-2 py-0.5 text-slate-600 dark:text-slate-300">
             <span className="animate-pulse">▋</span>
           </div>
         )}

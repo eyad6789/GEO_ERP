@@ -215,28 +215,28 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
       header: t('accounting.journal.receipt_iqd'),
       align: 'end',
       accessor: (r) => { const f = cashFlow(r); return f.currency === 'IQD' ? f.receipt || '' : '' },
-      render: (r) => { const f = cashFlow(r); return f.currency === 'IQD' && f.receipt ? <span className="tabular-nums font-medium text-emerald-700">{formatCurrency(f.receipt, 'IQD', lang)}</span> : dash },
+      render: (r) => { const f = cashFlow(r); return f.currency === 'IQD' && f.receipt ? <span className="tabular-nums font-medium text-emerald-700 dark:text-emerald-300">{formatCurrency(f.receipt, 'IQD', lang)}</span> : dash },
     },
     {
       key: 'receipt_usd',
       header: t('accounting.journal.receipt_usd'),
       align: 'end',
       accessor: (r) => { const f = cashFlow(r); return f.currency === 'USD' ? f.receipt || '' : '' },
-      render: (r) => { const f = cashFlow(r); return f.currency === 'USD' && f.receipt ? <span className="tabular-nums font-medium text-emerald-700">{formatCurrency(f.receipt, 'USD', lang)}</span> : dash },
+      render: (r) => { const f = cashFlow(r); return f.currency === 'USD' && f.receipt ? <span className="tabular-nums font-medium text-emerald-700 dark:text-emerald-300">{formatCurrency(f.receipt, 'USD', lang)}</span> : dash },
     },
     {
       key: 'payment_iqd',
       header: t('accounting.journal.payment_iqd'),
       align: 'end',
       accessor: (r) => { const f = cashFlow(r); return f.currency === 'IQD' ? f.payment || '' : '' },
-      render: (r) => { const f = cashFlow(r); return f.currency === 'IQD' && f.payment ? <span className="tabular-nums font-medium text-rose-700">{formatCurrency(f.payment, 'IQD', lang)}</span> : dash },
+      render: (r) => { const f = cashFlow(r); return f.currency === 'IQD' && f.payment ? <span className="tabular-nums font-medium text-rose-700 dark:text-rose-300">{formatCurrency(f.payment, 'IQD', lang)}</span> : dash },
     },
     {
       key: 'payment_usd',
       header: t('accounting.journal.payment_usd'),
       align: 'end',
       accessor: (r) => { const f = cashFlow(r); return f.currency === 'USD' ? f.payment || '' : '' },
-      render: (r) => { const f = cashFlow(r); return f.currency === 'USD' && f.payment ? <span className="tabular-nums font-medium text-rose-700">{formatCurrency(f.payment, 'USD', lang)}</span> : dash },
+      render: (r) => { const f = cashFlow(r); return f.currency === 'USD' && f.payment ? <span className="tabular-nums font-medium text-rose-700 dark:text-rose-300">{formatCurrency(f.payment, 'USD', lang)}</span> : dash },
     },
     {
       // الملاحظات — like the accountant's Excel cash book, the description sits
@@ -244,21 +244,21 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
       key: 'description',
       header: t('accounting.journal.notes'),
       accessor: (r) => r.description ?? '',
-      render: (r) => <span className="block max-w-[260px] truncate text-slate-600" title={r.description ?? ''}>{r.description || dash}</span>,
+      render: (r) => <span className="block max-w-[260px] truncate text-slate-600 dark:text-slate-300" title={r.description ?? ''}>{r.description || dash}</span>,
     },
     {
       key: 'balance_iqd',
       header: t('accounting.journal.balance_iqd'),
       align: 'end',
       accessor: (r) => { const c = cashAfter.get(r.entry_id); return c && c.currency === 'IQD' ? c.value : '' },
-      render: (r) => { const c = cashAfter.get(r.entry_id); return c && c.currency === 'IQD' ? <span className="tabular-nums font-medium text-slate-700">{formatCurrency(c.value, 'IQD', lang)}</span> : dash },
+      render: (r) => { const c = cashAfter.get(r.entry_id); return c && c.currency === 'IQD' ? <span className="tabular-nums font-medium text-slate-700 dark:text-slate-200">{formatCurrency(c.value, 'IQD', lang)}</span> : dash },
     },
     {
       key: 'balance_usd',
       header: t('accounting.journal.balance_usd'),
       align: 'end',
       accessor: (r) => { const c = cashAfter.get(r.entry_id); return c && c.currency === 'USD' ? c.value : '' },
-      render: (r) => { const c = cashAfter.get(r.entry_id); return c && c.currency === 'USD' ? <span className="tabular-nums font-medium text-slate-700">{formatCurrency(c.value, 'USD', lang)}</span> : dash },
+      render: (r) => { const c = cashAfter.get(r.entry_id); return c && c.currency === 'USD' ? <span className="tabular-nums font-medium text-slate-700 dark:text-slate-200">{formatCurrency(c.value, 'USD', lang)}</span> : dash },
     },
     {
       key: 'amount',
@@ -266,7 +266,7 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
       align: 'end',
       sortable: true,
       accessor: (r) => r.amount,
-      render: (r) => <span className="tabular-nums text-slate-700">{formatCurrency(r.amount, r.currency, lang)}</span>,
+      render: (r) => <span className="tabular-nums text-slate-700 dark:text-slate-200">{formatCurrency(r.amount, r.currency, lang)}</span>,
     },
   ]
 
@@ -289,7 +289,7 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
               {t('accounting.journal.new')}
             </Button>
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-500">
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400">
               <Lock className="h-3.5 w-3.5" />
               {t('accounting.readonly.badge')}
             </span>
@@ -298,11 +298,11 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
       />
 
       {/* One toolbar: category pills · search · filters */}
-      <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 shadow-sm">
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Category pills — multi-select: pick any combination of قبض / صرف / قيد
               at once. "All" clears the selection. */}
-          <div className="flex shrink-0 gap-1 rounded-lg bg-slate-100 p-1">
+          <div className="flex shrink-0 gap-1 rounded-lg bg-slate-100 dark:bg-slate-800 p-1">
             {pills.map((p) => {
               const active = p.key === 'ALL' ? types.size === 0 : types.has(p.key as VoucherType)
               return (
@@ -312,7 +312,7 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
                   aria-pressed={active}
                   className={
                     'rounded-md px-3 py-1.5 text-sm font-medium transition ' +
-                    (active ? 'bg-white text-primary shadow-sm ring-1 ring-primary/20' : 'text-slate-500 hover:text-slate-700')
+                    (active ? 'bg-white dark:bg-slate-800 text-primary shadow-sm ring-1 ring-primary/20' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700')
                   }
                 >
                   {p.label}
@@ -323,7 +323,7 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
 
           {/* Search (grows to fill) */}
           <div className="relative min-w-[180px] flex-1">
-            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -341,7 +341,7 @@ export function JournalTab({ range, onRange }: { range: DateRange; onRange: (r: 
           {(companyFilter || projectFilter || accountFilter || bankFilter || query) && (
             <button
               onClick={() => { setCompanyFilter(''); setProjectFilter(''); setAccountFilter(''); setBankFilter(''); setQuery('') }}
-              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-danger"
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 transition hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-danger"
               title={t('accounting.journal.clear_filters')}
             >
               <X className="h-3.5 w-3.5" />

@@ -46,11 +46,11 @@ const TYPE_ICON = {
 } as const
 
 const TYPE_TINT: Record<InventoryTxnType, string> = {
-  IN: 'bg-green-50 text-green-700 ring-green-200',
-  OUT: 'bg-red-50 text-red-700 ring-red-200',
-  TRANSFER: 'bg-blue-50 text-blue-700 ring-blue-200',
-  RETURN: 'bg-amber-50 text-amber-700 ring-amber-200',
-  ADJUST: 'bg-purple-50 text-purple-700 ring-purple-200',
+  IN: 'bg-green-50 dark:bg-green-500/15 text-green-700 dark:text-green-300 ring-green-200 dark:ring-green-500/30',
+  OUT: 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-300 ring-red-200 dark:ring-red-500/30',
+  TRANSFER: 'bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 ring-blue-200 dark:ring-blue-500/30',
+  RETURN: 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-200 dark:ring-amber-500/30',
+  ADJUST: 'bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 ring-purple-200 dark:ring-purple-500/30',
 }
 
 export function NewTxnDialog({
@@ -240,7 +240,7 @@ export function NewTxnDialog({
     >
       {/* Movement type — segmented control */}
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-slate-700">
+        <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
           {t('warehouse.txn.field_type')}
         </label>
         <div className="grid grid-cols-5 gap-2">
@@ -254,7 +254,7 @@ export function NewTxnDialog({
                 onClick={() => setType(ty)}
                 className={cn(
                   'flex flex-col items-center gap-1 rounded-xl px-2 py-2.5 text-xs font-medium ring-1 ring-inset transition',
-                  active ? TYPE_TINT[ty] : 'bg-white text-slate-500 ring-slate-200 hover:bg-slate-50',
+                  active ? TYPE_TINT[ty] : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 ring-slate-200 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800',
                 )}
               >
                 <Icon className="h-5 w-5" />
@@ -273,7 +273,7 @@ export function NewTxnDialog({
               <Select value={fromWarehouseId} options={whOptions} onChange={(e) => setFromWarehouseId(e.target.value)} />
             </Field>
             <div className="hidden justify-center pb-2.5 sm:flex">
-              <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 rtl:rotate-180" />
+              <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-400 rtl:rotate-180" />
             </div>
             <Field label={t('warehouse.txn.to_warehouse')} required>
               <Select value={warehouseId} options={whOptions} onChange={(e) => setWarehouseId(e.target.value)} />
@@ -308,8 +308,8 @@ export function NewTxnDialog({
                 className={cn(
                   'flex h-10 w-full items-center gap-2 rounded-lg px-3 text-sm font-medium ring-1 ring-inset transition sm:w-auto',
                   isLoan
-                    ? 'bg-amber-50 text-amber-700 ring-amber-300'
-                    : 'bg-white text-slate-500 ring-slate-200 hover:bg-slate-50',
+                    ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-300'
+                    : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 ring-slate-200 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800',
                 )}
               >
                 <span
@@ -335,7 +335,7 @@ export function NewTxnDialog({
       <button
         type="button"
         onClick={() => setMoreOpen((v) => !v)}
-        className="mt-4 flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-slate-700"
+        className="mt-4 flex items-center gap-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 transition hover:text-slate-700"
       >
         <ChevronDown className={cn('h-4 w-4 transition-transform', moreOpen && 'rotate-180')} />
         {t('warehouse.txn.more_options')}
@@ -366,7 +366,7 @@ export function NewTxnDialog({
 
       {/* Items cart — no prices, no totals */}
       <div className="mt-6">
-        <h4 className="mb-2 text-sm font-semibold text-slate-700">{t('warehouse.txn.items')}</h4>
+        <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{t('warehouse.txn.items')}</h4>
         <SearchSelect
           value=""
           placeholder={t('warehouse.txn.add_item')}
@@ -376,7 +376,7 @@ export function NewTxnDialog({
 
         <div className="mt-3 space-y-2">
           {lines.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-400">
+            <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-600 px-4 py-6 text-center text-sm text-slate-400 dark:text-slate-400">
               {t('warehouse.txn.no_items_yet')}
             </div>
           ) : (
@@ -385,11 +385,11 @@ export function NewTxnDialog({
               const available = availabilityMap.get(l.item_id) ?? 0
               const exceeds = (type === 'OUT' || type === 'TRANSFER') && Number(l.quantity) > available
               return (
-                <div key={l.key} className="rounded-xl px-4 py-3 ring-1 ring-slate-200">
+                <div key={l.key} className="rounded-xl px-4 py-3 ring-1 ring-slate-200 dark:ring-slate-700">
                   <div className="flex items-center gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-slate-700">{it ? pickName(it, lang) : l.item_id}</p>
-                      <p className="mt-0.5 truncate text-xs text-slate-400">
+                      <p className="truncate font-medium text-slate-700 dark:text-slate-200">{it ? pickName(it, lang) : l.item_id}</p>
+                      <p className="mt-0.5 truncate text-xs text-slate-400 dark:text-slate-400">
                         <span className="font-mono">{it?.code}</span>
                         <span className="mx-1.5">·</span>
                         {t('warehouse.txn.available')}: {formatNumber(available, lang)} {it?.uom}
@@ -400,7 +400,7 @@ export function NewTxnDialog({
                         type="button"
                         onClick={() => stepQty(l.key, -1)}
                         disabled={l.quantity <= 1}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 ring-1 ring-inset ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-30"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 ring-1 ring-inset ring-slate-200 dark:ring-slate-700 transition hover:bg-slate-50 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-30"
                         aria-label="-"
                       >
                         <Minus className="h-3.5 w-3.5" />
@@ -415,17 +415,17 @@ export function NewTxnDialog({
                       <button
                         type="button"
                         onClick={() => stepQty(l.key, 1)}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 ring-1 ring-inset ring-slate-200 transition hover:bg-slate-50"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 ring-1 ring-inset ring-slate-200 dark:ring-slate-700 transition hover:bg-slate-50 dark:hover:bg-slate-800"
                         aria-label="+"
                       >
                         <Plus className="h-3.5 w-3.5" />
                       </button>
-                      <span className="ms-1 text-xs text-slate-400">{it?.uom}</span>
+                      <span className="ms-1 text-xs text-slate-400 dark:text-slate-400">{it?.uom}</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => removeLine(l.key)}
-                      className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-danger"
+                      className="shrink-0 rounded-lg p-1.5 text-slate-400 dark:text-slate-400 transition hover:bg-red-50 hover:text-danger"
                       aria-label={t('common.delete')}
                     >
                       <Trash2 className="h-4 w-4" />

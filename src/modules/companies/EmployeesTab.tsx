@@ -16,7 +16,7 @@ export function EmployeesTab({ companyId, companyName }: { companyId: string; co
       header: t('companies.emp.number'),
       sortable: true,
       width: '120px',
-      render: (e) => <span className="font-mono text-xs text-slate-500">{e.employee_number}</span>,
+      render: (e) => <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{e.employee_number}</span>,
     },
     {
       key: 'name',
@@ -26,7 +26,7 @@ export function EmployeesTab({ companyId, companyName }: { companyId: string; co
       render: (e) => (
         <div className="flex items-center gap-2.5">
           <Avatar name={pickName(e, lang)} color={e.photo_color} size="sm" />
-          <span className="font-medium text-slate-700">{pickName(e, lang)}</span>
+          <span className="font-medium text-slate-700 dark:text-slate-200">{pickName(e, lang)}</span>
         </div>
       ),
     },

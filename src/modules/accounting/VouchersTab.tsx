@@ -108,7 +108,7 @@ export function VouchersTab() {
     {
       key: 'cash_account',
       header: t('accounting.vouchers.cash_account'),
-      render: (r) => (r.type === 'JOURNAL' ? <span className="text-slate-400">{t('accounting.vouchers.no_cash')}</span> : nameOf(r.cash_account)),
+      render: (r) => (r.type === 'JOURNAL' ? <span className="text-slate-400 dark:text-slate-400">{t('accounting.vouchers.no_cash')}</span> : nameOf(r.cash_account)),
     },
     {
       key: 'counter_account',
@@ -120,14 +120,14 @@ export function VouchersTab() {
               {nameOf(r.counter_account)}
             </Link>
             {r.type === 'JOURNAL' && r.line_count > 2 && (
-              <span className="text-[10px] text-slate-400">+{r.line_count - 1}</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-400">+{r.line_count - 1}</span>
             )}
           </span>
         ) : (
           '—'
         ),
     },
-    { key: 'description', header: t('accounting.journal.desc'), render: (r) => <span className="text-slate-600">{r.description || '—'}</span> },
+    { key: 'description', header: t('accounting.journal.desc'), render: (r) => <span className="text-slate-600 dark:text-slate-300">{r.description || '—'}</span> },
     {
       key: 'amount',
       header: t('accounting.vouchers.amount'),
@@ -135,7 +135,7 @@ export function VouchersTab() {
       accessor: (r) => r.amount,
       sortable: true,
       render: (r) => {
-        const cls = r.type === 'RECEIPT' ? 'text-emerald-700' : r.type === 'PAYMENT' ? 'text-red-600' : 'text-slate-700'
+        const cls = r.type === 'RECEIPT' ? 'text-emerald-700 dark:text-emerald-300' : r.type === 'PAYMENT' ? 'text-red-600 dark:text-red-300' : 'text-slate-700 dark:text-slate-200'
         const sign = r.type === 'RECEIPT' ? '+' : r.type === 'PAYMENT' ? '−' : ''
         return <span className={'tabular-nums font-semibold ' + cls}>{sign}{formatCurrency(r.amount, r.currency, lang)}</span>
       },
@@ -153,14 +153,14 @@ export function VouchersTab() {
     <div className="space-y-4">
       <FilterBar range={range} onChange={setRange} />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-1.5 rounded-lg bg-slate-100 p-1">
+        <div className="flex flex-wrap gap-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 p-1">
           {pills.map((p) => (
             <button
               key={p.key}
               onClick={() => setFilter(p.key)}
               className={
                 'rounded-md px-3.5 py-1.5 text-sm font-medium transition ' +
-                (filter === p.key ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700')
+                (filter === p.key ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700')
               }
             >
               {p.label}
@@ -174,7 +174,7 @@ export function VouchersTab() {
             {t('accounting.journal.new')}
           </Button>
         ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-500">
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400">
             <Lock className="h-3.5 w-3.5" />
             {t('accounting.readonly.badge')}
           </span>
@@ -182,10 +182,10 @@ export function VouchersTab() {
       </div>
 
       {/* Filters: search + company / project / account (server-side, like the journal) */}
-      <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 shadow-sm">
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="relative min-w-[180px] flex-1">
-            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('accounting.journal.search_ph')} className="h-10 ps-9" />
           </div>
           <div className="w-44 shrink-0"><SearchSelect value={companyFilter} onChange={setCompanyFilter} options={companyOptions} placeholder={t('accounting.filter.all_companies')} /></div>
@@ -194,7 +194,7 @@ export function VouchersTab() {
           {(companyFilter || projectFilter || accountFilter || query) && (
             <button
               onClick={() => { setCompanyFilter(''); setProjectFilter(''); setAccountFilter(''); setQuery('') }}
-              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-danger"
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 transition hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-danger"
               title={t('accounting.journal.clear_filters')}
             >
               <X className="h-3.5 w-3.5" />

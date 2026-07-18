@@ -19,7 +19,7 @@ export function HeroHeader() {
 
       <div className="relative flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <span className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white p-1.5 shadow-lg ring-1 ring-white/30">
+          <span className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white dark:bg-slate-800 p-1.5 shadow-lg ring-1 ring-white/30">
             <img src="/qeg-logo.png" alt={t('app.title')} className="h-full w-full object-contain" />
           </span>
           <div>

@@ -27,8 +27,8 @@ export function ProjectsTab({ companyId, companyName }: { companyId: string; com
       sortable: true,
       render: (p) => (
         <div className="min-w-0">
-          <p className="truncate font-medium text-slate-700">{pickName(p, lang)}</p>
-          <p className="truncate text-xs text-slate-400">{p.client}</p>
+          <p className="truncate font-medium text-slate-700 dark:text-slate-200">{pickName(p, lang)}</p>
+          <p className="truncate text-xs text-slate-400 dark:text-slate-400">{p.client}</p>
         </div>
       ),
     },
@@ -46,7 +46,7 @@ export function ProjectsTab({ companyId, companyName }: { companyId: string; com
       sortable: true,
       align: 'end',
       render: (p) => (
-        <span className="font-semibold tabular-nums text-slate-700">
+        <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">
           {formatCurrency(p.contract_value, p.currency, lang)}
         </span>
       ),

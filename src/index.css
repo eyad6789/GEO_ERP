@@ -19,6 +19,9 @@
   * {
     border-color: theme('colors.slate.200');
   }
+  .dark * {
+    border-color: theme('colors.slate.700');
+  }
 
   html {
     -webkit-font-smoothing: antialiased;
@@ -30,6 +33,10 @@
   body {
     @apply bg-slate-50 text-slate-800 font-sans font-medium;
     margin: 0;
+  }
+
+  .dark body {
+    @apply bg-slate-900 text-slate-200;
   }
 
   html[dir='ltr'] body {
@@ -57,18 +64,28 @@
   ::-webkit-scrollbar-thumb:hover {
     background: theme('colors.slate.400');
   }
+  .dark ::-webkit-scrollbar-thumb {
+    background: theme('colors.slate.600');
+    border-color: theme('colors.slate.900');
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: theme('colors.slate.500');
+  }
 }
 
 @layer components {
   .card {
-    @apply bg-white rounded-xl border border-slate-200 shadow-card;
+    @apply bg-white rounded-xl border border-slate-200 shadow-card
+      dark:bg-slate-800 dark:border-slate-700;
   }
 
   .input-base {
     @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm
       outline-none transition placeholder:text-slate-400
       focus:border-primary focus:ring-2 focus:ring-primary/15
-      disabled:cursor-not-allowed disabled:bg-slate-100;
+      disabled:cursor-not-allowed disabled:bg-slate-100
+      dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100
+      dark:placeholder:text-slate-500 dark:disabled:bg-slate-900;
   }
 
   .btn {

@@ -28,9 +28,9 @@ const EDGE_COLOR: Record<FlowType, string> = {
   OUT: '#dc2626',
 }
 const EDGE_TINT: Record<FlowType, string> = {
-  TRANSFER: 'bg-blue-50 text-blue-700 ring-blue-200',
-  IN: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-  OUT: 'bg-red-50 text-red-700 ring-red-200',
+  TRANSFER: 'bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 ring-blue-200 dark:ring-blue-500/30',
+  IN: 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-500/30',
+  OUT: 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-300 ring-red-200 dark:ring-red-500/30',
 }
 
 interface FlowNode {
@@ -277,34 +277,34 @@ export function TransferFlowView({
 
       {/* Route panel */}
       {!selectedRow ? (
-        <div className="flex items-center justify-center rounded-xl border border-dashed border-slate-200 py-8 text-sm text-slate-400">
+        <div className="flex items-center justify-center rounded-xl border border-dashed border-slate-200 dark:border-slate-700 py-8 text-sm text-slate-400 dark:text-slate-400">
           {t('warehouse.flow.pick_route')}
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 px-4 py-3">
             <div className="flex items-center gap-2.5">
-              <span className="text-sm font-semibold text-slate-800">
+              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                 {selectedRow.type === 'IN'
                   ? t('warehouse.flow.external_in')
                   : whLabel(selectedRow.type === 'OUT' ? selectedRow.warehouse_id : selectedRow.from_warehouse_id)}
               </span>
-              <ArrowLeftRight className="h-4 w-4 shrink-0 text-slate-400" />
-              <span className="text-sm font-semibold text-slate-800">
+              <ArrowLeftRight className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-400" />
+              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                 {selectedRow.type === 'OUT' ? t('warehouse.flow.external_out') : whLabel(selectedRow.warehouse_id)}
               </span>
               <Badge color={TXN_TYPE_COLOR[selectedRow.type]} dot>
                 {t(`warehouse.type.${selectedRow.type}`)}
               </Badge>
             </div>
-            <div className="flex items-center gap-4 text-xs text-slate-500">
+            <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
               <span>
-                <span className="font-semibold tabular-nums text-slate-700">{formatNumber(selectedRow.txn_count, lang)}</span>{' '}
+                <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{formatNumber(selectedRow.txn_count, lang)}</span>{' '}
                 {t('warehouse.flow.movements')}
               </span>
               <span>
                 {t('warehouse.flow.qty_total')}:{' '}
-                <span className="font-semibold tabular-nums text-slate-700">{formatNumber(selectedRow.total_qty, lang)}</span>
+                <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{formatNumber(selectedRow.total_qty, lang)}</span>
               </span>
             </div>
           </div>
@@ -319,16 +319,16 @@ export function TransferFlowView({
               {routeTxns.length === 0 ? (
                 <EmptyState title={t('warehouse.txn.empty')} icon={<ArrowLeftRight className="h-8 w-8" />} />
               ) : (
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y divide-slate-100 dark:divide-slate-700">
                   {routeTxns.map((tx) => (
                     <li key={tx.id}>
                       <button
                         onClick={() => onOpenTxn(tx)}
                         className="flex w-full items-center gap-3 px-5 py-3 text-start transition hover:bg-primary/5"
                       >
-                        <span className="w-28 shrink-0 font-mono text-xs font-semibold text-slate-500">{tx.serial_number}</span>
-                        <span className="w-24 shrink-0 text-xs text-slate-500 tabular-nums">{formatDate(tx.date, lang)}</span>
-                        <span className="min-w-0 flex-1 truncate text-xs text-slate-400">{tx.notes || '—'}</span>
+                        <span className="w-28 shrink-0 font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">{tx.serial_number}</span>
+                        <span className="w-24 shrink-0 text-xs text-slate-500 dark:text-slate-400 tabular-nums">{formatDate(tx.date, lang)}</span>
+                        <span className="min-w-0 flex-1 truncate text-xs text-slate-400 dark:text-slate-400">{tx.notes || '—'}</span>
                       </button>
                     </li>
                   ))}
@@ -357,10 +357,10 @@ function NodeCard({ node, index }: { node: FlowNode; index: number }) {
     ? t(isExternalIn ? 'warehouse.flow.external_in' : 'warehouse.flow.external_out')
     : shortWarehouseName(pickName(node.warehouse!, lang))
   const tileClass = node.external
-    ? 'border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400'
+    ? 'border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/60 text-slate-400 dark:text-slate-400'
     : isProject
-      ? 'bg-sky-50 text-sky-600'
-      : 'bg-slate-100 text-slate-600'
+      ? 'bg-sky-50 dark:bg-sky-500/15 text-sky-600 dark:text-sky-300'
+      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
 
   return (
     <div className="absolute inset-x-0" style={{ top: index * ROW_H, height: ROW_H }}>
@@ -370,8 +370,8 @@ function NodeCard({ node, index }: { node: FlowNode; index: number }) {
             <Icon className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-slate-800">{name}</p>
-            <p className="mt-0.5 truncate text-xs text-slate-400 tabular-nums">
+            <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{name}</p>
+            <p className="mt-0.5 truncate text-xs text-slate-400 dark:text-slate-400 tabular-nums">
               {t('warehouse.flow.sent')} {formatNumber(node.sent, lang)} · {t('warehouse.flow.received')}{' '}
               {formatNumber(node.received, lang)}
             </p>

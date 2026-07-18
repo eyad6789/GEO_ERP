@@ -9,6 +9,7 @@ import {
   Cell,
 } from 'recharts'
 import { useApi } from '../../hooks/useResource'
+import { useChartTheme } from '../../hooks/useChartTheme'
 import { useT, useLang } from '../../context/LangContext'
 import { KpiCard, ChartCard, CHART_COLORS } from '../../components/shared'
 import { Spinner } from '../../components/ui'
@@ -31,6 +32,7 @@ interface BalanceSheet {
 export function AccountingTab({ companyId }: { companyId: string }) {
   const t = useT()
   const { lang } = useLang()
+  const ct = useChartTheme()
 
   const { data: pnl, loading: pnlLoading } = useApi<CompanyPnl>('/reports/company-pnl', { company_id: companyId })
   const { data: bs, loading: bsLoading } = useApi<BalanceSheet>('/reports/balance-sheet', { company_id: companyId })
@@ -109,8 +111,8 @@ export function AccountingTab({ companyId }: { companyId: string }) {
         className={
           'flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium ring-1 ' +
           (bs?.balanced
-            ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-            : 'bg-amber-50 text-amber-700 ring-amber-200')
+            ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-200 dark:ring-emerald-500/30'
+            : 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-amber-200 dark:ring-amber-500/30')
         }
       >
         {bs?.balanced ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
@@ -121,12 +123,12 @@ export function AccountingTab({ companyId }: { companyId: string }) {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <ChartCard title={t('companies.acc.overview')} icon={<BarChart3 className="h-4 w-4" />} height={280}>
           <BarChart data={pnlData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef2f7" />
-            <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
-            <YAxis tickFormatter={(v) => formatCompact(Number(v), lang)} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={56} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={ct.grid} />
+            <XAxis dataKey="name" tick={{ fontSize: 12, fill: ct.axis }} axisLine={false} tickLine={false} />
+            <YAxis tickFormatter={(v) => formatCompact(Number(v), lang)} tick={{ fontSize: 11, fill: ct.axis }} axisLine={false} tickLine={false} width={56} />
             <Tooltip
               formatter={(v) => formatCurrency(Number(v), 'IQD', lang)}
-              contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 13 }}
+              contentStyle={{ borderRadius: 12, border: `1px solid ${ct.tooltipBorder}`, fontSize: 13 }}
             />
             <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={70}>
               {pnlData.map((d, i) => (
@@ -138,12 +140,12 @@ export function AccountingTab({ companyId }: { companyId: string }) {
 
         <ChartCard title={t('companies.acc.composition')} icon={<Scale className="h-4 w-4" />} height={280}>
           <BarChart data={balanceData} layout="vertical" margin={{ top: 10, right: 16, left: 10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#eef2f7" />
-            <XAxis type="number" tickFormatter={(v) => formatCompact(Number(v), lang)} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-            <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} width={90} />
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={ct.grid} />
+            <XAxis type="number" tickFormatter={(v) => formatCompact(Number(v), lang)} tick={{ fontSize: 11, fill: ct.axis }} axisLine={false} tickLine={false} />
+            <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: ct.axis }} axisLine={false} tickLine={false} width={90} />
             <Tooltip
               formatter={(v) => formatCurrency(Number(v), 'IQD', lang)}
-              contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 13 }}
+              contentStyle={{ borderRadius: 12, border: `1px solid ${ct.tooltipBorder}`, fontSize: 13 }}
             />
             <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={36}>
               {balanceData.map((d, i) => (

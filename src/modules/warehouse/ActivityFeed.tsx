@@ -12,13 +12,13 @@ import { shortWarehouseName, TXN_TYPE_COLOR, TXN_TYPES } from './helpers'
 // Literal Tailwind classes per movement type — same color family as
 // TXN_TYPE_COLOR/Badge (never built dynamically, so purge always sees them).
 const TYPE_CHIP_ACTIVE: Record<InventoryTxnType, string> = {
-  IN: 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200',
-  OUT: 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-200',
-  TRANSFER: 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200',
-  RETURN: 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200',
-  ADJUST: 'bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-200',
+  IN: 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-1 ring-inset ring-emerald-200 dark:ring-emerald-500/30',
+  OUT: 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-300 ring-1 ring-inset ring-red-200 dark:ring-red-500/30',
+  TRANSFER: 'bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 ring-1 ring-inset ring-blue-200 dark:ring-blue-500/30',
+  RETURN: 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-amber-200 dark:ring-amber-500/30',
+  ADJUST: 'bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 ring-1 ring-inset ring-purple-200 dark:ring-purple-500/30',
 }
-const CHIP_INACTIVE = 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+const CHIP_INACTIVE = 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200'
 const CHIP_ALL_ACTIVE = 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/20'
 
 interface ActivityItemLine {
@@ -114,7 +114,7 @@ export function ActivityFeed({
   }
 
   const chip = (label: string) => (
-    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">{label}</span>
+    <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">{label}</span>
   )
 
   return (
@@ -152,10 +152,10 @@ export function ActivityFeed({
         {groups.map(([dayKey, dayRows]) => (
           <div key={dayKey}>
             <div className="mb-2 flex items-center gap-3">
-              <span className="shrink-0 text-xs font-semibold text-slate-500">{dayLabel(dayKey)}</span>
-              <span className="h-px flex-1 bg-slate-200" />
+              <span className="shrink-0 text-xs font-semibold text-slate-500 dark:text-slate-400">{dayLabel(dayKey)}</span>
+              <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
             </div>
-            <div className="card divide-y divide-slate-100">
+            <div className="card divide-y divide-slate-100 dark:divide-slate-700">
               {dayRows.map((r) => {
                 const txn = txnMap.get(r.id)
                 const clickable = Boolean(txn)
@@ -165,22 +165,22 @@ export function ActivityFeed({
                 const route =
                   r.type === 'TRANSFER' ? (
                     <>
-                      <span className="text-xs text-slate-400">{t('warehouse.track.from')}</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-400">{t('warehouse.track.from')}</span>
                       {chip(whName(r.from_warehouse_id))}
-                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400 rtl:rotate-180" />
+                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-400 rtl:rotate-180" />
                       {chip(whName(r.warehouse_id))}
                     </>
                   ) : r.type === 'IN' ? (
                     <>
-                      <span className="text-xs text-slate-400">{t('warehouse.flow.external_in')}</span>
-                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400 rtl:rotate-180" />
+                      <span className="text-xs text-slate-400 dark:text-slate-400">{t('warehouse.flow.external_in')}</span>
+                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-400 rtl:rotate-180" />
                       {chip(whName(r.warehouse_id))}
                     </>
                   ) : r.type === 'OUT' ? (
                     <>
                       {chip(whName(r.warehouse_id))}
-                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400 rtl:rotate-180" />
-                      <span className="text-xs text-slate-400">{t('warehouse.flow.external_out')}</span>
+                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-400 rtl:rotate-180" />
+                      <span className="text-xs text-slate-400 dark:text-slate-400">{t('warehouse.flow.external_out')}</span>
                     </>
                   ) : (
                     chip(whName(r.warehouse_id))
@@ -194,21 +194,21 @@ export function ActivityFeed({
                       </Badge>
                       <span className="flex flex-wrap items-center gap-1.5">{route}</span>
                     </div>
-                    <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-700">
+                    <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-700 dark:text-slate-200">
                       {itemsShown.map((it, idx) => (
                         <span key={idx} className="inline-flex items-center gap-1">
                           {pickName({ name_ar: it.name_ar, name_en: it.name_en }, lang)}
-                          <span className="font-bold tabular-nums text-slate-900">{formatNumber(it.quantity, lang)}</span>
-                          <span className="text-xs font-normal text-slate-400">{it.uom}</span>
+                          <span className="font-bold tabular-nums text-slate-900 dark:text-slate-100">{formatNumber(it.quantity, lang)}</span>
+                          <span className="text-xs font-normal text-slate-400 dark:text-slate-400">{it.uom}</span>
                         </span>
                       ))}
                       {moreCount > 0 && (
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-slate-400 dark:text-slate-400">
                           +{formatNumber(moreCount, lang)} {t('warehouse.activity.more_items')}
                         </span>
                       )}
                     </p>
-                    <p className="mt-1.5 truncate text-xs text-slate-400">
+                    <p className="mt-1.5 truncate text-xs text-slate-400 dark:text-slate-400">
                       <span className="font-mono">{r.serial_number}</span>
                       {r.notes && <span> · {r.notes}</span>}
                     </p>

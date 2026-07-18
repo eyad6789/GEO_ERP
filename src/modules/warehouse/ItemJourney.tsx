@@ -77,9 +77,9 @@ export function ItemJourney({
             <Icon className="h-6 w-6" />
           </span>
           <div className="min-w-0">
-            <h3 className="truncate text-lg font-bold text-slate-800">{pickName(item, lang)}</h3>
+            <h3 className="truncate text-lg font-bold text-slate-800 dark:text-slate-100">{pickName(item, lang)}</h3>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              <span className="font-mono text-xs font-semibold text-slate-500">{item.code}</span>
+              <span className="font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">{item.code}</span>
               <span
                 className={cn(
                   'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset',
@@ -95,7 +95,7 @@ export function ItemJourney({
                 )}
               </span>
               {item.size_label && (
-                <span dir="ltr" className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                <span dir="ltr" className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
                   {item.size_label}
                 </span>
               )}
@@ -104,24 +104,24 @@ export function ItemJourney({
         </div>
 
         <div className="shrink-0 text-end">
-          <p className="text-xs font-medium text-slate-400">{t('warehouse.track.last_move')}</p>
+          <p className="text-xs font-medium text-slate-400 dark:text-slate-400">{t('warehouse.track.last_move')}</p>
           {lastMove ? (
             <div className="mt-1.5 flex items-center justify-end gap-2">
               <Badge color={TXN_TYPE_COLOR[lastMove.type]} dot>
                 {t(`warehouse.type.${lastMove.type}`)}
               </Badge>
               <span className="text-slate-300">·</span>
-              <span className="text-sm font-semibold tabular-nums text-slate-600">{formatDate(lastMove.date, lang)}</span>
+              <span className="text-sm font-semibold tabular-nums text-slate-600 dark:text-slate-300">{formatDate(lastMove.date, lang)}</span>
             </div>
           ) : (
-            <p className="mt-1.5 text-sm text-slate-400">{t('warehouse.track.no_moves')}</p>
+            <p className="mt-1.5 text-sm text-slate-400 dark:text-slate-400">{t('warehouse.track.no_moves')}</p>
           )}
         </div>
       </div>
 
       {/* Where is it now */}
       <div>
-        <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
           <MapPin className="h-4 w-4 text-primary" />
           {t('warehouse.track.now_title')}
         </h4>
@@ -139,18 +139,18 @@ export function ItemJourney({
                   <span
                     className={cn(
                       'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
-                      isProject ? 'bg-sky-50 text-sky-600' : 'bg-slate-100 text-slate-600',
+                      isProject ? 'bg-sky-50 dark:bg-sky-500/15 text-sky-600 dark:text-sky-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300',
                     )}
                   >
                     <WIcon className="h-5 w-5" />
                   </span>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-500">
+                    <p className="truncate text-sm font-medium text-slate-500 dark:text-slate-400">
                       {shortWarehouseName(pickName({ name_ar: s.name_ar, name_en: s.name_en ?? undefined }, lang))}
                     </p>
-                    <p className="text-2xl font-bold tabular-nums text-slate-800">
+                    <p className="text-2xl font-bold tabular-nums text-slate-800 dark:text-slate-100">
                       {formatNumber(s.quantity, lang)}
-                      <span className="ms-1 text-xs font-normal text-slate-400">{item.uom}</span>
+                      <span className="ms-1 text-xs font-normal text-slate-400 dark:text-slate-400">{item.uom}</span>
                     </p>
                   </div>
                 </div>
@@ -174,7 +174,7 @@ export function ItemJourney({
 
       {/* Item journey — the story, newest first */}
       <div>
-        <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
           <Route className="h-4 w-4 text-primary" />
           {t('warehouse.track.history_title')}
         </h4>
@@ -221,11 +221,11 @@ export function MovementTimeline({
   }
 
   const chip = (label: string) => (
-    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">{label}</span>
+    <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">{label}</span>
   )
 
   return (
-    <ol className={cn('relative border-s-2 border-slate-200', compact ? 'ms-3' : 'ms-4')}>
+    <ol className={cn('relative border-s-2 border-slate-200 dark:border-slate-700', compact ? 'ms-3' : 'ms-4')}>
       {moves.map((m) => {
         const txn = txnMap.get(m.id)
         const clickable = Boolean(txn && onOpenMove)
@@ -233,22 +233,22 @@ export function MovementTimeline({
         const route =
           m.type === 'TRANSFER' ? (
             <>
-              <span className="text-xs text-slate-400">{t('warehouse.track.from')}</span>
+              <span className="text-xs text-slate-400 dark:text-slate-400">{t('warehouse.track.from')}</span>
               {chip(whName(m.from_warehouse_id))}
-              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400 rtl:rotate-180" />
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-400 rtl:rotate-180" />
               {chip(whName(m.warehouse_id))}
             </>
           ) : m.type === 'IN' ? (
             <>
-              <span className="text-xs text-slate-400">{t('warehouse.flow.external_in')}</span>
-              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400 rtl:rotate-180" />
+              <span className="text-xs text-slate-400 dark:text-slate-400">{t('warehouse.flow.external_in')}</span>
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-400 rtl:rotate-180" />
               {chip(whName(m.warehouse_id))}
             </>
           ) : m.type === 'OUT' ? (
             <>
               {chip(whName(m.warehouse_id))}
-              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400 rtl:rotate-180" />
-              <span className="text-xs text-slate-400">{t('warehouse.flow.external_out')}</span>
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-400 rtl:rotate-180" />
+              <span className="text-xs text-slate-400 dark:text-slate-400">{t('warehouse.flow.external_out')}</span>
             </>
           ) : (
             chip(whName(m.warehouse_id))
@@ -260,13 +260,13 @@ export function MovementTimeline({
               <Badge color={TXN_TYPE_COLOR[m.type]} dot>
                 {t(`warehouse.type.${m.type}`)}
               </Badge>
-              <span className="font-bold tabular-nums text-slate-800">
+              <span className="font-bold tabular-nums text-slate-800 dark:text-slate-100">
                 {formatNumber(m.quantity, lang)}
-                <span className="ms-1 text-xs font-normal text-slate-400">{m.uom}</span>
+                <span className="ms-1 text-xs font-normal text-slate-400 dark:text-slate-400">{m.uom}</span>
               </span>
             </div>
             <p className="mt-1.5 flex flex-wrap items-center gap-1.5">{route}</p>
-            <p className="mt-1.5 truncate text-xs text-slate-400">
+            <p className="mt-1.5 truncate text-xs text-slate-400 dark:text-slate-400">
               {formatDate(m.date, lang)}
               {m.notes && <span> · {m.notes}</span>}
             </p>
@@ -277,7 +277,7 @@ export function MovementTimeline({
           <li key={m.id} className={cn('relative ps-6', compact ? 'pb-4 last:pb-0' : 'pb-6 last:pb-0')}>
             <span
               className={cn(
-                'absolute -start-[7px] top-1 h-3 w-3 rounded-full ring-4 ring-white',
+                'absolute -start-[7px] top-1 h-3 w-3 rounded-full ring-4 ring-white dark:ring-slate-800',
                 MOVE_DOT_COLOR[m.type],
               )}
             />

@@ -207,7 +207,7 @@ export function NewVoucherDialog({
             onClick={() => setType('RECEIPT')}
             className={
               'flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-semibold transition ' +
-              (isReceipt ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50')
+              (isReceipt ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800')
             }
           >
             <ArrowDownToLine className="h-5 w-5" />
@@ -218,7 +218,7 @@ export function NewVoucherDialog({
             onClick={() => setType('PAYMENT')}
             className={
               'flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-semibold transition ' +
-              (!isReceipt ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50')
+              (!isReceipt ? 'border-red-400 bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-300' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800')
             }
           >
             <ArrowUpFromLine className="h-5 w-5" />
@@ -284,18 +284,18 @@ export function NewVoucherDialog({
 
         {/* Live entry preview */}
         {amt > 0 && counterAccount && (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
-            <p className="mb-2 text-xs font-semibold text-slate-500">{t('accounting.voucher.preview')}</p>
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-3 text-sm">
+            <p className="mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400">{t('accounting.voucher.preview')}</p>
             <div className="space-y-1 font-mono text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-emerald-700">{nameOf(debitAccount)}</span>
-                <span className="tabular-nums text-slate-600">
+                <span className="text-emerald-700 dark:text-emerald-300">{nameOf(debitAccount)}</span>
+                <span className="tabular-nums text-slate-600 dark:text-slate-300">
                   {t('accounting.new.line_debit')} {formatCurrency(amt, currency, lang)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sky-700">{nameOf(creditAccount)}</span>
-                <span className="tabular-nums text-slate-600">
+                <span className="text-sky-700 dark:text-sky-300">{nameOf(creditAccount)}</span>
+                <span className="tabular-nums text-slate-600 dark:text-slate-300">
                   {t('accounting.new.line_credit')} {formatCurrency(amt, currency, lang)}
                 </span>
               </div>

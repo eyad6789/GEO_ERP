@@ -149,7 +149,7 @@ export default function HrShell() {
 
       {/* Month + employee filters (stats-bearing tabs only) */}
       {tab !== 'departments' && (
-        <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+        <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5">
           <MonthPicker value={month} onChange={setMonth} />
           <div className="ms-auto w-full sm:w-64">
             <SearchSelect

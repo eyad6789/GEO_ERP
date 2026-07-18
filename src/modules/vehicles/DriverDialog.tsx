@@ -134,7 +134,7 @@ export function DriverDialog({
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-info/10 text-info">
               <IdCard className="h-4 w-4" />
             </span>
-            <span className="font-bold text-slate-800">{driverName}</span>
+            <span className="font-bold text-slate-800 dark:text-slate-100">{driverName}</span>
             <Badge color="blue">{cars.length} {t('fleet.driver.cars_count')}</Badge>
           </span>
         }
@@ -143,7 +143,7 @@ export function DriverDialog({
         <div className="max-h-[64vh] space-y-5 overflow-y-auto pe-1">
           {/* Driver details — name, phone, national ID, license no. & expiry */}
           <section>
-            <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
               <User className="h-4 w-4 text-primary" />{t('fleet.driver.details')}
             </h4>
             <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
@@ -156,26 +156,26 @@ export function DriverDialog({
                 { icon: <Car className="h-3.5 w-3.5" />, label: t('fleet.driver.address'), value: profile.address },
               ].map((f, i) => (
                 <div key={i} className="flex items-start justify-between gap-3 border-b border-slate-50 py-1.5 last:border-0">
-                  <span className="flex shrink-0 items-center gap-1.5 text-xs text-slate-400">{f.icon}{f.label}</span>
-                  <span className={'text-sm font-medium text-slate-700 ' + (f.value ? '' : 'text-slate-300')} dir={f.ltr ? 'ltr' : undefined}>
+                  <span className="flex shrink-0 items-center gap-1.5 text-xs text-slate-400 dark:text-slate-400">{f.icon}{f.label}</span>
+                  <span className={'text-sm font-medium text-slate-700 dark:text-slate-200 ' + (f.value ? '' : 'text-slate-300')} dir={f.ltr ? 'ltr' : undefined}>
                     {f.value || '—'}
                   </span>
                 </div>
               ))}
             </div>
-            <p className="mt-1.5 text-[11px] text-slate-400">{t('fleet.driver.edit_hint')}</p>
+            <p className="mt-1.5 text-[11px] text-slate-400 dark:text-slate-400">{t('fleet.driver.edit_hint')}</p>
           </section>
 
           {/* Cars driven */}
           <section>
-            <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
               <Car className="h-4 w-4 text-primary" />{t('fleet.driver.cars')}
             </h4>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {cars.map((c) => (
-                <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2">
-                  <span className="truncate text-sm font-medium text-slate-700" dir="ltr">{c.plate_number}</span>
-                  <span className="truncate text-xs text-slate-400">{pickName(c, lang)}</span>
+                <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 dark:border-slate-700/70 bg-slate-50/60 px-3 py-2">
+                  <span className="truncate text-sm font-medium text-slate-700 dark:text-slate-200" dir="ltr">{c.plate_number}</span>
+                  <span className="truncate text-xs text-slate-400 dark:text-slate-400">{pickName(c, lang)}</span>
                 </div>
               ))}
             </div>
@@ -184,7 +184,7 @@ export function DriverDialog({
           {/* Driver's own documents */}
           <section>
             <div className="mb-2 flex items-center justify-between gap-2">
-              <h4 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <h4 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 <IdCard className="h-4 w-4 text-primary" />{t('fleet.driver.docs')}
               </h4>
               {canEdit && primaryCar && (
@@ -196,33 +196,33 @@ export function DriverDialog({
                 </>
               )}
             </div>
-            <p className="mb-2 text-[11px] text-slate-400">{t('fleet.driver.doc_hint')}</p>
+            <p className="mb-2 text-[11px] text-slate-400 dark:text-slate-400">{t('fleet.driver.doc_hint')}</p>
             {docs.length === 0 ? (
-              <p className="rounded-lg bg-slate-50 py-6 text-center text-sm text-slate-400">{t('fleet.driver.no_docs')}</p>
+              <p className="rounded-lg bg-slate-50 dark:bg-slate-800/60 py-6 text-center text-sm text-slate-400 dark:text-slate-400">{t('fleet.driver.no_docs')}</p>
             ) : (
               <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
                 {docs.map((d, i) => (
-                  <div key={d.id} className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
-                    <button type="button" onClick={() => setViewerIdx(i)} title={d.title} className="block h-32 w-full bg-slate-50">
+                  <div key={d.id} className="group relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm transition hover:shadow-md">
+                    <button type="button" onClick={() => setViewerIdx(i)} title={d.title} className="block h-32 w-full bg-slate-50 dark:bg-slate-800/60">
                       {isImg(d.mime) ? (
                         <img src={fileUrl(d)} alt={d.title} loading="lazy" className="h-32 w-full object-cover" />
                       ) : isPdf(d.mime) ? (
-                        <span className="pointer-events-none block h-32 w-full overflow-hidden bg-white">
+                        <span className="pointer-events-none block h-32 w-full overflow-hidden bg-white dark:bg-slate-800">
                           <object data={`${fileUrl(d)}#toolbar=0&navpanes=0&view=FitH`} type="application/pdf" className="h-40 w-full">
                             <span className="flex h-32 w-full flex-col items-center justify-center gap-1 text-rose-500"><FileText className="h-7 w-7" /><span className="text-[10px] font-semibold">PDF</span></span>
                           </object>
                         </span>
                       ) : (
-                        <span className="flex h-32 w-full flex-col items-center justify-center gap-1 text-slate-400"><FileText className="h-7 w-7" /><span className="text-[10px] font-semibold uppercase">{d.file_name.split('.').pop()}</span></span>
+                        <span className="flex h-32 w-full flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-400"><FileText className="h-7 w-7" /><span className="text-[10px] font-semibold uppercase">{d.file_name.split('.').pop()}</span></span>
                       )}
                       <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/30 group-hover:opacity-100"><ZoomIn className="h-6 w-6 text-white drop-shadow" /></span>
                     </button>
                     {canEdit && (
-                      <button type="button" onClick={() => del(d.id)} title={t('fleet.mod.delete')} className="absolute end-1.5 top-1.5 rounded-lg bg-white/90 p-1 text-slate-400 opacity-0 shadow transition hover:text-danger group-hover:opacity-100">
+                      <button type="button" onClick={() => del(d.id)} title={t('fleet.mod.delete')} className="absolute end-1.5 top-1.5 rounded-lg bg-white/90 p-1 text-slate-400 dark:text-slate-400 opacity-0 shadow transition hover:text-danger group-hover:opacity-100">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     )}
-                    <div className="truncate px-2 py-1.5 text-[11px] text-slate-500" title={d.title}>{d.title}</div>
+                    <div className="truncate px-2 py-1.5 text-[11px] text-slate-500 dark:text-slate-400" title={d.title}>{d.title}</div>
                   </div>
                 ))}
               </div>
@@ -248,7 +248,7 @@ export function DriverDialog({
             {isImg(viewer.mime) ? (
               <img src={fileUrl(viewer)} alt={viewer.title} className="max-h-full max-w-full rounded-lg object-contain shadow-2xl" />
             ) : (
-              <iframe src={fileUrl(viewer)} title={viewer.title} className="h-full w-full max-w-4xl rounded-lg bg-white shadow-2xl" />
+              <iframe src={fileUrl(viewer)} title={viewer.title} className="h-full w-full max-w-4xl rounded-lg bg-white dark:bg-slate-800 shadow-2xl" />
             )}
             {docs.length > 1 && (
               <button type="button" onClick={() => setViewerIdx((i) => (i! - 1 + docs.length) % docs.length)} className="absolute end-2 z-10 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/25"><ChevronRight className="h-6 w-6" /></button>

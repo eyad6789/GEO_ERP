@@ -113,7 +113,7 @@ export function MapTab() {
           icon={<MapPin className="h-4 w-4" />}
           action={
             /* Legend row */
-            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
               {/* Vehicle status dots */}
               {(['ACTIVE', 'MAINTENANCE', 'INACTIVE'] as const).map((s) => (
                 <span key={s} className="flex items-center gap-1.5">
@@ -152,7 +152,7 @@ export function MapTab() {
         />
 
         {canEdit && (
-          <div className="border-b border-slate-100 bg-primary/5 px-5 py-2 text-xs font-medium text-primary">
+          <div className="border-b border-slate-100 dark:border-slate-700/70 bg-primary/5 px-5 py-2 text-xs font-medium text-primary">
             {t('fleet.map.drag_hint')}
           </div>
         )}
@@ -162,7 +162,7 @@ export function MapTab() {
           {data ? (
             <LeafletMap data={data} height={500} editable={canEdit} onVehicleMove={onVehicleMove} onVehicleOpen={onVehicleOpen} />
           ) : (
-            <div className="flex items-center justify-center py-20 text-slate-400 text-sm">
+            <div className="flex items-center justify-center py-20 text-slate-400 dark:text-slate-400 text-sm">
               {t('fleet.map.no_data')}
             </div>
           )}

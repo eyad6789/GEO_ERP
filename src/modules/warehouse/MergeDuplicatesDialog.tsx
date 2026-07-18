@@ -91,7 +91,7 @@ export function MergeDuplicatesDialog({
         <EmptyState icon={<Sparkles className="h-7 w-7" />} title={t('warehouse.merge.empty')} />
       ) : (
         <div className="flex flex-col gap-4">
-          <p className="text-sm font-medium text-slate-500">
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
             {formatNumber(list.length, lang)} {t('warehouse.merge.groups')}
           </p>
           {list.map((items) => {
@@ -102,15 +102,15 @@ export function MergeDuplicatesDialog({
             const isMerging = mergingKey === key
 
             return (
-              <div key={key} className="rounded-xl border border-slate-200 p-4">
+              <div key={key} className="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
                 <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <span className="font-semibold text-slate-800">{first.name_ar}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">{first.name_ar}</span>
                   {first.size_label && (
-                    <span dir="ltr" className="text-sm text-slate-500">
+                    <span dir="ltr" className="text-sm text-slate-500 dark:text-slate-400">
                       {first.size_label}
                     </span>
                   )}
-                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+                  <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
                     {categoryLabel(taxonomy, first.category, lang)}
                   </span>
                 </div>
@@ -123,7 +123,7 @@ export function MergeDuplicatesDialog({
                         key={item.id}
                         className={cn(
                           'flex cursor-pointer items-center gap-3 rounded-lg border p-2.5 transition',
-                          isSurvivor ? 'border-primary/40 bg-primary/5' : 'border-slate-200 hover:bg-slate-50',
+                          isSurvivor ? 'border-primary/40 bg-primary/5' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800',
                         )}
                       >
                         <span className="flex shrink-0 items-center gap-1.5">
@@ -137,19 +137,19 @@ export function MergeDuplicatesDialog({
                           <span
                             className={cn(
                               'text-xs font-medium',
-                              isSurvivor ? 'font-semibold text-primary' : 'text-slate-400',
+                              isSurvivor ? 'font-semibold text-primary' : 'text-slate-400 dark:text-slate-400',
                             )}
                           >
                             {t('warehouse.merge.keep')}
                           </span>
                         </span>
-                        <span className="shrink-0 font-mono text-xs text-slate-500">{item.code}</span>
+                        <span className="shrink-0 font-mono text-xs text-slate-500 dark:text-slate-400">{item.code}</span>
                         {specsVary && item.spec && (
-                          <span className="truncate text-xs text-slate-400">{item.spec}</span>
+                          <span className="truncate text-xs text-slate-400 dark:text-slate-400">{item.spec}</span>
                         )}
-                        <span className="ms-auto shrink-0 text-sm font-semibold tabular-nums text-slate-700">
+                        <span className="ms-auto shrink-0 text-sm font-semibold tabular-nums text-slate-700 dark:text-slate-200">
                           {formatNumber(item.quantity, lang)}{' '}
-                          <span className="font-normal text-slate-400">{item.uom}</span>
+                          <span className="font-normal text-slate-400 dark:text-slate-400">{item.uom}</span>
                         </span>
                       </label>
                     )
@@ -160,7 +160,7 @@ export function MergeDuplicatesDialog({
                   <Button size="sm" onClick={() => doMerge(items)} disabled={isMerging}>
                     {isMerging ? `${t('warehouse.merge.do')}…` : t('warehouse.merge.do')}
                   </Button>
-                  <p className="text-xs text-slate-400">{t('warehouse.merge.desc')}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-400">{t('warehouse.merge.desc')}</p>
                 </div>
               </div>
             )

@@ -68,8 +68,8 @@ export function PartiesTab() {
   const totalAP = payables.reduce((s, r) => s + r.balance, 0)
 
   const columns = (accent: string): Column<PartyRow>[] => [
-    { key: 'code', header: t('accounting.chart.code'), width: '80px', render: (r) => <span className="font-mono text-xs font-semibold text-slate-500">{r.code}</span> },
-    { key: 'name', header: t('accounting.chart.name'), render: (r) => <span className="text-slate-700">{r.name}</span> },
+    { key: 'code', header: t('accounting.chart.code'), width: '80px', render: (r) => <span className="font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">{r.code}</span> },
+    { key: 'name', header: t('accounting.chart.name'), render: (r) => <span className="text-slate-700 dark:text-slate-200">{r.name}</span> },
     {
       key: 'balance',
       header: t('accounting.parties.balance'),
@@ -92,7 +92,7 @@ export function PartiesTab() {
         <Card className="overflow-hidden">
           <CardHeader title={t('accounting.parties.receivables')} icon={<Users className="h-5 w-5" />} />
           <ArabicTable
-            columns={columns('text-emerald-700')}
+            columns={columns('text-emerald-700 dark:text-emerald-300')}
             data={receivables}
             loading={loading}
             rowKey={(r) => r.code}
@@ -104,7 +104,7 @@ export function PartiesTab() {
         <Card className="overflow-hidden">
           <CardHeader title={t('accounting.parties.payables')} icon={<Truck className="h-5 w-5" />} />
           <ArabicTable
-            columns={columns('text-amber-700')}
+            columns={columns('text-amber-700 dark:text-amber-300')}
             data={payables}
             loading={loading}
             rowKey={(r) => r.code}
@@ -116,7 +116,7 @@ export function PartiesTab() {
         <Card className="overflow-hidden">
           <CardHeader title={t('accounting.parties.contractors')} icon={<Truck className="h-5 w-5" />} />
           <ArabicTable
-            columns={columns('text-violet-700')}
+            columns={columns('text-violet-700 dark:text-violet-300')}
             data={contractors}
             loading={loading}
             rowKey={(r) => r.code}

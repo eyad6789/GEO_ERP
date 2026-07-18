@@ -422,7 +422,7 @@ export function NewEntryDialog({
         <div className="flex w-full items-center justify-between gap-3">
           <div className="flex flex-col gap-1">
             <BalanceIndicator balanced={balanced} totalDebit={displayDebit} totalCredit={displayCredit} diff={displayDiff} currency={displayCurrency} lang={lang} t={t} />
-            <span className="text-[11px] text-slate-400">{t('accounting.new.shortcuts')}</span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-400">{t('accounting.new.shortcuts')}</span>
           </div>
           <div className="flex items-center gap-2">
             {isEdit && (
@@ -450,7 +450,7 @@ export function NewEntryDialog({
       <div className="space-y-5" onKeyDown={onFormKeyDown} onKeyUp={formNav.onKeyUp}>
         {/* Type toggle: قيد / سند قبض / سند صرف (new entries only) */}
         {!isEdit && (
-          <div className="flex gap-1.5 rounded-xl bg-slate-100 p-1">
+          <div className="flex gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
             {([
               ['JOURNAL', t('accounting.vouchers.journal')],
               ['RECEIPT', t('accounting.vouchers.receipt')],
@@ -462,7 +462,7 @@ export function NewEntryDialog({
                 onClick={() => changeMode(m)}
                 className={
                   'flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ' +
-                  (mode === m ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700')
+                  (mode === m ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700')
                 }
               >
                 {label}
@@ -496,7 +496,7 @@ export function NewEntryDialog({
                 <button
                   type="button"
                   onClick={() => onOpenExisting?.(existingEntry.id)}
-                  className="mt-1.5 flex w-full items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-1.5 text-start text-xs font-medium text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100"
+                  className="mt-1.5 flex w-full items-center gap-1.5 rounded-lg bg-amber-50 dark:bg-amber-500/15 px-3 py-1.5 text-start text-xs font-medium text-amber-800 dark:text-amber-200 ring-1 ring-amber-200 dark:ring-amber-500/30 transition hover:bg-amber-100"
                 >
                   <BookOpen className="h-3.5 w-3.5 shrink-0" />
                   {t('accounting.new.doc_exists')}
@@ -510,7 +510,7 @@ export function NewEntryDialog({
         {/* Lines editor: الشركة | المشروع | الحساب | مدين | دائن | البيان | العملة | سعر العملة */}
         <section>
           <div className="mb-2 flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-slate-700">{t('accounting.new.lines')}</h4>
+            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('accounting.new.lines')}</h4>
             <Button variant="subtle" size="sm" onClick={addLine}>
               <Plus className="h-4 w-4" />
               {t('accounting.new.add_line')}
@@ -519,9 +519,9 @@ export function NewEntryDialog({
 
           {/* Column order mirrors the legacy entry grid the accountant knows:
               م | مدين | دائن | الحساب | الشركة | المشروع | الآلية | البيان | العملة | سعرها | القيمة */}
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
             <table className="w-full min-w-[1750px] text-sm">
-              <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 <tr>
                   <th className="w-8 px-2 py-2.5 text-center">{t('accounting.new.line_no')}</th>
                   <th className="w-28 px-2 py-2.5 text-start">{t('accounting.new.line_debit')}</th>
@@ -537,10 +537,10 @@ export function NewEntryDialog({
                   <th className="w-10 px-1 py-2.5" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {lines.map((line, idx) => (
                   <tr key={line.uid} className="align-top">
-                    <td className="px-2 py-3.5 text-center text-xs tabular-nums text-slate-400">{idx + 1}</td>
+                    <td className="px-2 py-3.5 text-center text-xs tabular-nums text-slate-400 dark:text-slate-400">{idx + 1}</td>
                     <td className="px-2 py-2">
                       <NumberInput
                         className="text-start tabular-nums"
@@ -643,7 +643,7 @@ export function NewEntryDialog({
                       />
                     </td>
                     {/* القيمة — the line's dinar value (amount × rate), read-only */}
-                    <td className="px-2 py-3.5 text-end text-xs tabular-nums text-slate-500">
+                    <td className="px-2 py-3.5 text-end text-xs tabular-nums text-slate-500 dark:text-slate-400">
                       {num(line.debit) || num(line.credit)
                         ? formatCurrency((num(line.debit) || num(line.credit)) * lineRate(line), 'IQD', lang)
                         : <span className="text-slate-300">—</span>}
@@ -655,7 +655,7 @@ export function NewEntryDialog({
                         title={t('accounting.new.remove_line')}
                         onClick={() => removeLine(line.uid)}
                         disabled={lines.length <= 2}
-                        className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-danger disabled:cursor-not-allowed disabled:opacity-30"
+                        className="rounded-lg p-1.5 text-slate-400 dark:text-slate-400 transition hover:bg-red-50 hover:text-danger disabled:cursor-not-allowed disabled:opacity-30"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -663,11 +663,11 @@ export function NewEntryDialog({
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="bg-slate-50 font-semibold text-slate-700">
+              <tfoot className="bg-slate-50 dark:bg-slate-800/60 font-semibold text-slate-700 dark:text-slate-200">
                 <tr>
                   <td className="px-2 py-2.5 text-start">{t('common.total')}</td>
-                  <td className="px-2 py-2.5 tabular-nums text-emerald-700">{formatCurrency(displayDebit, displayCurrency, lang)}</td>
-                  <td className="px-2 py-2.5 tabular-nums text-sky-700">{formatCurrency(displayCredit, displayCurrency, lang)}</td>
+                  <td className="px-2 py-2.5 tabular-nums text-emerald-700 dark:text-emerald-300">{formatCurrency(displayDebit, displayCurrency, lang)}</td>
+                  <td className="px-2 py-2.5 tabular-nums text-sky-700 dark:text-sky-300">{formatCurrency(displayCredit, displayCurrency, lang)}</td>
                   <td colSpan={7} />
                   <td className="px-2 py-2.5 text-end tabular-nums">{formatCurrency(totalDebit, 'IQD', lang)}</td>
                   <td />
@@ -700,19 +700,19 @@ function BalanceIndicator({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-3 text-sm">
-      <span className="flex items-center gap-1.5 text-slate-500">
-        <span className="font-medium text-emerald-700">{t('accounting.new.total_debit')}:</span>
+      <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+        <span className="font-medium text-emerald-700 dark:text-emerald-300">{t('accounting.new.total_debit')}:</span>
         <span className="tabular-nums">{formatCurrency(totalDebit, currency, lang)}</span>
       </span>
       <span className="text-slate-300">|</span>
-      <span className="flex items-center gap-1.5 text-slate-500">
-        <span className="font-medium text-sky-700">{t('accounting.new.total_credit')}:</span>
+      <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+        <span className="font-medium text-sky-700 dark:text-sky-300">{t('accounting.new.total_credit')}:</span>
         <span className="tabular-nums">{formatCurrency(totalCredit, currency, lang)}</span>
       </span>
       <span
         className={
           'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ' +
-          (balanced ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' : 'bg-amber-50 text-amber-700 ring-1 ring-amber-200')
+          (balanced ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-200 dark:ring-emerald-500/30' : 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-500/30')
         }
       >
         {balanced ? (

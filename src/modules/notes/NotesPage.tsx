@@ -95,7 +95,7 @@ export default function NotesPage() {
         <CardBody>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="w-full sm:w-52">
-              <label className="mb-1 block text-xs font-medium text-slate-500">{t('notes.mod.pick')}</label>
+              <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{t('notes.mod.pick')}</label>
               <SearchSelect
                 value={target}
                 onChange={setTarget}
@@ -103,7 +103,7 @@ export default function NotesPage() {
               />
             </div>
             <div className="flex-1">
-              <label className="mb-1 block text-xs font-medium text-slate-500">{t('notes.module.title')}</label>
+              <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{t('notes.module.title')}</label>
               <Textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
@@ -120,7 +120,7 @@ export default function NotesPage() {
 
       {/* Search */}
       <div className="relative mb-4 max-w-sm">
-        <Search className="pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 start-3" />
+        <Search className="pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-400 start-3" />
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('notes.search')} className="ps-9" />
       </div>
 
@@ -128,7 +128,7 @@ export default function NotesPage() {
       {filtered.length === 0 ? (
         <Card>
           <CardBody>
-            <p className="py-10 text-center text-sm text-slate-400">{t('notes.empty')}</p>
+            <p className="py-10 text-center text-sm text-slate-400 dark:text-slate-400">{t('notes.empty')}</p>
           </CardBody>
         </Card>
       ) : (
@@ -142,8 +142,8 @@ export default function NotesPage() {
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
-                <p className="whitespace-pre-wrap text-sm text-slate-700">{n.content}</p>
-                <p className="mt-2 text-[11px] text-slate-400">{n.author} · {formatDateTime(n.created_at, lang)}</p>
+                <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">{n.content}</p>
+                <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-400">{n.author} · {formatDateTime(n.created_at, lang)}</p>
               </CardBody>
             </Card>
           ))}

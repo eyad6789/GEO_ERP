@@ -26,7 +26,7 @@ export function Panel({
             {icon && <span className="text-primary-light">{icon}</span>}
             <div className="min-w-0">
               <h3 className="truncate text-sm font-semibold text-slate-100">{title}</h3>
-              {subtitle && <p className="truncate text-xs text-slate-400">{subtitle}</p>}
+              {subtitle && <p className="truncate text-xs text-slate-400 dark:text-slate-400">{subtitle}</p>}
             </div>
           </div>
           {action && <div className="shrink-0">{action}</div>}
@@ -64,7 +64,7 @@ export function StatTile({
     <div className="rounded-xl border border-debug-line bg-debug-panel p-4 shadow-lg shadow-black/20 transition hover:border-primary-light/40">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-medium text-slate-400">{label}</p>
+          <p className="text-xs font-medium text-slate-400 dark:text-slate-400">{label}</p>
           <p className="mt-1.5 font-mono text-2xl font-bold tabular-nums text-slate-100">{value}</p>
         </div>
         {icon && (
@@ -74,7 +74,7 @@ export function StatTile({
         )}
       </div>
       {children}
-      {hint && <p className="mt-2 text-[11px] text-slate-500">{hint}</p>}
+      {hint && <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">{hint}</p>}
     </div>
   )
 }
@@ -85,7 +85,7 @@ export function DTable({ children, head }: { children: ReactNode; head: ReactNod
     <div className="overflow-x-auto">
       <table className="w-full text-start text-sm">
         <thead className="bg-debug-bg/60">
-          <tr className="border-b border-debug-line text-xs uppercase tracking-wide text-slate-400">{head}</tr>
+          <tr className="border-b border-debug-line text-xs uppercase tracking-wide text-slate-400 dark:text-slate-400">{head}</tr>
         </thead>
         <tbody className="divide-y divide-debug-line/70">{children}</tbody>
       </table>

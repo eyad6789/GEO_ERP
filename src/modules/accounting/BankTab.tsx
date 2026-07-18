@@ -98,10 +98,10 @@ export function BankTab() {
   }
 
   const columns: Column<Bank>[] = [
-    { key: 'name', header: t('accounting.bank.name'), render: (b) => <span className="font-medium text-slate-700">{pickName(b, lang)}</span> },
-    { key: 'branch', header: t('accounting.bank.branch'), render: (b) => <span className="text-slate-600">{b.branch || '—'}</span> },
-    { key: 'balance_iqd', header: t('accounting.bank.balance_iqd'), align: 'end', render: (b) => <span className="tabular-nums text-slate-800">{formatCurrency(liveBankBalance(b).iqd, 'IQD', lang)}</span> },
-    { key: 'balance_usd', header: t('accounting.bank.balance_usd'), align: 'end', render: (b) => <span className="tabular-nums text-emerald-700">{formatCurrency(liveBankBalance(b).usd, 'USD', lang)}</span> },
+    { key: 'name', header: t('accounting.bank.name'), render: (b) => <span className="font-medium text-slate-700 dark:text-slate-200">{pickName(b, lang)}</span> },
+    { key: 'branch', header: t('accounting.bank.branch'), render: (b) => <span className="text-slate-600 dark:text-slate-300">{b.branch || '—'}</span> },
+    { key: 'balance_iqd', header: t('accounting.bank.balance_iqd'), align: 'end', render: (b) => <span className="tabular-nums text-slate-800 dark:text-slate-100">{formatCurrency(liveBankBalance(b).iqd, 'IQD', lang)}</span> },
+    { key: 'balance_usd', header: t('accounting.bank.balance_usd'), align: 'end', render: (b) => <span className="tabular-nums text-emerald-700 dark:text-emerald-300">{formatCurrency(liveBankBalance(b).usd, 'USD', lang)}</span> },
     ...(canEdit
       ? [{
           key: 'actions',
@@ -109,10 +109,10 @@ export function BankTab() {
           align: 'center' as const,
           render: (b: Bank) => (
             <div className="flex items-center justify-center gap-1">
-              <button type="button" title={t('common.edit')} onClick={(e) => { e.stopPropagation(); setBankDialog({ open: true, bank: b }) }} className="rounded-lg p-1.5 text-slate-400 transition hover:bg-primary/10 hover:text-primary">
+              <button type="button" title={t('common.edit')} onClick={(e) => { e.stopPropagation(); setBankDialog({ open: true, bank: b }) }} className="rounded-lg p-1.5 text-slate-400 dark:text-slate-400 transition hover:bg-primary/10 hover:text-primary">
                 <Pencil className="h-4 w-4" />
               </button>
-              <button type="button" title={t('common.delete')} onClick={(e) => { e.stopPropagation(); handleDelete(b) }} className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-danger">
+              <button type="button" title={t('common.delete')} onClick={(e) => { e.stopPropagation(); handleDelete(b) }} className="rounded-lg p-1.5 text-slate-400 dark:text-slate-400 transition hover:bg-red-50 hover:text-danger">
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
@@ -137,7 +137,7 @@ export function BankTab() {
           action={
             <Link
               to="/accounting?tab=chart"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-500 transition hover:border-primary hover:text-primary"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 transition hover:border-primary hover:text-primary"
             >
               {t('accounting.bank.accounts_hint')}
             </Link>
@@ -153,21 +153,21 @@ export function BankTab() {
               <Link
                 key={b.code}
                 to={`/accounting/accounts/${b.code}`}
-                className="group rounded-2xl border border-slate-200 p-6 transition hover:border-primary hover:shadow-card-hover"
+                className="group rounded-2xl border border-slate-200 dark:border-slate-700 p-6 transition hover:border-primary hover:shadow-card-hover"
               >
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 font-mono text-sm text-slate-400">
+                  <span className="flex items-center gap-2 font-mono text-sm text-slate-400 dark:text-slate-400">
                     <Landmark className="h-4 w-4" />
                     {b.code}
                   </span>
                   {b.branch && <Badge color="blue">{b.branch}</Badge>}
                 </div>
-                <p className="mt-1.5 text-lg font-bold text-slate-800 group-hover:text-primary">{b.name}</p>
+                <p className="mt-1.5 text-lg font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary">{b.name}</p>
                 <p className="mt-3 text-2xl font-bold tabular-nums text-primary">{formatCurrency(b.iqd, 'IQD', lang)}</p>
                 {b.usd !== 0 && (
-                  <p className="mt-1 text-base font-semibold tabular-nums text-emerald-700">{formatCurrency(b.usd, 'USD', lang)}</p>
+                  <p className="mt-1 text-base font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">{formatCurrency(b.usd, 'USD', lang)}</p>
                 )}
-                <p className="mt-1 text-xs text-slate-400">{t('accounting.bank.current_balance')}</p>
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">{t('accounting.bank.current_balance')}</p>
               </Link>
             ))}
           </div>
@@ -185,7 +185,7 @@ export function BankTab() {
                 {t('accounting.bank.new')}
               </Button>
             ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-500">
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
                 <Lock className="h-3.5 w-3.5" />
                 {t('accounting.readonly.badge')}
               </span>

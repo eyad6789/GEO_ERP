@@ -33,8 +33,8 @@ function InfoGrid({ rows }: { rows: InfoRow[] }) {
             {r.icon}
           </span>
           <div className="min-w-0">
-            <p className="text-xs font-medium text-slate-400">{r.label}</p>
-            <p className="mt-0.5 break-words font-medium text-slate-700">{r.value || '—'}</p>
+            <p className="text-xs font-medium text-slate-400 dark:text-slate-400">{r.label}</p>
+            <p className="mt-0.5 break-words font-medium text-slate-700 dark:text-slate-200">{r.value || '—'}</p>
           </div>
         </div>
       ))}

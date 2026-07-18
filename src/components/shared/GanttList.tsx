@@ -39,12 +39,12 @@ export function GanttList({ tasks }: { tasks: GanttTask[] }) {
         return (
           <div key={task.id} className="grid grid-cols-[180px_1fr] items-center gap-3">
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-slate-700">{task.label}</p>
-              <p className="text-[11px] text-slate-400">
+              <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-200">{task.label}</p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-400">
                 {formatDate(task.start, lang)} – {formatDate(task.end, lang)}
               </p>
             </div>
-            <div className="relative h-7 rounded-lg bg-slate-100">
+            <div className="relative h-7 rounded-lg bg-slate-100 dark:bg-slate-800">
               <div
                 className="absolute top-0 h-7 rounded-lg"
                 style={{ [startEdge]: `${left}%`, width: `${width}%`, backgroundColor: `${color}30` }}
@@ -53,7 +53,7 @@ export function GanttList({ tasks }: { tasks: GanttTask[] }) {
                   className={cn('h-7 rounded-lg transition-all')}
                   style={{ width: `${task.percent ?? 0}%`, backgroundColor: color }}
                 />
-                <span className="absolute inset-0 flex items-center justify-center text-[11px] font-semibold text-slate-700">
+                <span className="absolute inset-0 flex items-center justify-center text-[11px] font-semibold text-slate-700 dark:text-slate-200">
                   {task.percent ?? 0}%
                 </span>
               </div>

@@ -39,7 +39,7 @@ export const REG_CHIP: Record<RegState, string> = {
   expired: 'bg-danger/10 text-danger',
   soon: 'bg-warning/10 text-warning',
   ok: 'bg-success/10 text-success',
-  none: 'bg-slate-100 text-slate-500',
+  none: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400',
 }
 
 /** i18n key per registration state. */

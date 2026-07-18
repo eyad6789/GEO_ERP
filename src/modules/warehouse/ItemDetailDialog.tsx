@@ -143,7 +143,7 @@ export function ItemDetailDialog({ itemId, onClose }: { itemId: string | null; o
                           'h-14 w-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-inset transition',
                           i === Math.min(activePhoto, photos.length - 1)
                             ? 'ring-2 ring-primary'
-                            : 'ring-slate-200 hover:ring-slate-300',
+                            : 'ring-slate-200 dark:ring-slate-700 hover:ring-slate-300',
                         )}
                       >
                         <img src={src} alt="" className="h-full w-full object-cover" />
@@ -153,7 +153,7 @@ export function ItemDetailDialog({ itemId, onClose }: { itemId: string | null; o
                 )}
               </>
             ) : (
-              <div className="flex h-32 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/60">
+              <div className="flex h-32 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/60">
                 <Button
                   variant="outline"
                   onClick={() => fileInputRef.current?.click()}
@@ -205,7 +205,7 @@ export function ItemDetailDialog({ itemId, onClose }: { itemId: string | null; o
               <Meta label={t('warehouse.field.location')}>{item.shelf_location}</Meta>
             )}
             <div className="min-w-0">
-              <p className="text-xs font-medium text-slate-400">{t('warehouse.radar.set_min')}</p>
+              <p className="text-xs font-medium text-slate-400 dark:text-slate-400">{t('warehouse.radar.set_min')}</p>
               {editingMin ? (
                 <div className="mt-1">
                   <div className="flex items-center gap-1">
@@ -229,20 +229,20 @@ export function ItemDetailDialog({ itemId, onClose }: { itemId: string | null; o
                       type="button"
                       onClick={() => setEditingMin(false)}
                       disabled={savingMin}
-                      className="text-slate-400 hover:text-slate-600 disabled:opacity-50"
+                      className="text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 disabled:opacity-50"
                     >
                       <X className="h-4 w-4" />
                     </button>
                   </div>
-                  <p className="mt-1 text-xs text-slate-400">{t('warehouse.radar.min_hint')}</p>
+                  <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">{t('warehouse.radar.min_hint')}</p>
                 </div>
               ) : (
-                <div className="mt-1 flex items-center gap-1.5 text-sm text-slate-700">
+                <div className="mt-1 flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-200">
                   <span className="tabular-nums">{item.min_stock ? formatNumber(item.min_stock, lang) : '—'}</span>
                   <button
                     type="button"
                     onClick={startEditMin}
-                    className="text-slate-400 transition hover:text-primary"
+                    className="text-slate-400 dark:text-slate-400 transition hover:text-primary"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
@@ -261,26 +261,26 @@ export function ItemDetailDialog({ itemId, onClose }: { itemId: string | null; o
             {data.stock.length === 0 ? (
               <EmptyState title={t('warehouse.explorer.no_stock')} />
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-slate-100 dark:divide-slate-700">
                 {data.stock.map((s) => (
                   <li key={s.warehouse_id} className="flex items-center justify-between gap-3 px-4 py-2.5">
                     <span className="flex min-w-0 items-center gap-2">
-                      <span className="truncate font-medium text-slate-700">
+                      <span className="truncate font-medium text-slate-700 dark:text-slate-200">
                         {pickName({ name_ar: s.name_ar, name_en: s.name_en ?? undefined }, lang)}
                       </span>
                       <Badge color={WAREHOUSE_TYPE_COLOR[s.type]}>{t(`warehouse.wh_type.${s.type}`)}</Badge>
                     </span>
-                    <span className="shrink-0 font-semibold tabular-nums text-slate-800">
+                    <span className="shrink-0 font-semibold tabular-nums text-slate-800 dark:text-slate-100">
                       {formatNumber(s.quantity, lang)}
-                      <span className="ms-1 text-xs font-normal text-slate-400">{item.uom}</span>
+                      <span className="ms-1 text-xs font-normal text-slate-400 dark:text-slate-400">{item.uom}</span>
                     </span>
                   </li>
                 ))}
-                <li className="flex items-center justify-between gap-3 bg-slate-50 px-4 py-2.5">
-                  <span className="text-sm font-semibold text-slate-600">{t('common.total')}</span>
+                <li className="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/60 px-4 py-2.5">
+                  <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">{t('common.total')}</span>
                   <span className="font-bold tabular-nums text-primary">
                     {formatNumber(totalQty, lang)}
-                    <span className="ms-1 text-xs font-normal text-slate-400">{item.uom}</span>
+                    <span className="ms-1 text-xs font-normal text-slate-400 dark:text-slate-400">{item.uom}</span>
                   </span>
                 </li>
               </ul>
@@ -304,18 +304,18 @@ export function ItemDetailDialog({ itemId, onClose }: { itemId: string | null; o
 function Meta({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <p className="text-xs font-medium text-slate-400">{label}</p>
-      <div className="mt-1 truncate text-sm text-slate-700">{children}</div>
+      <p className="text-xs font-medium text-slate-400 dark:text-slate-400">{label}</p>
+      <div className="mt-1 truncate text-sm text-slate-700 dark:text-slate-200">{children}</div>
     </div>
   )
 }
 
 function Section({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200">
-      <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50/60 px-4 py-2.5">
+    <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+      <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-700/70 bg-slate-50/60 px-4 py-2.5">
         {icon}
-        <h4 className="text-sm font-semibold text-slate-700">{title}</h4>
+        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{title}</h4>
       </div>
       {children}
     </div>

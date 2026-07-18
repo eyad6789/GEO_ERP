@@ -31,8 +31,8 @@ export function DashboardPage() {
           <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-danger/10 text-danger">
             <AlertTriangle className="h-7 w-7" />
           </span>
-          <p className="font-semibold text-slate-600">{t('dashboard.error')}</p>
-          {error && <p className="text-sm text-slate-400">{error}</p>}
+          <p className="font-semibold text-slate-600 dark:text-slate-300">{t('dashboard.error')}</p>
+          {error && <p className="text-sm text-slate-400 dark:text-slate-400">{error}</p>}
         </div>
       </div>
     )
@@ -44,7 +44,7 @@ export function DashboardPage() {
       <KpiGrid data={data} />
 
       <section className="space-y-3">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-500">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
           <AlertTriangle className="h-4 w-4 text-warning" />
           {t('dashboard.alerts.title')}
         </h2>

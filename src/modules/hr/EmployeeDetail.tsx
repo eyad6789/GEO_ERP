@@ -50,8 +50,8 @@ const EMPLOYEE_DOC_TYPES = ['PHOTO', 'NATIONAL_ID', 'DRIVER_LICENSE', 'PASSPORT'
 function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-slate-50 py-2 last:border-0">
-      <span className="shrink-0 text-sm text-slate-400">{label}</span>
-      <span className="text-end text-sm font-medium text-slate-700">{value || '—'}</span>
+      <span className="shrink-0 text-sm text-slate-400 dark:text-slate-400">{label}</span>
+      <span className="text-end text-sm font-medium text-slate-700 dark:text-slate-200">{value || '—'}</span>
     </div>
   )
 }
@@ -163,7 +163,7 @@ export default function EmployeeDetail() {
   if (!id) return <Navigate to="/hr" replace />
   if (!emp) {
     return (
-      <div className="py-20 text-center text-slate-400">
+      <div className="py-20 text-center text-slate-400 dark:text-slate-400">
         <p>{t('hr.detail.not_found')}</p>
         <Link to="/hr" className="mt-3 inline-block text-primary hover:underline">
           {t('hr.detail.back')}
@@ -187,7 +187,7 @@ export default function EmployeeDetail() {
       {/* Breadcrumb */}
       <Link
         to="/hr"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500 transition hover:text-primary"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 transition hover:text-primary"
       >
         <ArrowRight className="h-4 w-4 rtl:rotate-180" />
         {t('hr.detail.back')}
@@ -201,7 +201,7 @@ export default function EmployeeDetail() {
               <img
                 src={`/api/employee-documents/${photoDoc.id}/file`}
                 alt={pickName(emp, lang)}
-                className="h-20 w-20 rounded-2xl object-cover shadow ring-1 ring-slate-200"
+                className="h-20 w-20 rounded-2xl object-cover shadow ring-1 ring-slate-200 dark:ring-slate-700"
               />
             ) : (
               <Avatar name={pickName(emp, lang)} color={emp.photo_color} size="xl" />
@@ -230,7 +230,7 @@ export default function EmployeeDetail() {
                     title={t('hr.photo.delete')}
                     disabled={photoBusy}
                     onClick={() => void removePhoto()}
-                    className="absolute -top-1.5 -end-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white text-slate-400 shadow ring-1 ring-slate-200 transition hover:text-danger"
+                    className="absolute -top-1.5 -end-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-400 shadow ring-1 ring-slate-200 dark:ring-slate-700 transition hover:text-danger"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -240,11 +240,11 @@ export default function EmployeeDetail() {
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl font-bold text-slate-800">{pickName(emp, lang)}</h1>
+              <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{pickName(emp, lang)}</h1>
               <StatusBadge status={emp.status} />
             </div>
             {emp.job_title && <p className="mt-1 text-primary">{emp.job_title}</p>}
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
               <span className="inline-flex items-center gap-1.5">
                 <IdCard className="h-4 w-4" />
                 {emp.employee_number}
@@ -272,7 +272,7 @@ export default function EmployeeDetail() {
         />
         <CardBody>
           {attLoading || lvLoading ? (
-            <p className="py-4 text-center text-sm text-slate-400">{t('common.loading')}</p>
+            <p className="py-4 text-center text-sm text-slate-400 dark:text-slate-400">{t('common.loading')}</p>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <StatTile
@@ -384,13 +384,13 @@ export default function EmployeeDetail() {
 
 function StatTile({ label, value, bar, icon }: { label: string; value: string; bar: ReactNode; icon: ReactNode }) {
   return (
-    <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5">
+    <div className="rounded-xl border border-slate-100 dark:border-slate-700/70 bg-slate-50/50 p-3.5">
       <div className="mb-1 flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1.5 text-xs text-slate-500">
-          <span className="text-slate-400">{icon}</span>
+        <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+          <span className="text-slate-400 dark:text-slate-400">{icon}</span>
           {label}
         </span>
-        <span className="text-sm font-bold tabular-nums text-slate-800">{value}</span>
+        <span className="text-sm font-bold tabular-nums text-slate-800 dark:text-slate-100">{value}</span>
       </div>
       {bar}
     </div>
@@ -500,16 +500,16 @@ function EmployeeDocuments({ employeeId }: { employeeId: string }) {
         </div>
 
         {list.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-400">{t('hr.doc.empty')}</p>
+          <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-400">{t('hr.doc.empty')}</p>
         ) : (
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
             {list.map((d) => (
-              <div key={d.id} className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
-                <button type="button" onClick={() => setViewer(d)} title={d.title} className="block h-32 w-full bg-slate-50">
+              <div key={d.id} className="group relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm transition hover:shadow-md">
+                <button type="button" onClick={() => setViewer(d)} title={d.title} className="block h-32 w-full bg-slate-50 dark:bg-slate-800/60">
                   {isImg(d.mime) ? (
                     <img src={fileUrl(d)} alt={d.title} loading="lazy" className="h-32 w-full object-cover" />
                   ) : (
-                    <span className="flex h-32 w-full flex-col items-center justify-center gap-1 text-slate-400">
+                    <span className="flex h-32 w-full flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-400">
                       <FileText className="h-7 w-7" />
                       <span className="text-[10px] font-semibold uppercase">{isPdf(d.mime) ? 'PDF' : (d.file_name.split('.').pop() || 'FILE')}</span>
                     </span>
@@ -525,11 +525,11 @@ function EmployeeDocuments({ employeeId }: { employeeId: string }) {
                   type="button"
                   onClick={() => deleteDoc(d.id)}
                   title={t('hr.doc.delete')}
-                  className="absolute end-1.5 top-1.5 rounded-lg bg-white/90 p-1 text-slate-400 opacity-0 shadow transition hover:text-danger group-hover:opacity-100"
+                  className="absolute end-1.5 top-1.5 rounded-lg bg-white/90 p-1 text-slate-400 dark:text-slate-400 opacity-0 shadow transition hover:text-danger group-hover:opacity-100"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
-                <p className="truncate px-2 py-1.5 text-xs text-slate-600" title={d.file_name}>{d.title}</p>
+                <p className="truncate px-2 py-1.5 text-xs text-slate-600 dark:text-slate-300" title={d.file_name}>{d.title}</p>
               </div>
             ))}
           </div>
@@ -644,7 +644,7 @@ function EmployeeLeaves({ data, loading }: { data: LeaveRequest[]; loading: bool
       header: `${t('hr.leave.start')} – ${t('hr.leave.end')}`,
       accessor: (l) => l.start_date,
       render: (l) => (
-        <span className="whitespace-nowrap tabular-nums text-slate-600">
+        <span className="whitespace-nowrap tabular-nums text-slate-600 dark:text-slate-300">
           {isHourlyLeave(l)
             ? formatDate(l.start_date, lang)
             : `${formatDate(l.start_date, lang)} – ${formatDate(l.end_date, lang)}`}
@@ -669,7 +669,7 @@ function EmployeeLeaves({ data, loading }: { data: LeaveRequest[]; loading: bool
       key: 'reason',
       header: t('hr.leave.reason'),
       render: (l) => (
-        <span className="block max-w-[240px] truncate text-slate-600" title={l.reason ?? ''}>
+        <span className="block max-w-[240px] truncate text-slate-600 dark:text-slate-300" title={l.reason ?? ''}>
           {l.reason || '—'}
         </span>
       ),
@@ -686,7 +686,7 @@ function EmployeeLeaves({ data, loading }: { data: LeaveRequest[]; loading: bool
       header: t('hr.leave.decision'),
       accessor: (l) => l.decision_note ?? '',
       render: (l) => (
-        <span className="block max-w-[220px] truncate text-slate-500" title={l.decision_note ?? ''}>
+        <span className="block max-w-[220px] truncate text-slate-500 dark:text-slate-400" title={l.decision_note ?? ''}>
           {l.decision_note || '—'}
         </span>
       ),
@@ -697,20 +697,20 @@ function EmployeeLeaves({ data, loading }: { data: LeaveRequest[]; loading: bool
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl bg-primary/5 p-3 text-center">
           <p className="text-2xl font-bold tabular-nums text-primary">{formatNumber(balance.approvedYear, lang)}</p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             {t('hr.leave.days_this_year').replace(
               '{year}',
               new Intl.NumberFormat(lang === 'ar' ? 'ar-IQ' : 'en-US', { useGrouping: false }).format(Number(balance.year)),
             )}
           </p>
         </div>
-        <div className="rounded-xl bg-slate-50 p-3 text-center">
-          <p className="text-2xl font-bold tabular-nums text-slate-700">{formatNumber(balance.approvedAll, lang)}</p>
-          <p className="text-xs text-slate-500">{t('hr.leave.days_all_time')}</p>
+        <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3 text-center">
+          <p className="text-2xl font-bold tabular-nums text-slate-700 dark:text-slate-200">{formatNumber(balance.approvedAll, lang)}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{t('hr.leave.days_all_time')}</p>
         </div>
-        <div className="rounded-xl bg-amber-50 p-3 text-center">
-          <p className="text-2xl font-bold tabular-nums text-amber-700">{formatNumber(balance.pending, lang)}</p>
-          <p className="text-xs text-slate-500">{t('hr.leave.days_pending')}</p>
+        <div className="rounded-xl bg-amber-50 dark:bg-amber-500/15 p-3 text-center">
+          <p className="text-2xl font-bold tabular-nums text-amber-700 dark:text-amber-300">{formatNumber(balance.pending, lang)}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{t('hr.leave.days_pending')}</p>
         </div>
       </div>
       <ArabicTable<LeaveRequest>

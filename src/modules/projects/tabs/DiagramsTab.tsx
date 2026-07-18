@@ -37,7 +37,7 @@ export function DiagramsTab({ projectId }: { projectId: string }) {
               return (
                 <div
                   key={d.id}
-                  className="group flex flex-col gap-3 rounded-xl border border-slate-100 bg-white p-4 transition hover:border-primary/30 hover:shadow-card"
+                  className="group flex flex-col gap-3 rounded-xl border border-slate-100 dark:border-slate-700/70 bg-white dark:bg-slate-800 p-4 transition hover:border-primary/30 hover:shadow-card"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -46,14 +46,14 @@ export function DiagramsTab({ projectId }: { projectId: string }) {
                     <Badge color={FILE_TYPE_COLOR[ext] ?? 'gray'}>{ext || '—'}</Badge>
                   </div>
                   <div className="min-w-0">
-                    <h4 className="line-clamp-2 font-semibold text-slate-800 group-hover:text-primary">{d.name_ar}</h4>
-                    <p className="mt-1 text-xs text-slate-400">
+                    <h4 className="line-clamp-2 font-semibold text-slate-800 dark:text-slate-100 group-hover:text-primary">{d.name_ar}</h4>
+                    <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">
                       {t('projects.diag.version')} {d.version}
                     </p>
                   </div>
-                  <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-500">
+                  <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-700/70 pt-3 text-xs text-slate-500 dark:text-slate-400">
                     <span className="inline-flex items-center gap-1.5">
-                      <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
+                      <MessageSquare className="h-3.5 w-3.5 text-slate-400 dark:text-slate-400" />
                       {d.comments_count} {t('projects.diag.comments')}
                     </span>
                     <span>

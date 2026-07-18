@@ -28,12 +28,12 @@ export function AccountingTab({ projectId, currency }: { projectId: string; curr
   }, [entries])
 
   const columns: Column<JournalEntry>[] = [
-    { key: 'serial_number', header: t('projects.acc.serial'), sortable: true, width: '120px', render: (e) => <span className="font-mono text-xs text-slate-500">{e.serial_number}</span> },
-    { key: 'doc_number', header: t('projects.acc.doc'), render: (e) => <span className="font-mono text-xs text-slate-500">{e.doc_number}</span> },
+    { key: 'serial_number', header: t('projects.acc.serial'), sortable: true, width: '120px', render: (e) => <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{e.serial_number}</span> },
+    { key: 'doc_number', header: t('projects.acc.doc'), render: (e) => <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{e.doc_number}</span> },
     { key: 'date', header: t('common.date'), accessor: (e) => e.date, sortable: true, render: (e) => formatDate(e.date, lang) },
-    { key: 'description', header: t('common.description'), render: (e) => <span className="text-slate-700">{e.description}</span> },
-    { key: 'total_debit', header: t('projects.acc.debit'), accessor: (e) => e.total_debit, sortable: true, align: 'end', render: (e) => <span className="tabular-nums text-slate-700">{formatCurrency(e.total_debit, e.currency, lang)}</span> },
-    { key: 'total_credit', header: t('projects.acc.credit'), accessor: (e) => e.total_credit, sortable: true, align: 'end', render: (e) => <span className="tabular-nums text-slate-700">{formatCurrency(e.total_credit, e.currency, lang)}</span> },
+    { key: 'description', header: t('common.description'), render: (e) => <span className="text-slate-700 dark:text-slate-200">{e.description}</span> },
+    { key: 'total_debit', header: t('projects.acc.debit'), accessor: (e) => e.total_debit, sortable: true, align: 'end', render: (e) => <span className="tabular-nums text-slate-700 dark:text-slate-200">{formatCurrency(e.total_debit, e.currency, lang)}</span> },
+    { key: 'total_credit', header: t('projects.acc.credit'), accessor: (e) => e.total_credit, sortable: true, align: 'end', render: (e) => <span className="tabular-nums text-slate-700 dark:text-slate-200">{formatCurrency(e.total_credit, e.currency, lang)}</span> },
     { key: 'status', header: t('common.status'), accessor: (e) => e.status, render: (e) => <StatusBadge status={e.status} /> },
   ]
 

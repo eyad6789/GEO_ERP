@@ -72,7 +72,7 @@ export function NotesButton({ moduleKey, moduleLabel }: { moduleKey: string; mod
           title={t('notes.module.title')}
           className={
             'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition ' +
-            (open ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50')
+            (open ? 'border-amber-300 bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800')
           }
         >
           <StickyNote className="h-4 w-4 text-amber-500" />
@@ -88,22 +88,22 @@ export function NotesButton({ moduleKey, moduleLabel }: { moduleKey: string; mod
       {(close) => (
         <div className="space-y-2.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+            <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
               <StickyNote className="h-4 w-4 text-amber-500" />
               {moduleLabel || t('notes.module.title')}
             </span>
-            <span className="text-xs text-slate-400">{notes.length}</span>
+            <span className="text-xs text-slate-400 dark:text-slate-400">{notes.length}</span>
           </div>
 
           <div className="-mx-1 max-h-56 space-y-2 overflow-y-auto px-1">
             {notes.length === 0 ? (
-              <p className="py-4 text-center text-sm text-slate-400">{t('notes.empty')}</p>
+              <p className="py-4 text-center text-sm text-slate-400 dark:text-slate-400">{t('notes.empty')}</p>
             ) : (
               notes.slice(0, 6).map((n) => (
-                <div key={n.id} className="group rounded-lg border border-amber-100 bg-amber-50/60 p-2.5">
-                  <p className="whitespace-pre-wrap text-sm text-slate-700">{n.content}</p>
+                <div key={n.id} className="group rounded-lg border border-amber-100 bg-amber-50/60 dark:bg-amber-500/15 p-2.5">
+                  <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">{n.content}</p>
                   <div className="mt-1 flex items-center justify-between gap-2">
-                    <span className="text-[10px] text-slate-400">{n.author} · {formatDateTime(n.created_at, lang)}</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-400">{n.author} · {formatDateTime(n.created_at, lang)}</span>
                     <button onClick={() => del(n.id)} title={t('common.delete')} className="rounded p-0.5 text-slate-300 opacity-0 transition hover:text-danger group-hover:opacity-100">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -113,7 +113,7 @@ export function NotesButton({ moduleKey, moduleLabel }: { moduleKey: string; mod
             )}
           </div>
 
-          <div className="space-y-2 border-t border-slate-100 pt-2.5">
+          <div className="space-y-2 border-t border-slate-100 dark:border-slate-700/70 pt-2.5">
             <Textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}

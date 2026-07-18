@@ -119,12 +119,12 @@ export function TransactionsTab({ rows, onChanged }: { rows: StockSummaryRow[]; 
       header: t('warehouse.txn.serial'),
       sortable: true,
       width: '130px',
-      render: (r) => <span className="font-mono text-xs font-semibold text-slate-500">{r.serial_number}</span>,
+      render: (r) => <span className="font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">{r.serial_number}</span>,
     },
     {
       key: 'doc_number',
       header: t('warehouse.txn.doc'),
-      render: (r) => <span className="text-slate-600">{r.doc_number || '—'}</span>,
+      render: (r) => <span className="text-slate-600 dark:text-slate-300">{r.doc_number || '—'}</span>,
     },
     {
       key: 'date',
@@ -150,13 +150,13 @@ export function TransactionsTab({ rows, onChanged }: { rows: StockSummaryRow[]; 
       accessor: (r) => r.warehouse_id,
       render: (r) =>
         r.type === 'TRANSFER' && r.from_warehouse_id ? (
-          <span className="flex items-center gap-1.5 text-slate-700">
+          <span className="flex items-center gap-1.5 text-slate-700 dark:text-slate-200">
             {whLabel(r.from_warehouse_id)}
-            <ArrowLeftRight className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+            <ArrowLeftRight className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-400" />
             {whLabel(r.warehouse_id)}
           </span>
         ) : (
-          <span className="text-slate-700">{whLabel(r.warehouse_id)}</span>
+          <span className="text-slate-700 dark:text-slate-200">{whLabel(r.warehouse_id)}</span>
         ),
     },
   ]
@@ -192,13 +192,13 @@ export function TransactionsTab({ rows, onChanged }: { rows: StockSummaryRow[]; 
             <ItemJourney itemId={trackedItemId} transactions={data} onOpenTxn={setSelected} />
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-slate-200 px-6 py-16 text-center">
+          <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 px-6 py-16 text-center">
             <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <PackageSearch className="h-8 w-8" />
             </span>
             <div>
-              <h3 className="text-lg font-bold text-slate-800">{t('warehouse.track.prompt')}</h3>
-              <p className="mt-1 text-sm text-slate-400">{t('warehouse.track.hint')}</p>
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">{t('warehouse.track.prompt')}</h3>
+              <p className="mt-1 text-sm text-slate-400 dark:text-slate-400">{t('warehouse.track.hint')}</p>
             </div>
             <div className="w-full max-w-xl">
               <SearchSelect

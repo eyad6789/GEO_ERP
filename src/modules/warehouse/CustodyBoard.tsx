@@ -85,7 +85,7 @@ export function CustodyBoard({ onChanged }: { onChanged: () => void }) {
       {/* Person filter chips */}
       {openRows.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-slate-400">{t('warehouse.custody.by_person')}</span>
+          <span className="text-xs font-medium text-slate-400 dark:text-slate-400">{t('warehouse.custody.by_person')}</span>
           <button
             type="button"
             onClick={() => setPerson('ALL')}
@@ -93,7 +93,7 @@ export function CustodyBoard({ onChanged }: { onChanged: () => void }) {
               'rounded-full px-3 py-1 text-xs font-medium transition',
               person === 'ALL'
                 ? 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/20'
-                : 'bg-slate-100 text-slate-500 hover:bg-slate-200',
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200',
             )}
           >
             {t('common.all')} <span className="tabular-nums opacity-70">{formatNumber(openRows.length, lang)}</span>
@@ -107,7 +107,7 @@ export function CustodyBoard({ onChanged }: { onChanged: () => void }) {
                 'rounded-full px-3 py-1 text-xs font-medium transition',
                 person === p
                   ? 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/20'
-                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200',
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200',
               )}
             >
               {p} <span className="tabular-nums opacity-70">{formatNumber(personCounts.get(p) ?? 0, lang)}</span>
@@ -119,11 +119,11 @@ export function CustodyBoard({ onChanged }: { onChanged: () => void }) {
       {/* Open loans */}
       <div>
         <div className="mb-2 flex items-center gap-3">
-          <span className="shrink-0 text-xs font-semibold text-slate-500">
+          <span className="shrink-0 text-xs font-semibold text-slate-500 dark:text-slate-400">
             {t('warehouse.custody.open')}{' '}
-            <span className="tabular-nums text-slate-400">{formatNumber(filteredOpen.length, lang)}</span>
+            <span className="tabular-nums text-slate-400 dark:text-slate-400">{formatNumber(filteredOpen.length, lang)}</span>
           </span>
-          <span className="h-px flex-1 bg-slate-200" />
+          <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
         </div>
 
         {filteredOpen.length === 0 ? (
@@ -131,21 +131,21 @@ export function CustodyBoard({ onChanged }: { onChanged: () => void }) {
             <EmptyState title={t('warehouse.custody.empty')} icon={<HandCoins className="h-7 w-7" />} />
           </div>
         ) : (
-          <div className="card divide-y divide-slate-100">
+          <div className="card divide-y divide-slate-100 dark:divide-slate-700">
             {filteredOpen.map((r) => {
               const days = daysSince(r.date)
-              const dayColor = days > 90 ? 'text-red-600' : days > 30 ? 'text-amber-600' : 'text-slate-400'
+              const dayColor = days > 90 ? 'text-red-600 dark:text-red-300' : days > 30 ? 'text-amber-600 dark:text-amber-300' : 'text-slate-400 dark:text-slate-400'
               return (
                 <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold text-slate-800">{personLabel(r)}</span>
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                      <span className="font-semibold text-slate-800 dark:text-slate-100">{personLabel(r)}</span>
+                      <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
                         {whShortName(r.warehouse_id)}
                       </span>
                     </div>
-                    <p className="mt-1 truncate text-sm text-slate-600">{r.items_text}</p>
-                    <p className="mt-1 text-xs text-slate-400">
+                    <p className="mt-1 truncate text-sm text-slate-600 dark:text-slate-300">{r.items_text}</p>
+                    <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">
                       {formatDate(r.date, lang)} ·{' '}
                       <span className={cn('font-medium', dayColor)}>
                         {t('warehouse.custody.since')} {formatNumber(days, lang)} {t('warehouse.custody.days')}
@@ -177,37 +177,37 @@ export function CustodyBoard({ onChanged }: { onChanged: () => void }) {
             onClick={() => setShowReturned((v) => !v)}
             className="mb-2 flex w-full items-center gap-3 text-start"
           >
-            <span className="shrink-0 text-xs font-semibold text-slate-400">
+            <span className="shrink-0 text-xs font-semibold text-slate-400 dark:text-slate-400">
               {t('warehouse.custody.returned')}{' '}
               <span className="tabular-nums text-slate-300">{formatNumber(returnedRows.length, lang)}</span>
             </span>
-            <span className="h-px flex-1 bg-slate-100" />
+            <span className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
             {showReturned ? (
-              <ChevronUp className="h-4 w-4 shrink-0 text-slate-400" />
+              <ChevronUp className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-400" />
             ) : (
-              <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
+              <ChevronDown className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-400" />
             )}
           </button>
 
           {showReturned && (
-            <div className="card divide-y divide-slate-100 opacity-80">
+            <div className="card divide-y divide-slate-100 dark:divide-slate-700 opacity-80">
               {returnedRows.map((r) => (
                 <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold text-slate-600">{personLabel(r)}</span>
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                      <span className="font-semibold text-slate-600 dark:text-slate-300">{personLabel(r)}</span>
+                      <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
                         {whShortName(r.warehouse_id)}
                       </span>
                     </div>
-                    <p className="mt-1 truncate text-sm text-slate-500">{r.items_text}</p>
-                    <p className="mt-1 text-xs text-slate-400">{formatDate(r.date, lang)}</p>
+                    <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">{r.items_text}</p>
+                    <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">{formatDate(r.date, lang)}</p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <Badge color="green" dot>
                       {t('warehouse.custody.returned')}
                     </Badge>
-                    <span className="text-xs text-slate-400">{formatDate(r.returned_at, lang)}</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-400">{formatDate(r.returned_at, lang)}</span>
                   </div>
                 </div>
               ))}

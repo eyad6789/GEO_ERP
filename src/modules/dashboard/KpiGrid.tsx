@@ -15,7 +15,7 @@ export function KpiGrid({ data }: { data: DashboardData }) {
     usd ? (
       <span className="inline-flex flex-col">
         <span>{formatCurrency(iqd, 'IQD', lang)}</span>
-        <span className="text-sm font-semibold text-emerald-600">{formatCurrency(usd, 'USD', lang)}</span>
+        <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-300">{formatCurrency(usd, 'USD', lang)}</span>
       </span>
     ) : (
       formatCurrency(iqd, 'IQD', lang)

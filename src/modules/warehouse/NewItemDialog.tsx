@@ -179,9 +179,9 @@ export function NewItemDialog({
         </Field>
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
             {t('warehouse.field.size')}{' '}
-            <span className="text-xs font-normal text-slate-400">({t('warehouse.field.optional')})</span>
+            <span className="text-xs font-normal text-slate-400 dark:text-slate-400">({t('warehouse.field.optional')})</span>
           </label>
           <div className="flex flex-wrap gap-1.5">
             {COMMON_DN_SIZES.map((n) => (
@@ -191,7 +191,7 @@ export function NewItemDialog({
             ))}
           </div>
           <Input value={size} onChange={(e) => setSize(e.target.value)} placeholder="DN 600" />
-          <span className="text-xs text-slate-400">{t('warehouse.field.size_hint')}</span>
+          <span className="text-xs text-slate-400 dark:text-slate-400">{t('warehouse.field.size_hint')}</span>
         </div>
 
         <Field label={t('warehouse.field.shelf_location')}>
@@ -199,8 +199,8 @@ export function NewItemDialog({
         </Field>
       </div>
 
-      <p className="mt-5 text-xs text-slate-400">
-        {t('warehouse.field.code_auto')} <span dir="ltr" className="font-mono font-semibold text-slate-500">{nextCode}</span>
+      <p className="mt-5 text-xs text-slate-400 dark:text-slate-400">
+        {t('warehouse.field.code_auto')} <span dir="ltr" className="font-mono font-semibold text-slate-500 dark:text-slate-400">{nextCode}</span>
       </p>
     </Dialog>
   )
@@ -216,7 +216,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
         'rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset transition',
         active
           ? 'bg-primary/10 text-primary ring-primary/30 font-semibold'
-          : 'bg-white text-slate-500 ring-slate-200 hover:bg-slate-50',
+          : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 ring-slate-200 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800',
       )}
     >
       {children}

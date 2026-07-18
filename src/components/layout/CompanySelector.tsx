@@ -14,7 +14,7 @@ export function CompanySelector() {
 
   return (
     <div className="flex items-center gap-2">
-      <Building2 className="h-4 w-4 text-slate-400" />
+      <Building2 className="h-4 w-4 text-slate-400 dark:text-slate-400" />
       <Select
         value={companyId ?? ''}
         onChange={(e) => setCompanyId(e.target.value || null)}

@@ -27,6 +27,7 @@ import { Button } from '../../../components/ui/Button'
 import { Input } from '../../../components/ui/Input'
 import { useT, useLang } from '../../../context/LangContext'
 import { useApi, useResource } from '../../../hooks/useResource'
+import { useChartTheme } from '../../../hooks/useChartTheme'
 import { formatNumber, pickName } from '../../../lib/format'
 import { STATUS_COLOR } from '../fleetUtils'
 import type { FleetSummary, FleetMapData, Vehicle } from '../../../types'
@@ -52,9 +53,9 @@ registerStrings({
 function CountTooltip({ active, payload, label, suffix }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-card" dir="ltr">
-      <p className="mb-0.5 font-semibold text-slate-700">{label ?? payload[0]?.name}</p>
-      <p className="font-medium tabular-nums text-slate-600">
+    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs shadow-card" dir="ltr">
+      <p className="mb-0.5 font-semibold text-slate-700 dark:text-slate-200">{label ?? payload[0]?.name}</p>
+      <p className="font-medium tabular-nums text-slate-600 dark:text-slate-300">
         {payload[0].value} {suffix}
       </p>
     </div>
@@ -79,6 +80,7 @@ function blankVehicle(): Vehicle {
 export function VehiclesTab() {
   const t = useT()
   const { lang } = useLang()
+  const ct = useChartTheme()
 
   const { data: summary, loading: loadingSum } = useApi<FleetSummary>('/fleet/summary')
   const { data: mapData, loading: loadingMap } = useApi<FleetMapData>('/fleet/map')
@@ -236,7 +238,7 @@ export function VehiclesTab() {
                   innerRadius={62}
                   outerRadius={96}
                   paddingAngle={2}
-                  stroke="#fff"
+                  stroke={ct.pieStroke}
                   strokeWidth={2}
                 >
                   {statusChartData.map((entry) => (
@@ -273,12 +275,12 @@ export function VehiclesTab() {
       {FEATURES.fleetMap ? (
       <div ref={mapCardRef} className="card overflow-hidden">
 
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700/70 px-5 py-3.5">
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-primary" />
-            <span className="font-semibold text-slate-700">{t('fleet.map.overview')}</span>
+            <span className="font-semibold text-slate-700 dark:text-slate-200">{t('fleet.map.overview')}</span>
           </div>
-          <span className="text-xs text-slate-400">{t('fleet.map.full')}</span>
+          <span className="text-xs text-slate-400 dark:text-slate-400">{t('fleet.map.full')}</span>
         </div>
         <div className="p-0">
           {loadingMap ? (
@@ -303,7 +305,7 @@ export function VehiclesTab() {
       {/* ── Inventory section header ── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <h2 className="text-base font-bold text-slate-800">{t('fleet.inventory.title')}</h2>
+          <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">{t('fleet.inventory.title')}</h2>
           <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
             {formatNumber(filtered.length, lang)} {t('fleet.inventory.count')}
           </span>
@@ -312,7 +314,7 @@ export function VehiclesTab() {
         <div className="flex flex-wrap items-center gap-2">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <Search className="absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -334,23 +336,23 @@ export function VehiclesTab() {
 
       {/* ── Category filters: ownership (private/public) + assignment ── */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
+        <div className="flex gap-1 rounded-lg bg-slate-100 dark:bg-slate-800 p-1">
           {(['ALL', 'PRIVATE', 'PUBLIC'] as const).map((k) => (
             <button
               key={k}
               onClick={() => setOwnerFilter(k)}
-              className={'rounded-md px-3 py-1 text-xs font-medium transition ' + (ownerFilter === k ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+              className={'rounded-md px-3 py-1 text-xs font-medium transition ' + (ownerFilter === k ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700')}
             >
               {k === 'ALL' ? t('fleet.filter.all') : t(`fleet.veh.${k}`)}
             </button>
           ))}
         </div>
-        <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
+        <div className="flex gap-1 rounded-lg bg-slate-100 dark:bg-slate-800 p-1">
           {(['ALL', 'PROJECT', 'COMPANY'] as const).map((k) => (
             <button
               key={k}
               onClick={() => setAssignFilter(k)}
-              className={'rounded-md px-3 py-1 text-xs font-medium transition ' + (assignFilter === k ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+              className={'rounded-md px-3 py-1 text-xs font-medium transition ' + (assignFilter === k ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700')}
             >
               {k === 'ALL' ? t('fleet.filter.all') : k === 'PROJECT' ? t('fleet.filter.project') : t('fleet.filter.company')}
             </button>
@@ -408,11 +410,11 @@ export function VehiclesTab() {
                   {/* Group heading */}
                   <div className="mb-3 flex items-center gap-2">
                     <FolderOpen className="h-4 w-4 text-accent" />
-                    <h3 className="text-sm font-semibold text-slate-700">{groupName}</h3>
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs tabular-nums text-slate-500">
+                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{groupName}</h3>
+                    <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs tabular-nums text-slate-500 dark:text-slate-400">
                       {formatNumber(groupVehicles.length, lang)}
                     </span>
-                    <div className="h-px flex-1 bg-slate-100" />
+                    <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
                   </div>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {groupVehicles.map((v) => (

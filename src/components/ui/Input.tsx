@@ -29,13 +29,13 @@ export function Field({ label, required, error, hint, children, className }: Fie
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
       {label && (
-        <label className="text-sm font-medium text-slate-700">
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
           {label}
           {required && <span className="text-danger ms-0.5">*</span>}
         </label>
       )}
       {children}
-      {hint && !error && <span className="text-xs text-slate-400">{hint}</span>}
+      {hint && !error && <span className="text-xs text-slate-400 dark:text-slate-400">{hint}</span>}
       {error && <span className="text-xs text-danger">{error}</span>}
     </div>
   )

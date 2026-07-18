@@ -26,7 +26,7 @@ export function ArchiveTab({ companyId, companyName }: { companyId: string; comp
       header: t('companies.arc.ref'),
       sortable: true,
       width: '120px',
-      render: (d) => <span className="font-mono text-xs text-slate-500">{d.ref_number}</span>,
+      render: (d) => <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{d.ref_number}</span>,
     },
     {
       key: 'date',
@@ -49,8 +49,8 @@ export function ArchiveTab({ companyId, companyName }: { companyId: string; comp
       sortable: true,
       render: (d) => (
         <div className="min-w-0">
-          <p className="truncate font-medium text-slate-700">{d.title}</p>
-          {d.subject && <p className="truncate text-xs text-slate-400">{d.subject}</p>}
+          <p className="truncate font-medium text-slate-700 dark:text-slate-200">{d.title}</p>
+          {d.subject && <p className="truncate text-xs text-slate-400 dark:text-slate-400">{d.subject}</p>}
         </div>
       ),
     },
@@ -67,7 +67,7 @@ export function ArchiveTab({ companyId, companyName }: { companyId: string; comp
       width: '110px',
       render: (d) =>
         d.attachments_count > 0 ? (
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500">
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400">
             <Paperclip className="h-3.5 w-3.5" />
             {d.attachments_count}
           </span>

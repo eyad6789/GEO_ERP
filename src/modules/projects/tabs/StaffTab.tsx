@@ -35,14 +35,14 @@ export function StaffTab({ projectId, companyId }: { projectId: string; companyI
           <div className="flex items-center gap-2.5">
             <Avatar name={empName(s)} color={emp?.photo_color} size="sm" />
             <div className="min-w-0">
-              <p className="truncate font-medium text-slate-800">{empName(s)}</p>
-              {emp?.job_title && <p className="truncate text-xs text-slate-400">{emp.job_title}</p>}
+              <p className="truncate font-medium text-slate-800 dark:text-slate-100">{empName(s)}</p>
+              {emp?.job_title && <p className="truncate text-xs text-slate-400 dark:text-slate-400">{emp.job_title}</p>}
             </div>
           </div>
         )
       },
     },
-    { key: 'project_role', header: t('projects.staff.role'), sortable: true, render: (s) => <span className="text-slate-700">{s.project_role}</span> },
+    { key: 'project_role', header: t('projects.staff.role'), sortable: true, render: (s) => <span className="text-slate-700 dark:text-slate-200">{s.project_role}</span> },
     { key: 'start_date', header: t('projects.field.start_date'), accessor: (s) => s.start_date, sortable: true, render: (s) => formatDate(s.start_date, lang) },
     { key: 'end_date', header: t('projects.field.end_date'), accessor: (s) => s.end_date ?? '', sortable: true, render: (s) => (s.end_date ? formatDate(s.end_date, lang) : <span className="text-slate-300">—</span>) },
     { key: 'status', header: t('common.status'), accessor: (s) => s.status, render: (s) => <StatusBadge status={s.status} /> },

@@ -64,7 +64,7 @@ export function DateField({ value, onChange }: { value: string; onChange: (v: st
 function Part({ caption, children }: { caption: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[11px] font-medium text-slate-400">{caption}</span>
+      <span className="text-[11px] font-medium text-slate-400 dark:text-slate-400">{caption}</span>
       {children}
     </div>
   )

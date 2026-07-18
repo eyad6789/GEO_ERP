@@ -296,8 +296,8 @@ export function VehicleModule({
       else display = raw === 0 || raw ? String(raw) : '—'
       return (
         <div key={String(name)} className="flex items-start justify-between gap-3 border-b border-slate-50 py-1.5 last:border-0">
-          <span className="shrink-0 text-xs text-slate-400">{label}</span>
-          <span className="text-end text-sm font-medium text-slate-700" dir={ltr && display !== '—' ? 'ltr' : undefined}>{display || '—'}</span>
+          <span className="shrink-0 text-xs text-slate-400 dark:text-slate-400">{label}</span>
+          <span className="text-end text-sm font-medium text-slate-700 dark:text-slate-200" dir={ltr && display !== '—' ? 'ltr' : undefined}>{display || '—'}</span>
         </div>
       )
     }
@@ -327,7 +327,7 @@ export function VehicleModule({
   // look in view and edit, so the module stays compact).
   const section = (icon: ReactNode, title: string, body: ReactNode): ReactNode => (
     <section>
-      <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
         {icon}{title}
       </h4>
       <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">{body}</div>
@@ -348,7 +348,7 @@ export function VehicleModule({
         <span className="flex flex-wrap items-center gap-2">
           <Truck className="h-5 w-5 text-primary" />
           <span className="font-bold tabular-nums" dir="ltr">{form.plate_number}</span>
-          <span className="text-sm font-normal text-slate-500">— {displayName}</span>
+          <span className="text-sm font-normal text-slate-500 dark:text-slate-400">— {displayName}</span>
           <Badge color={form.status === 'ACTIVE' ? 'green' : form.status === 'MAINTENANCE' ? 'amber' : form.status === 'SOLD' ? 'blue' : 'gray'}>
             {t(`status.${form.status}`)}
           </Badge>
@@ -364,8 +364,8 @@ export function VehicleModule({
             )}
           </div>
           <div className="flex items-center gap-2">
-            {!canEdit && <span className="text-xs text-slate-400">{t('fleet.mod.readonly')}</span>}
-            {canEdit && focus === 'driver' && <span className="text-xs text-slate-400">{t('fleet.mod.upload_hint')}</span>}
+            {!canEdit && <span className="text-xs text-slate-400 dark:text-slate-400">{t('fleet.mod.readonly')}</span>}
+            {canEdit && focus === 'driver' && <span className="text-xs text-slate-400 dark:text-slate-400">{t('fleet.mod.upload_hint')}</span>}
             {editable && !editing && (
               <Button variant="primary" onClick={() => setEditing(true)}>
                 <Pencil className="h-4 w-4" />{t('fleet.mod.edit')}
@@ -438,29 +438,29 @@ export function VehicleModule({
             الآليات maintenance sheets (read-only; editing is in Accounting). */}
         {focus === 'full' && section(<Wallet className="h-4 w-4 text-primary" />, t('fleet.mod.sec_maint'), (
           <div className="space-y-2 sm:col-span-2">
-            <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2">
-              <span className="text-xs text-slate-500">
+            <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 px-3 py-2">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
                 {t('fleet.mod.maint_total')}
-                <span className="ms-1.5 text-slate-400">· {costRows.length} {t('fleet.mod.maint_count')}</span>
+                <span className="ms-1.5 text-slate-400 dark:text-slate-400">· {costRows.length} {t('fleet.mod.maint_count')}</span>
               </span>
               <span className="flex flex-col items-end">
-                <span className="text-sm font-semibold text-slate-800 tabular-nums">{formatCurrency(spent.iqd, 'IQD', lang)}</span>
-                {spent.usd ? <span className="text-[11px] font-medium text-emerald-600 tabular-nums">{formatCurrency(spent.usd, 'USD', lang)}</span> : null}
+                <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 tabular-nums">{formatCurrency(spent.iqd, 'IQD', lang)}</span>
+                {spent.usd ? <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-300 tabular-nums">{formatCurrency(spent.usd, 'USD', lang)}</span> : null}
               </span>
             </div>
             {costRows.length === 0 ? (
-              <p className="text-xs text-slate-400">{t('fleet.mod.no_costs')}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-400">{t('fleet.mod.no_costs')}</p>
             ) : (
-              <div className="max-h-60 divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-200">
+              <div className="max-h-60 divide-y divide-slate-100 dark:divide-slate-700 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700">
                 {costRows.map((c, i) => (
                   <div key={i} className="flex items-start justify-between gap-3 px-3 py-2">
                     <div className="min-w-0">
-                      <p className="truncate text-sm text-slate-700">{c.note || t(`fleet.cat.${c.category}`)}</p>
-                      <p className="text-[11px] text-slate-400">
+                      <p className="truncate text-sm text-slate-700 dark:text-slate-200">{c.note || t(`fleet.cat.${c.category}`)}</p>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-400">
                         {c.date ? formatDate(c.date, lang) : '—'} · {t(`fleet.cat.${c.category}`)}
                       </p>
                     </div>
-                    <span className="shrink-0 tabular-nums text-sm font-medium text-slate-700">
+                    <span className="shrink-0 tabular-nums text-sm font-medium text-slate-700 dark:text-slate-200">
                       {c.currency === 'USD' ? formatCurrency(c.amount, 'USD', lang) : formatNumber(c.amount, lang)}
                     </span>
                   </div>
@@ -481,14 +481,14 @@ export function VehicleModule({
             {row(t('fleet.mod.sale_date'), 'sale_date', 'date')}
             {!editing && (
               <div className="flex items-start justify-between gap-3 border-b border-slate-50 py-1.5 last:border-0">
-                <span className="shrink-0 text-xs text-slate-400">{t('fleet.mod.spent')}</span>
+                <span className="shrink-0 text-xs text-slate-400 dark:text-slate-400">{t('fleet.mod.spent')}</span>
                 <span className="inline-flex flex-col items-end">
-                  <span className="text-sm font-semibold text-slate-800">{formatCurrency(spent.iqd, 'IQD', lang)}</span>
-                  {spent.usd ? <span className="text-[11px] text-emerald-600">{formatCurrency(spent.usd, 'USD', lang)}</span> : null}
+                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(spent.iqd, 'IQD', lang)}</span>
+                  {spent.usd ? <span className="text-[11px] text-emerald-600 dark:text-emerald-300">{formatCurrency(spent.usd, 'USD', lang)}</span> : null}
                 </span>
               </div>
             )}
-            {editing && <p className="text-xs text-amber-600 sm:col-span-2">{t('fleet.mod.sell_hint')}</p>}
+            {editing && <p className="text-xs text-amber-600 dark:text-amber-300 sm:col-span-2">{t('fleet.mod.sell_hint')}</p>}
           </>
         ))}
 
@@ -496,7 +496,7 @@ export function VehicleModule({
           <>
             {row(t('fleet.field.plate'), 'plate_number')}
             {row(t('fleet.mod.name_ar'), 'name_ar')}
-            <p className="text-xs text-amber-600 sm:col-span-2">{t('fleet.mod.retire_hint')}</p>
+            <p className="text-xs text-amber-600 dark:text-amber-300 sm:col-span-2">{t('fleet.mod.retire_hint')}</p>
           </>
         ))}
 
@@ -505,7 +505,7 @@ export function VehicleModule({
             {editing ? (
               <Textarea value={form.notes ?? ''} onChange={(e) => set({ notes: e.target.value })} rows={3} placeholder={t('fleet.mod.notes_ph')} />
             ) : (
-              <p className="whitespace-pre-wrap text-sm text-slate-700">{form.notes || '—'}</p>
+              <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">{form.notes || '—'}</p>
             )}
           </div>
         ))}
@@ -523,28 +523,28 @@ export function VehicleModule({
                 </Button>
               </div>
             ) : (
-              <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">{t('fleet.mod.save_to_attach')}</p>
+              <p className="rounded-lg bg-amber-50 dark:bg-amber-500/15 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">{t('fleet.mod.save_to_attach')}</p>
             ))}
             {(docs ?? []).length === 0 ? (
-              <p className="text-xs text-slate-400">{t('fleet.mod.no_docs')}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-400">{t('fleet.mod.no_docs')}</p>
             ) : (
               <>
-                <p className="text-[11px] text-slate-400">{(docs ?? []).length} {t('fleet.mod.doc_count')}</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-400">{(docs ?? []).length} {t('fleet.mod.doc_count')}</p>
                 <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
                   {(docs ?? []).map((d, i) => (
-                    <div key={d.id} className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
+                    <div key={d.id} className="group relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm transition hover:shadow-md">
                       {/* Clickable visual preview → opens the in-page viewer */}
                       <button
                         type="button"
                         onClick={() => setViewerIdx(i)}
                         title={d.title}
-                        className="block h-32 w-full bg-slate-50"
+                        className="block h-32 w-full bg-slate-50 dark:bg-slate-800/60"
                       >
                         {isImg(d.mime) ? (
                           <img src={fileUrl(d)} alt={d.title} loading="lazy" className="h-32 w-full object-cover" />
                         ) : isPdf(d.mime) ? (
                           // Render the actual first page of the PDF as the thumbnail.
-                          <span className="pointer-events-none block h-32 w-full overflow-hidden bg-white">
+                          <span className="pointer-events-none block h-32 w-full overflow-hidden bg-white dark:bg-slate-800">
                             <object data={`${fileUrl(d)}#toolbar=0&navpanes=0&view=FitH`} type="application/pdf" className="h-40 w-full">
                               <span className="flex h-32 w-full flex-col items-center justify-center gap-1 text-rose-500">
                                 <FileText className="h-7 w-7" /><span className="text-[10px] font-semibold">PDF</span>
@@ -552,7 +552,7 @@ export function VehicleModule({
                             </object>
                           </span>
                         ) : (
-                          <span className="flex h-32 w-full flex-col items-center justify-center gap-1 text-slate-400">
+                          <span className="flex h-32 w-full flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-400">
                             <FileText className="h-7 w-7" /><span className="text-[10px] font-semibold uppercase">{d.file_name.split('.').pop()}</span>
                           </span>
                         )}
@@ -571,13 +571,13 @@ export function VehicleModule({
                           type="button"
                           onClick={() => deleteDoc(d.id)}
                           title={t('fleet.mod.delete')}
-                          className="absolute end-1.5 top-1.5 rounded-lg bg-white/90 p-1 text-slate-400 opacity-0 shadow transition hover:text-danger group-hover:opacity-100"
+                          className="absolute end-1.5 top-1.5 rounded-lg bg-white/90 p-1 text-slate-400 dark:text-slate-400 opacity-0 shadow transition hover:text-danger group-hover:opacity-100"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       )}
                       {/* caption */}
-                      <div className="truncate px-2 py-1.5 text-[11px] text-slate-500" title={d.title}>{d.title}</div>
+                      <div className="truncate px-2 py-1.5 text-[11px] text-slate-500 dark:text-slate-400" title={d.title}>{d.title}</div>
                     </div>
                   ))}
                 </div>
@@ -588,9 +588,9 @@ export function VehicleModule({
 
         {focus === 'full' && section(<MapPin className="h-4 w-4 text-primary" />, t('fleet.mod.sec_location'), (
           <div className="sm:col-span-2">
-            {editing && canEdit && <p className="mb-2 text-xs text-slate-400">{t('fleet.mod.map_hint')}</p>}
-            <div ref={mapRef} className="h-44 w-full overflow-hidden rounded-xl border border-slate-200" />
-            {form.lat == null && <p className="mt-2 text-xs text-slate-400">{t('fleet.mod.no_location')}</p>}
+            {editing && canEdit && <p className="mb-2 text-xs text-slate-400 dark:text-slate-400">{t('fleet.mod.map_hint')}</p>}
+            <div ref={mapRef} className="h-44 w-full overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700" />
+            {form.lat == null && <p className="mt-2 text-xs text-slate-400 dark:text-slate-400">{t('fleet.mod.no_location')}</p>}
           </div>
         ))}
       </div>
@@ -628,11 +628,11 @@ export function VehicleModule({
           {isImg(viewer.mime) ? (
             <img src={fileUrl(viewer)} alt={viewer.title} className="max-h-full max-w-full rounded-lg object-contain shadow-2xl" />
           ) : isPdf(viewer.mime) ? (
-            <iframe src={fileUrl(viewer)} title={viewer.title} className="h-full w-full max-w-4xl rounded-lg bg-white shadow-2xl" />
+            <iframe src={fileUrl(viewer)} title={viewer.title} className="h-full w-full max-w-4xl rounded-lg bg-white dark:bg-slate-800 shadow-2xl" />
           ) : (
             <div className="flex flex-col items-center gap-3 rounded-xl bg-white/95 px-8 py-10 text-center">
-              <FileText className="h-12 w-12 text-slate-400" />
-              <p className="text-sm text-slate-600">{t('fleet.mod.no_preview')}</p>
+              <FileText className="h-12 w-12 text-slate-400 dark:text-slate-400" />
+              <p className="text-sm text-slate-600 dark:text-slate-300">{t('fleet.mod.no_preview')}</p>
               <a href={fileUrl(viewer)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white">
                 <ExternalLink className="h-4 w-4" />{t('fleet.mod.open_new')}
               </a>

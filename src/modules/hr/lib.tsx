@@ -41,13 +41,13 @@ export function useHrLookups(companyId: string | null) {
 /** Avatar + name cell for an employee, resolved by id. */
 export function EmployeeCell({ employee }: { employee?: Employee }) {
   const { lang } = useLang()
-  if (!employee) return <span className="text-slate-400">—</span>
+  if (!employee) return <span className="text-slate-400 dark:text-slate-400">—</span>
   return (
     <div className="flex items-center gap-2.5">
       <Avatar name={pickName(employee, lang)} color={employee.photo_color} size="sm" />
       <div className="min-w-0">
-        <p className="truncate font-medium text-slate-800">{pickName(employee, lang)}</p>
-        <p className="truncate text-xs text-slate-400">{employee.job_title}</p>
+        <p className="truncate font-medium text-slate-800 dark:text-slate-100">{pickName(employee, lang)}</p>
+        <p className="truncate text-xs text-slate-400 dark:text-slate-400">{employee.job_title}</p>
       </div>
     </div>
   )
@@ -74,7 +74,7 @@ export function MiniBar({
           ? 'bg-amber-400'
           : 'bg-success'
   return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
       <div className={`h-full rounded-full transition-all ${fill}`} style={{ width: `${pct}%` }} />
     </div>
   )

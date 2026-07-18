@@ -87,7 +87,7 @@ export function EmployeeCardsSection({
       {/* Toolbar: search + new employee */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-[240px] flex-1 sm:max-w-sm">
-          <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -105,7 +105,7 @@ export function EmployeeCardsSection({
 
       {/* The roster IS the content — it sits right under the toolbar */}
       {loading ? (
-        <p className="py-10 text-center text-sm text-slate-400">{t('common.loading')}</p>
+        <p className="py-10 text-center text-sm text-slate-400 dark:text-slate-400">{t('common.loading')}</p>
       ) : filtered.length === 0 ? (
         // Toolbar (incl. «موظف جديد») stays visible — an empty company must
         // still be able to add its first employee.
@@ -130,7 +130,7 @@ export function EmployeeCardsSection({
       {/* Month highlights — commentary AFTER the people, never above them */}
       {(topHours.length > 0 || topLeaves.length > 0) && (
         <div>
-          <h3 className="mb-3 text-sm font-bold text-slate-500">{t('hr.board.month_highlights')}</h3>
+          <h3 className="mb-3 text-sm font-bold text-slate-500 dark:text-slate-400">{t('hr.board.month_highlights')}</h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Leaderboard
               title={t('hr.board.top_hours')}
@@ -213,9 +213,9 @@ export function EmployeeCardsSection({
 // ---------------------------------------------------------------------------
 
 const MEDALS = [
-  'bg-amber-100 text-amber-700',
-  'bg-slate-100 text-slate-500',
-  'bg-orange-100 text-orange-700',
+  'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300',
+  'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400',
+  'bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300',
 ]
 
 function Leaderboard({
@@ -235,9 +235,9 @@ function Leaderboard({
       <CardHeader title={title} icon={icon} />
       <CardBody>
         {rows.length === 0 ? (
-          <p className="py-3 text-center text-sm text-slate-400">{empty}</p>
+          <p className="py-3 text-center text-sm text-slate-400 dark:text-slate-400">{empty}</p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700">
             {rows.map(({ emp, value }, i) => (
               <li key={emp.id} className="flex items-center gap-3 py-2">
                 <span
@@ -246,7 +246,7 @@ function Leaderboard({
                   {i === 0 ? <Trophy className="h-3.5 w-3.5" /> : i + 1}
                 </span>
                 <Avatar name={pickName(emp, lang)} color={emp.photo_color} size="sm" />
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700 dark:text-slate-200">
                   {pickName(emp, lang)}
                 </span>
                 <span className="shrink-0 text-sm font-bold tabular-nums text-primary">{value}</span>

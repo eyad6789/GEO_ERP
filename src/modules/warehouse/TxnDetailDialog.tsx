@@ -234,7 +234,7 @@ export function TxnDetailDialog({
               {txn.type === 'TRANSFER' && txn.from_warehouse_id ? (
                 <span className="flex items-center gap-1.5">
                   {whLabel(txn.from_warehouse_id)}
-                  <ArrowLeftRight className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                  <ArrowLeftRight className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-400" />
                   {whLabel(txn.warehouse_id)}
                 </span>
               ) : (
@@ -268,32 +268,32 @@ export function TxnDetailDialog({
             )}
           </div>
 
-          <h4 className="mb-2 text-sm font-semibold text-slate-700">{t('warehouse.txn.detail_lines')}</h4>
+          <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{t('warehouse.txn.detail_lines')}</h4>
           {loading ? (
             <LoadingState label={t('common.loading')} />
           ) : lines.length === 0 ? (
             <EmptyState title={t('common.empty')} />
           ) : (
-            <div className="overflow-hidden rounded-xl border border-slate-200">
+            <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   <tr>
                     <th className="px-3 py-2.5 text-start">{t('warehouse.txn.line_item')}</th>
                     <th className="px-3 py-2.5 text-start">{t('warehouse.col.uom')}</th>
                     <th className="px-3 py-2.5 text-end">{t('warehouse.txn.line_qty')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {lines.map((ln) => {
                     const it = itemMap.get(ln.item_id)
                     return (
-                      <tr key={ln.id} className="text-slate-700">
+                      <tr key={ln.id} className="text-slate-700 dark:text-slate-200">
                         <td className="px-3 py-2.5">
                           <div className="font-medium">{it ? pickName(it, lang) : ln.item_id}</div>
-                          {it && <div className="text-xs text-slate-400">{it.code}</div>}
-                          {it?.spec && <div className="text-xs text-slate-400">{it.spec}</div>}
+                          {it && <div className="text-xs text-slate-400 dark:text-slate-400">{it.code}</div>}
+                          {it?.spec && <div className="text-xs text-slate-400 dark:text-slate-400">{it.spec}</div>}
                         </td>
-                        <td className="px-3 py-2.5 text-slate-500">{ln.uom || it?.uom || '—'}</td>
+                        <td className="px-3 py-2.5 text-slate-500 dark:text-slate-400">{ln.uom || it?.uom || '—'}</td>
                         <td className="px-3 py-2.5 text-end font-medium tabular-nums">{formatNumber(ln.quantity, lang)}</td>
                       </tr>
                     )
@@ -307,7 +307,7 @@ export function TxnDetailDialog({
               already-stored image (with a small re-sign shortcut). */}
           {(sigOpen || sigUrl) && (
             <div className="mt-6">
-              <h4 className="mb-2 text-sm font-semibold text-slate-700">{t('warehouse.slip.signature')}</h4>
+              <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{t('warehouse.slip.signature')}</h4>
               {sigOpen ? (
                 <div className="max-w-md">
                   <canvas
@@ -319,10 +319,10 @@ export function TxnDetailDialog({
                     onPointerUp={onPointerUp}
                     onPointerLeave={onPointerUp}
                     onPointerCancel={onPointerUp}
-                    className="w-full rounded-xl border border-slate-300 bg-white"
+                    className="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
                     style={{ touchAction: 'none', aspectRatio: `${SIG_CANVAS_W} / ${SIG_CANVAS_H}` }}
                   />
-                  <p className="mt-1.5 text-xs text-slate-400">{t('warehouse.slip.sign_here')}</p>
+                  <p className="mt-1.5 text-xs text-slate-400 dark:text-slate-400">{t('warehouse.slip.sign_here')}</p>
                   <div className="mt-2 flex items-center gap-2">
                     <Button size="sm" variant="outline" onClick={clearSig}>
                       {t('warehouse.slip.sign_clear')}
@@ -337,7 +337,7 @@ export function TxnDetailDialog({
                   <img
                     src={sigUrl ?? undefined}
                     alt={t('warehouse.slip.receiver')}
-                    className="h-20 rounded-lg border border-slate-200 bg-white p-1"
+                    className="h-20 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1"
                   />
                   <Button size="sm" variant="outline" onClick={() => setSigOpen(true)}>
                     <PenLine className="h-3.5 w-3.5" />
@@ -356,8 +356,8 @@ export function TxnDetailDialog({
 function Meta({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs font-medium text-slate-400">{label}</p>
-      <div className="mt-1 text-sm text-slate-700">{children}</div>
+      <p className="text-xs font-medium text-slate-400 dark:text-slate-400">{label}</p>
+      <div className="mt-1 text-sm text-slate-700 dark:text-slate-200">{children}</div>
     </div>
   )
 }

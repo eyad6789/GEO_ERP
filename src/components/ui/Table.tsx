@@ -11,15 +11,15 @@ export function Table({ className, ...props }: HTMLAttributes<HTMLTableElement>)
 }
 
 export function THead({ className, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead className={cn('bg-slate-50 text-slate-500', className)} {...props} />
+  return <thead className={cn('bg-slate-50 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400', className)} {...props} />
 }
 
 export function TBody({ className, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
-  return <tbody className={cn('divide-y divide-slate-100', className)} {...props} />
+  return <tbody className={cn('divide-y divide-slate-100 dark:divide-slate-700/60', className)} {...props} />
 }
 
 export function TR({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) {
-  return <tr className={cn('transition hover:bg-slate-50/70', className)} {...props} />
+  return <tr className={cn('transition hover:bg-slate-50/70 dark:hover:bg-slate-800/50', className)} {...props} />
 }
 
 export function TH({ className, ...props }: ThHTMLAttributes<HTMLTableCellElement>) {
@@ -32,5 +32,5 @@ export function TH({ className, ...props }: ThHTMLAttributes<HTMLTableCellElemen
 }
 
 export function TD({ className, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn('px-4 py-3 text-slate-700', className)} {...props} />
+  return <td className={cn('px-4 py-3 text-slate-700 dark:text-slate-200', className)} {...props} />
 }

@@ -38,7 +38,7 @@ export function EmployeeCard({
   return (
     <button
       onClick={onClick}
-      className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white text-center shadow-card transition duration-200 hover:-translate-y-1 hover:border-primary/25 hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:translate-y-0 active:shadow-card"
+      className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-center shadow-card transition duration-200 hover:-translate-y-1 hover:border-primary/25 hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:translate-y-0 active:shadow-card"
     >
       {/* Identity wash — the personal tint at whisper opacity, fading downward */}
       <div
@@ -48,7 +48,7 @@ export function EmployeeCard({
       />
 
       {/* Employee number chip — always visible so numbering gaps (15, 19) are explainable */}
-      <span className="absolute start-3 top-3 inline-flex items-center rounded-full bg-white/85 px-2 py-0.5 text-[11px] font-bold tabular-nums text-slate-500 ring-1 ring-inset ring-slate-200 backdrop-blur-sm">
+      <span className="absolute start-3 top-3 inline-flex items-center rounded-full bg-white/85 px-2 py-0.5 text-[11px] font-bold tabular-nums text-slate-500 dark:text-slate-400 ring-1 ring-inset ring-slate-200 dark:ring-slate-700 backdrop-blur-sm">
         {t('hr.card.num_chip').replace('{n}', formatNumber(Number(emp.employee_number) || 0, lang))}
       </span>
 
@@ -69,7 +69,7 @@ export function EmployeeCard({
       {/* Haloed avatar overlapping the wash — white keyline + soft tint ring */}
       <div className="-mt-9 flex justify-center">
         <span
-          className="rounded-full bg-white p-1 transition-transform duration-200 group-hover:scale-105"
+          className="rounded-full bg-white dark:bg-slate-800 p-1 transition-transform duration-200 group-hover:scale-105"
           style={{ boxShadow: `0 0 0 4px ${tint}26` }}
         >
           {photoDocId ? (
@@ -86,13 +86,13 @@ export function EmployeeCard({
 
       {/* Who — name large in Cairo; one calm secondary line (title if it exists, else phone) */}
       <div className="flex flex-col items-center px-4 pt-2.5">
-        <p className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-800 transition-colors group-hover:text-primary">
+        <p className="line-clamp-2 text-[15px] font-bold leading-snug text-slate-800 dark:text-slate-100 transition-colors group-hover:text-primary">
           {name}
         </p>
         {emp.job_title ? (
-          <p className="mt-1 text-xs text-slate-400">{emp.job_title}</p>
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">{emp.job_title}</p>
         ) : emp.phone_primary ? (
-          <p className="mt-1 text-xs text-slate-400" dir="ltr">
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-400" dir="ltr">
             <span className="tabular-nums tracking-wide">{emp.phone_primary}</span>
           </p>
         ) : null}
@@ -101,15 +101,15 @@ export function EmployeeCard({
       {/* Hours meter — worked vs required, labeled, tinted with the personal color */}
       <div className="mt-auto w-full px-4 pt-3">
         <div className="flex items-baseline justify-between text-xs">
-          <span className="font-bold tabular-nums text-slate-700">
+          <span className="font-bold tabular-nums text-slate-700 dark:text-slate-200">
             {formatNumber(stats.workedHours, lang, 1)}
-            <span className="ms-1 font-normal text-slate-400">
+            <span className="ms-1 font-normal text-slate-400 dark:text-slate-400">
               {t('hr.card.hours_of_short').replace('{y}', formatNumber(stats.requiredHours, lang))}
             </span>
           </span>
-          <span className="tabular-nums text-slate-400">{formatNumber(Math.round(pct), lang)}٪</span>
+          <span className="tabular-nums text-slate-400 dark:text-slate-400">{formatNumber(Math.round(pct), lang)}٪</span>
         </div>
-        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
           <div
             className="h-full rounded-full transition-all duration-300"
             style={{ width: `${Math.max(pct > 0 ? 6 : 0, Math.round(pct))}%`, backgroundColor: tint }}
@@ -118,12 +118,12 @@ export function EmployeeCard({
       </div>
 
       {/* Segmented footer strip — present / absent / leave balance, hairline-divided */}
-      <div className="mt-3.5 grid w-full grid-cols-3 border-t border-slate-100 [&>*+*]:border-s [&>*+*]:border-slate-100">
+      <div className="mt-3.5 grid w-full grid-cols-3 border-t border-slate-100 dark:border-slate-700/70 [&>*+*]:border-s [&>*+*]:border-slate-100">
         <div className="py-2.5">
-          <p className="text-sm font-bold tabular-nums leading-none text-slate-800">
+          <p className="text-sm font-bold tabular-nums leading-none text-slate-800 dark:text-slate-100">
             {formatNumber(stats.presentDays, lang)}
           </p>
-          <p className="mt-1 text-[11px] font-medium text-slate-400">{t('hr.card.present_days')}</p>
+          <p className="mt-1 text-[11px] font-medium text-slate-400 dark:text-slate-400">{t('hr.card.present_days')}</p>
         </div>
         <div className="py-2.5">
           <p
@@ -134,22 +134,22 @@ export function EmployeeCard({
           >
             {formatNumber(stats.absentDays, lang)}
           </p>
-          <p className="mt-1 text-[11px] font-medium text-slate-400">{t('hr.card.absent_days')}</p>
+          <p className="mt-1 text-[11px] font-medium text-slate-400 dark:text-slate-400">{t('hr.card.absent_days')}</p>
         </div>
         <div className="py-2.5">
           {/* «المتبقي من المستحق» phrased with من — bidi-safe with Arabic-Indic digits */}
           <p
             className={cn(
               'text-sm font-bold tabular-nums leading-none',
-              leaveEmpty ? 'text-danger' : 'text-slate-800',
+              leaveEmpty ? 'text-danger' : 'text-slate-800 dark:text-slate-100',
             )}
           >
             {formatNumber(stats.leaveDaysRemaining, lang)}
-            <span className="text-[10px] font-normal text-slate-400">
+            <span className="text-[10px] font-normal text-slate-400 dark:text-slate-400">
               {' '}{t('hr.card.of_n').replace('{y}', formatNumber(stats.leaveDaysEntitled, lang))}
             </span>
           </p>
-          <p className="mt-1 text-[11px] font-medium text-slate-400">{t('hr.card.leave_left_short')}</p>
+          <p className="mt-1 text-[11px] font-medium text-slate-400 dark:text-slate-400">{t('hr.card.leave_left_short')}</p>
         </div>
       </div>
     </button>

@@ -58,7 +58,7 @@ export function FollowUpSection({
       key: 'present',
       header: t('hr.fu.present'),
       accessor: (r) => r.s.presentDays,
-      render: (r) => <span className="tabular-nums font-semibold text-emerald-600">{formatNumber(r.s.presentDays, lang)}</span>,
+      render: (r) => <span className="tabular-nums font-semibold text-emerald-600 dark:text-emerald-300">{formatNumber(r.s.presentDays, lang)}</span>,
       align: 'center',
       sortable: true,
     },
@@ -81,7 +81,7 @@ export function FollowUpSection({
       accessor: (r) => r.s.leaveDays,
       render: (r) =>
         r.s.leaveDays > 0 ? (
-          <span className="tabular-nums font-semibold text-amber-600">{formatNumber(r.s.leaveDays, lang)}</span>
+          <span className="tabular-nums font-semibold text-amber-600 dark:text-amber-300">{formatNumber(r.s.leaveDays, lang)}</span>
         ) : (
           <span className="text-slate-300">—</span>
         ),
@@ -110,10 +110,10 @@ export function FollowUpSection({
       accessor: (r) => r.s.leaveDaysRemaining,
       render: (r) => (
         <span className="tabular-nums">
-          <span className={r.s.leaveDaysRemaining > 0 ? 'font-semibold text-emerald-600' : 'font-semibold text-danger'}>
+          <span className={r.s.leaveDaysRemaining > 0 ? 'font-semibold text-emerald-600 dark:text-emerald-300' : 'font-semibold text-danger'}>
             {formatNumber(r.s.leaveDaysRemaining, lang)}
           </span>
-          <span className="text-xs text-slate-400"> / {formatNumber(r.s.leaveDaysEntitled, lang)}</span>
+          <span className="text-xs text-slate-400 dark:text-slate-400"> / {formatNumber(r.s.leaveDaysEntitled, lang)}</span>
         </span>
       ),
       align: 'center',
@@ -125,8 +125,8 @@ export function FollowUpSection({
       accessor: (r) => r.s.hourlyRemaining,
       render: (r) => (
         <span className="tabular-nums">
-          <span className="font-semibold text-slate-700">{formatNumber(r.s.hourlyRemaining, lang, 1)}</span>
-          <span className="text-xs text-slate-400"> / {formatNumber(r.s.hourlyAllowance, lang)}</span>
+          <span className="font-semibold text-slate-700 dark:text-slate-200">{formatNumber(r.s.hourlyRemaining, lang, 1)}</span>
+          <span className="text-xs text-slate-400 dark:text-slate-400"> / {formatNumber(r.s.hourlyAllowance, lang)}</span>
         </span>
       ),
       align: 'center',

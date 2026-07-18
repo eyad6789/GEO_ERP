@@ -48,7 +48,7 @@ function ActionButton({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-semibold text-slate-100">{title}</span>
-        <span className="block truncate text-xs text-slate-400">{desc}</span>
+        <span className="block truncate text-xs text-slate-400 dark:text-slate-400">{desc}</span>
       </span>
       {trailing}
     </button>
@@ -140,7 +140,7 @@ export function ActionsPanel() {
                   'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ring-1 ring-inset',
                   maintenance
                     ? 'bg-amber-400/15 text-amber-300 ring-amber-400/30'
-                    : 'bg-slate-400/10 text-slate-400 ring-slate-400/20',
+                    : 'bg-slate-400/10 text-slate-400 dark:text-slate-400 ring-slate-400/20',
                 )}
               >
                 {maintenance ? t('debug.actions.on') : t('debug.actions.off')}

@@ -119,13 +119,13 @@ export function CashTab() {
     },
     { key: 'date', header: t('accounting.journal.date'), render: (m) => formatDate(m.date, lang) },
     { key: 'cash_account', header: t('accounting.vouchers.cash_account'), render: (m) => nameOf(m.cash_account) },
-    { key: 'description', header: t('accounting.journal.desc'), render: (m) => <span className="text-slate-600">{m.description || '—'}</span> },
+    { key: 'description', header: t('accounting.journal.desc'), render: (m) => <span className="text-slate-600 dark:text-slate-300">{m.description || '—'}</span> },
     {
       key: 'amount',
       header: t('accounting.vouchers.amount'),
       align: 'end',
       render: (m) => (
-        <span className={'tabular-nums font-semibold ' + (m.type === 'RECEIPT' ? 'text-emerald-700' : 'text-red-600')}>
+        <span className={'tabular-nums font-semibold ' + (m.type === 'RECEIPT' ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-600 dark:text-red-300')}>
           {m.type === 'RECEIPT' ? '+' : '−'}
           {formatCurrency(m.amount, m.currency, lang)}
         </span>
@@ -187,7 +187,7 @@ export function CashTab() {
           action={
             <Link
               to="/accounting?tab=chart"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-500 transition hover:border-primary hover:text-primary"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 transition hover:border-primary hover:text-primary"
             >
               <Plus className="h-3.5 w-3.5" />
               {t('accounting.cash.add_box')}
@@ -201,21 +201,21 @@ export function CashTab() {
               to={`/accounting/accounts/${c.code}`}
               className={
                 'group rounded-2xl border p-6 transition hover:border-primary hover:shadow-card-hover ' +
-                (c.currency === 'IQD' ? 'border-primary/30 bg-primary/5' : 'border-slate-200')
+                (c.currency === 'IQD' ? 'border-primary/30 bg-primary/5' : 'border-slate-200 dark:border-slate-700')
               }
             >
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 font-mono text-sm text-slate-400">
+                <span className="flex items-center gap-2 font-mono text-sm text-slate-400 dark:text-slate-400">
                   <Banknote className="h-4 w-4" />
                   {c.code}
                 </span>
                 <Badge color={c.currency === 'IQD' ? 'blue' : 'green'}>{c.currency}</Badge>
               </div>
-              <p className="mt-1.5 text-lg font-bold text-slate-800 group-hover:text-primary">{c.name}</p>
+              <p className="mt-1.5 text-lg font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary">{c.name}</p>
               <p className="mt-3 text-2xl font-bold tabular-nums text-primary">
                 {formatCurrency(c.currency === 'USD' ? c.usd : c.iqd, c.currency, lang)}
               </p>
-              <p className="mt-1 text-xs text-slate-400">{t('accounting.cash.current_balance')}</p>
+              <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">{t('accounting.cash.current_balance')}</p>
             </Link>
           ))}
         </div>

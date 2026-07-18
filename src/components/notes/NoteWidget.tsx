@@ -70,7 +70,7 @@ export function NoteWidget({
           onClick={toggle}
           className={
             'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition ' +
-            (open ? 'border-accent bg-accent/10 text-accent-dark' : 'border-slate-200 text-slate-500 hover:bg-slate-50')
+            (open ? 'border-accent bg-accent/10 text-accent-dark' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800')
           }
           title={t('notes.title')}
         >
@@ -85,32 +85,32 @@ export function NoteWidget({
       )}
     >
       <div className="space-y-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
           <StickyNote className="h-4 w-4 text-accent" />
           {t('notes.title')}
         </div>
 
         <div className="max-h-52 space-y-2 overflow-y-auto">
           {notes.length === 0 ? (
-            <p className="py-4 text-center text-sm text-slate-400">{t('notes.empty')}</p>
+            <p className="py-4 text-center text-sm text-slate-400 dark:text-slate-400">{t('notes.empty')}</p>
           ) : (
             notes.map((n) => (
-              <div key={n.id} className="rounded-lg border border-slate-100 bg-slate-50/60 p-2.5">
+              <div key={n.id} className="rounded-lg border border-slate-100 dark:border-slate-700/70 bg-slate-50/60 dark:bg-slate-800/60 p-2.5">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-medium text-slate-600">{n.author}</span>
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{n.author}</span>
                   <div className="flex items-center gap-1">
                     {n.pinned ? <Pin className="h-3 w-3 text-accent" /> : null}
                     <Badge color={visColor[n.visibility]}>{t(`notes.${n.visibility.toLowerCase()}`)}</Badge>
                   </div>
                 </div>
-                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{n.content}</p>
-                <p className="mt-1 text-[10px] text-slate-400">{formatDateTime(n.created_at, lang)}</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">{n.content}</p>
+                <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-400">{formatDateTime(n.created_at, lang)}</p>
               </div>
             ))
           )}
         </div>
 
-        <div className="space-y-2 border-t border-slate-100 pt-2.5">
+        <div className="space-y-2 border-t border-slate-100 dark:border-slate-700/70 pt-2.5">
           <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -133,7 +133,7 @@ export function NoteWidget({
               {t('common.add')}
             </Button>
           </div>
-          <p className="text-[10px] leading-relaxed text-amber-600">{t('notes.warning')}</p>
+          <p className="text-[10px] leading-relaxed text-amber-600 dark:text-amber-300">{t('notes.warning')}</p>
         </div>
       </div>
     </Popover>

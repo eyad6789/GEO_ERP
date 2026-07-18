@@ -70,7 +70,7 @@ export function DebugWindow() {
                 {t('debug.envBadge')}
               </span>
             </h1>
-            <p className="mt-0.5 text-sm text-slate-400">{t('debug.subtitle')}</p>
+            <p className="mt-0.5 text-sm text-slate-400 dark:text-slate-400">{t('debug.subtitle')}</p>
           </div>
         </div>
 
@@ -112,7 +112,7 @@ export function DebugWindow() {
                 'flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition',
                 active
                   ? 'bg-primary text-white shadow-sm shadow-primary/40'
-                  : 'text-slate-400 hover:bg-debug-line hover:text-slate-200',
+                  : 'text-slate-400 dark:text-slate-400 hover:bg-debug-line hover:text-slate-200',
               )}
             >
               <Icon className="h-4 w-4" />

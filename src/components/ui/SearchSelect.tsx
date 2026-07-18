@@ -131,16 +131,16 @@ export function SearchSelect({
         onKeyDown={onKeyDown}
         autoComplete="off"
       />
-      <ChevronDown className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+      <ChevronDown className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-400" />
       {open &&
         rect &&
         createPortal(
           <ul
             style={{ position: 'fixed', top: rect.bottom + 4, left: rect.left, width: rect.width, zIndex: 70 }}
-            className="max-h-60 overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-xl"
+            className="max-h-60 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 py-1 shadow-xl"
           >
             {filtered.length === 0 ? (
-              <li className="px-3 py-2 text-sm text-slate-400">—</li>
+              <li className="px-3 py-2 text-sm text-slate-400 dark:text-slate-400">—</li>
             ) : (
               filtered.map((o, i) => (
                 <li
@@ -152,7 +152,7 @@ export function SearchSelect({
                   onMouseEnter={() => setHi(i)}
                   className={cn(
                     'cursor-pointer px-3 py-2 text-sm',
-                    i === hi ? 'bg-primary/10 text-primary' : 'text-slate-700 hover:bg-slate-50',
+                    i === hi ? 'bg-primary/10 text-primary' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800',
                   )}
                 >
                   {o.label}

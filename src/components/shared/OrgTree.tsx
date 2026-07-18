@@ -52,19 +52,19 @@ function Node({ node }: { node: OrgNode }) {
   const hasChildren = node.children && node.children.length > 0
   return (
     <li className="flex flex-col items-center">
-      <div className="relative flex flex-col items-center rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-card min-w-[160px] transition hover:border-primary hover:shadow-card-hover">
+      <div className="relative flex flex-col items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 shadow-card min-w-[160px] transition hover:border-primary hover:shadow-card-hover">
         <Avatar name={node.name} color={node.color ?? '#1a5f7a'} size="md" />
-        <p className="mt-2 text-sm font-semibold text-slate-800 text-center">{node.name}</p>
+        <p className="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-100 text-center">{node.name}</p>
         {node.title && <p className="text-xs text-primary text-center">{node.title}</p>}
-        {node.subtitle && <p className="text-[11px] text-slate-400 text-center">{node.subtitle}</p>}
+        {node.subtitle && <p className="text-[11px] text-slate-400 dark:text-slate-400 text-center">{node.subtitle}</p>}
       </div>
       {hasChildren && (
         <>
-          <div className="h-5 w-px bg-slate-300" />
+          <div className="h-5 w-px bg-slate-300 dark:bg-slate-600" />
           <ul className="flex gap-6 pt-0">
             {node.children!.map((child) => (
               <div key={child.id} className="relative flex flex-col items-center">
-                <div className="absolute -top-0 h-5 w-px bg-slate-300" />
+                <div className="absolute -top-0 h-5 w-px bg-slate-300 dark:bg-slate-600" />
                 <Node node={child} />
               </div>
             ))}

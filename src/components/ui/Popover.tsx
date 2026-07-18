@@ -31,7 +31,7 @@ export function Popover({ trigger, children, align = 'end', className, width = '
       {open && (
         <div
           className={cn(
-            'absolute top-full z-40 mt-2 rounded-xl border border-slate-200 bg-white p-3 shadow-xl animate-scale-in',
+            'absolute top-full z-40 mt-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-xl animate-scale-in',
             align === 'end' ? 'end-0' : 'start-0',
             width,
             className,

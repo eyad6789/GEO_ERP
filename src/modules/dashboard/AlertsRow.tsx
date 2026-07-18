@@ -63,11 +63,11 @@ function AlertCard({
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           <span className={`text-2xl font-bold tabular-nums ${s.value}`}>{formatNumber(count, lang)}</span>
-          <span className="truncate text-sm font-semibold text-slate-700">{label}</span>
+          <span className="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">{label}</span>
         </div>
-        <p className="mt-0.5 truncate text-xs text-slate-400">{hint}</p>
+        <p className="mt-0.5 truncate text-xs text-slate-400 dark:text-slate-400">{hint}</p>
       </div>
-      <span className="flex items-center gap-1 text-xs font-medium text-slate-400 transition group-hover:text-primary">
+      <span className="flex items-center gap-1 text-xs font-medium text-slate-400 dark:text-slate-400 transition group-hover:text-primary">
         <span className="hidden sm:inline">{t('dashboard.alerts.review')}</span>
         <Chevron className="h-4 w-4" />
       </span>

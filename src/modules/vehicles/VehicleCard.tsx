@@ -55,17 +55,17 @@ export function VehicleCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-bold tracking-wide text-slate-800 tabular-nums" dir="ltr">
+            <span className="text-sm font-bold tracking-wide text-slate-800 dark:text-slate-100 tabular-nums" dir="ltr">
               {vehicle.plate_number}
             </span>
             {vehicle.model_year && (
-              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs tabular-nums text-slate-500">
+              <span className="rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-xs tabular-nums text-slate-500 dark:text-slate-400">
                 {vehicle.model_year}
               </span>
             )}
             <StatusBadge status={vehicle.status} />
           </div>
-          <p className="mt-0.5 truncate text-xs text-slate-500">{displayName}</p>
+          <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{displayName}</p>
         </div>
 
         {/* Open-affordance chevron */}
@@ -73,7 +73,7 @@ export function VehicleCard({
       </div>
 
       {/* ── Summary row ── */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 px-4 py-2.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 dark:border-slate-700/70 px-4 py-2.5">
         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${REG_CHIP[rs]}`}>
           {t(REG_LABEL_KEY[rs])}
           {vehicle.registration_expiry && rs !== 'none' && (
@@ -82,15 +82,15 @@ export function VehicleCard({
         </span>
 
         {vehicle.location && (
-          <span className="flex items-center gap-1 text-xs text-slate-500">
-            <MapPin className="h-3 w-3 shrink-0 text-slate-400" />
+          <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+            <MapPin className="h-3 w-3 shrink-0 text-slate-400 dark:text-slate-400" />
             {vehicle.location}
           </span>
         )}
 
         {vehicle.driver_name && (
-          <span className="flex items-center gap-1 text-xs text-slate-500">
-            <User className="h-3 w-3 shrink-0 text-slate-400" />
+          <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+            <User className="h-3 w-3 shrink-0 text-slate-400 dark:text-slate-400" />
             {vehicle.driver_name}
           </span>
         )}

@@ -163,11 +163,11 @@ export function TrialBalanceTab({
       <FilterBar range={range} onChange={onRange} />
 
       {/* Company / project filters — applied server-side (like the journal page) */}
-      <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 shadow-sm">
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Search by account code or name */}
           <div className="relative min-w-[180px] flex-1">
-            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -182,7 +182,7 @@ export function TrialBalanceTab({
           {(companyFilter || projectFilter || accountFilter || query || typeFilter) && (
             <button
               onClick={() => { setCompanyFilter(''); setProjectFilter(''); setAccountFilter(''); setQuery(''); setTypeFilter('') }}
-              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-danger"
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 transition hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-danger"
               title={t('accounting.journal.clear_filters')}
             >
               <X className="h-3.5 w-3.5" />
@@ -212,7 +212,7 @@ export function TrialBalanceTab({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 <tr>
                   <th className="w-12 px-4 py-3 text-start">#</th>
                   <th className="px-4 py-3 text-start"><button type="button" onClick={() => toggleSort('code')} className="inline-flex items-center gap-1 transition hover:text-primary">{t('accounting.trial.code')}<SortIcon k="code" /></button></th>
@@ -222,7 +222,7 @@ export function TrialBalanceTab({
                   <th className="px-4 py-3 text-end"><button type="button" onClick={() => toggleSort('balance')} className="inline-flex items-center gap-1 transition hover:text-primary">{t('accounting.trial.balance')}<SortIcon k="balance" /></button></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {sortedRows.map((r, i) => (
                   <tr
                     key={r.code}
@@ -230,45 +230,45 @@ export function TrialBalanceTab({
                     onClick={() => navigate(`/accounting/accounts/${r.code}`)}
                     title={t('accounting.trial.open_account')}
                   >
-                    <td className="px-4 py-2.5 text-xs tabular-nums text-slate-400">{i + 1}</td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{r.code}</td>
-                    <td className="px-4 py-2.5 text-slate-700">{name(r)}</td>
-                    <td className="px-4 py-2.5 text-end tabular-nums text-emerald-700">
+                    <td className="px-4 py-2.5 text-xs tabular-nums text-slate-400 dark:text-slate-400">{i + 1}</td>
+                    <td className="px-4 py-2.5 font-mono text-xs text-slate-500 dark:text-slate-400">{r.code}</td>
+                    <td className="px-4 py-2.5 text-slate-700 dark:text-slate-200">{name(r)}</td>
+                    <td className="px-4 py-2.5 text-end tabular-nums text-emerald-700 dark:text-emerald-300">
                       <span className="inline-flex flex-col items-end">
                         <span>{r.total_debit ? formatCurrency(r.total_debit, 'IQD', lang) : '—'}</span>
-                        {r.debit_usd ? <span className="text-[11px] text-emerald-600">{formatCurrency(r.debit_usd, 'USD', lang)}</span> : null}
+                        {r.debit_usd ? <span className="text-[11px] text-emerald-600 dark:text-emerald-300">{formatCurrency(r.debit_usd, 'USD', lang)}</span> : null}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-end tabular-nums text-sky-700">
+                    <td className="px-4 py-2.5 text-end tabular-nums text-sky-700 dark:text-sky-300">
                       <span className="inline-flex flex-col items-end">
                         <span>{r.total_credit ? formatCurrency(r.total_credit, 'IQD', lang) : '—'}</span>
-                        {r.credit_usd ? <span className="text-[11px] text-sky-600">{formatCurrency(r.credit_usd, 'USD', lang)}</span> : null}
+                        {r.credit_usd ? <span className="text-[11px] text-sky-600 dark:text-sky-300">{formatCurrency(r.credit_usd, 'USD', lang)}</span> : null}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-end font-medium tabular-nums text-slate-800">
+                    <td className="px-4 py-2.5 text-end font-medium tabular-nums text-slate-800 dark:text-slate-100">
                       <span className="inline-flex flex-col items-end">
                         <span>{formatCurrency(Math.abs(r.balance), 'IQD', lang)}</span>
-                        {r.balance_usd ? <span className="text-[11px] text-emerald-600">{formatCurrency(Math.abs(r.balance_usd), 'USD', lang)}</span> : null}
+                        {r.balance_usd ? <span className="text-[11px] text-emerald-600 dark:text-emerald-300">{formatCurrency(Math.abs(r.balance_usd), 'USD', lang)}</span> : null}
                       </span>
                     </td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-slate-300 bg-slate-50 font-bold text-slate-800">
+                <tr className="border-t-2 border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/60 font-bold text-slate-800 dark:text-slate-100">
                   <td className="px-4 py-3.5" colSpan={3}>
                     {t('accounting.trial.totals')}
                   </td>
-                  <td className="px-4 py-3.5 text-end tabular-nums text-emerald-700">
+                  <td className="px-4 py-3.5 text-end tabular-nums text-emerald-700 dark:text-emerald-300">
                     <span className="inline-flex flex-col items-end">
                       <span>{formatCurrency(totals.debit, 'IQD', lang)}</span>
-                      {hasUsd ? <span className="text-[11px] font-semibold text-emerald-600">{formatCurrency(totals.debit_usd, 'USD', lang)}</span> : null}
+                      {hasUsd ? <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-300">{formatCurrency(totals.debit_usd, 'USD', lang)}</span> : null}
                     </span>
                   </td>
-                  <td className="px-4 py-3.5 text-end tabular-nums text-sky-700">
+                  <td className="px-4 py-3.5 text-end tabular-nums text-sky-700 dark:text-sky-300">
                     <span className="inline-flex flex-col items-end">
                       <span>{formatCurrency(totals.credit, 'IQD', lang)}</span>
-                      {hasUsd ? <span className="text-[11px] font-semibold text-sky-600">{formatCurrency(totals.credit_usd, 'USD', lang)}</span> : null}
+                      {hasUsd ? <span className="text-[11px] font-semibold text-sky-600 dark:text-sky-300">{formatCurrency(totals.credit_usd, 'USD', lang)}</span> : null}
                     </span>
                   </td>
                   {/* No balanced/unbalanced badge here — mixed-currency (tasarif)

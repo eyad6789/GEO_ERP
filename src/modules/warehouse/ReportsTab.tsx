@@ -4,6 +4,7 @@ import { AlertTriangle, BellRing, Boxes, Layers, PackageX, Warehouse as Warehous
 import { Card, CardHeader, CardBody, Badge, Select, LoadingState } from '../../components/ui'
 import { ChartCard, EmptyState, KpiCard, CHART_COLORS } from '../../components/shared'
 import { useApi, useResource } from '../../hooks/useResource'
+import { useChartTheme } from '../../hooks/useChartTheme'
 import { useT, useLang } from '../../context/LangContext'
 import { formatNumber, formatDate, pickName } from '../../lib/format'
 import type { InventoryTransaction, Warehouse } from '../../types'
@@ -26,6 +27,7 @@ interface ReorderRadarRow {
 export function ReportsTab() {
   const t = useT()
   const { lang } = useLang()
+  const ct = useChartTheme()
   const [warehouseId, setWarehouseId] = useState<string>('')
 
   const { data: summary, loading } = useApi<StockSummaryRow[]>(
@@ -91,7 +93,7 @@ export function ReportsTab() {
     <div className="space-y-6">
       {/* Warehouse selector */}
       <div className="flex flex-wrap items-center gap-3">
-        <span className="flex items-center gap-2 text-sm font-medium text-slate-600">
+        <span className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-300">
           <WarehouseIcon className="h-4 w-4 text-primary" />
           {t('warehouse.reports.warehouse')}
         </span>
@@ -134,19 +136,19 @@ export function ReportsTab() {
             {radarRows.length === 0 ? (
               <EmptyState title={t('warehouse.radar.empty')} icon={<Boxes className="h-8 w-8" />} />
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-slate-100 dark:divide-slate-700">
                 {radarRows.map((r) => (
                   <li key={r.item_id} className="flex items-center justify-between gap-3 px-5 py-3">
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-slate-800">{pickName(r, lang)}</p>
-                      <p className="text-xs text-slate-400">
+                      <p className="truncate font-medium text-slate-800 dark:text-slate-100">{pickName(r, lang)}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-400">
                         <span className="font-mono">{r.code}</span> · {r.size_label || '—'}
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-3 text-xs">
-                      <span className="text-slate-500">
+                      <span className="text-slate-500 dark:text-slate-400">
                         {t('warehouse.reports.current')}:{' '}
-                        <span className="font-semibold text-slate-700 tabular-nums">
+                        <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
                           {formatNumber(r.quantity, lang)}
                         </span>{' '}
                         / {t('warehouse.reports.min')}:{' '}
@@ -163,7 +165,7 @@ export function ReportsTab() {
           </CardBody>
 
           <CardHeader
-            className="border-t border-slate-100"
+            className="border-t border-slate-100 dark:border-slate-700/70"
             title={t('warehouse.reports.low_stock_title')}
             subtitle={`${low.length}`}
             icon={<AlertTriangle className="h-5 w-5 text-warning" />}
@@ -172,23 +174,23 @@ export function ReportsTab() {
             {low.length === 0 ? (
               <EmptyState title={t('warehouse.reports.low_stock_empty')} icon={<Boxes className="h-8 w-8" />} />
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-slate-100 dark:divide-slate-700">
                 {low.map((r) => (
                   <li key={r.item_id} className="flex items-center justify-between gap-3 px-5 py-3">
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-slate-800">{pickName(r, lang)}</p>
-                      <p className="text-xs text-slate-400">
+                      <p className="truncate font-medium text-slate-800 dark:text-slate-100">{pickName(r, lang)}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-400">
                         <span className="font-mono">{r.code}</span> · {r.category || '—'}
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-3 text-xs">
-                      <span className="text-slate-500">
+                      <span className="text-slate-500 dark:text-slate-400">
                         {t('warehouse.reports.current')}:{' '}
-                        <span className="font-semibold text-slate-700 tabular-nums">
+                        <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
                           {formatNumber(r.quantity, lang)}
                         </span>
                       </span>
-                      <span className="text-slate-400">
+                      <span className="text-slate-400 dark:text-slate-400">
                         {t('warehouse.reports.min')}:{' '}
                         <span className="tabular-nums">{formatNumber(r.min_stock, lang)}</span>
                       </span>
@@ -223,13 +225,13 @@ export function ReportsTab() {
             height={300}
           >
             <BarChart data={byCategory} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
-              <XAxis dataKey="category" tick={{ fontSize: 11, fill: '#64748b' }} interval={0} angle={-12} textAnchor="end" height={50} />
-              <YAxis allowDecimals={false} tickFormatter={(v) => formatNumber(Number(v), lang)} tick={{ fontSize: 11, fill: '#64748b' }} width={56} />
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} vertical={false} />
+              <XAxis dataKey="category" tick={{ fontSize: 11, fill: ct.axis }} interval={0} angle={-12} textAnchor="end" height={50} />
+              <YAxis allowDecimals={false} tickFormatter={(v) => formatNumber(Number(v), lang)} tick={{ fontSize: 11, fill: ct.axis }} width={56} />
               <Tooltip
                 formatter={(v: number | string) => formatNumber(Number(v), lang)}
                 labelStyle={{ fontWeight: 600 }}
-                contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }}
+                contentStyle={{ borderRadius: 12, border: `1px solid ${ct.tooltipBorder}`, fontSize: 12 }}
               />
               <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={48}>
                 {byCategory.map((_, i) => (
@@ -252,22 +254,22 @@ export function ReportsTab() {
           {recentTransfers.length === 0 ? (
             <EmptyState title={t('common.empty')} icon={<ArrowLeftRight className="h-8 w-8" />} />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-700">
               {recentTransfers.map((tx) => {
                 const from = tx.from_warehouse_id ? warehouseMap.get(tx.from_warehouse_id) : undefined
                 const to = warehouseMap.get(tx.warehouse_id)
                 return (
                   <li key={tx.id} className="flex items-center justify-between gap-3 px-5 py-3">
                     <div className="flex min-w-0 items-center gap-2 text-sm">
-                      <span className="truncate font-medium text-slate-800">
+                      <span className="truncate font-medium text-slate-800 dark:text-slate-100">
                         {from ? pickName(from, lang) : tx.from_warehouse_id}
                       </span>
-                      <ArrowLeftRight className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                      <span className="truncate font-medium text-slate-800">
+                      <ArrowLeftRight className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-400" />
+                      <span className="truncate font-medium text-slate-800 dark:text-slate-100">
                         {to ? pickName(to, lang) : tx.warehouse_id}
                       </span>
                     </div>
-                    <span className="shrink-0 text-xs text-slate-400">{formatDate(tx.date, lang)}</span>
+                    <span className="shrink-0 text-xs text-slate-400 dark:text-slate-400">{formatDate(tx.date, lang)}</span>
                   </li>
                 )
               })}

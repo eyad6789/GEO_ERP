@@ -29,7 +29,7 @@ function NotFound() {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-2 text-center">
       <p className="text-5xl font-black text-primary/20">404</p>
-      <p className="text-lg font-semibold text-slate-600">الصفحة غير موجودة</p>
+      <p className="text-lg font-semibold text-slate-600 dark:text-slate-300">الصفحة غير موجودة</p>
       <a href={LANDING_PATH} className="text-sm text-primary hover:underline">
         العودة إلى المحاسبة
       </a>

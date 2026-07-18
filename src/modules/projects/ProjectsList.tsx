@@ -89,8 +89,8 @@ export function ProjectsList() {
       sortable: true,
       render: (p) => (
         <div className="min-w-0">
-          <p className="truncate font-medium text-slate-800">{pickName(p, lang)}</p>
-          <p className="truncate text-xs text-slate-400">{p.client}</p>
+          <p className="truncate font-medium text-slate-800 dark:text-slate-100">{pickName(p, lang)}</p>
+          <p className="truncate text-xs text-slate-400 dark:text-slate-400">{p.client}</p>
         </div>
       ),
     },
@@ -102,7 +102,7 @@ export function ProjectsList() {
       accessor: (p) => p.contract_value,
       sortable: true,
       align: 'end',
-      render: (p) => <span className="font-semibold tabular-nums text-slate-700">{formatCurrency(p.contract_value, p.currency, lang)}</span>,
+      render: (p) => <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{formatCurrency(p.contract_value, p.currency, lang)}</span>,
     },
     {
       key: 'progress',
@@ -122,17 +122,17 @@ export function ProjectsList() {
         subtitle={t('projects.subtitle')}
         icon={<FolderKanban className="h-6 w-6" />}
         actions={
-          <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1">
+          <div className="flex items-center gap-1 rounded-lg bg-slate-100 dark:bg-slate-800 p-1">
             <button
               onClick={() => setView('grid')}
-              className={`flex h-8 w-8 items-center justify-center rounded-md transition ${view === 'grid' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`flex h-8 w-8 items-center justify-center rounded-md transition ${view === 'grid' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
               aria-label="grid"
             >
               <LayoutGrid className="h-4 w-4" />
             </button>
             <button
               onClick={() => setView('table')}
-              className={`flex h-8 w-8 items-center justify-center rounded-md transition ${view === 'table' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`flex h-8 w-8 items-center justify-center rounded-md transition ${view === 'table' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
               aria-label="table"
             >
               <Rows3 className="h-4 w-4" />
@@ -152,7 +152,7 @@ export function ProjectsList() {
       {/* Toolbar */}
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <div className="relative min-w-[220px] flex-1">
-          <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -230,7 +230,7 @@ function ProjectCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <span className="font-mono text-xs font-semibold text-primary">{p.code}</span>
-          <h3 className="mt-0.5 line-clamp-2 font-bold leading-snug text-slate-800 group-hover:text-primary">
+          <h3 className="mt-0.5 line-clamp-2 font-bold leading-snug text-slate-800 dark:text-slate-100 group-hover:text-primary">
             {pickName(p, lang)}
           </h3>
         </div>
@@ -238,46 +238,46 @@ function ProjectCard({
       </div>
 
       {/* Client + company */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-500">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-500 dark:text-slate-400">
         <span className="inline-flex items-center gap-1.5">
-          <UserRound className="h-3.5 w-3.5 text-slate-400" />
+          <UserRound className="h-3.5 w-3.5 text-slate-400 dark:text-slate-400" />
           {p.client || '—'}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <Building2 className="h-3.5 w-3.5 text-slate-400" />
+          <Building2 className="h-3.5 w-3.5 text-slate-400 dark:text-slate-400" />
           {companyName}
         </span>
         {p.location && (
           <span className="inline-flex items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5 text-slate-400" />
+            <MapPin className="h-3.5 w-3.5 text-slate-400 dark:text-slate-400" />
             {p.location}
           </span>
         )}
       </div>
 
       {/* Contract value */}
-      <div className="rounded-lg bg-slate-50 px-3 py-2.5">
-        <p className="text-[11px] font-medium text-slate-400">{t('projects.field.contract_value')}</p>
-        <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-800">{formatCurrency(p.contract_value, p.currency, lang)}</p>
+      <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 px-3 py-2.5">
+        <p className="text-[11px] font-medium text-slate-400 dark:text-slate-400">{t('projects.field.contract_value')}</p>
+        <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-800 dark:text-slate-100">{formatCurrency(p.contract_value, p.currency, lang)}</p>
       </div>
 
       {/* Progress */}
       <div>
         <div className="mb-1.5 flex items-center justify-between text-xs">
-          <span className="font-medium text-slate-500">{t('projects.field.progress')}</span>
-          <span className="font-semibold tabular-nums text-slate-700">{Math.round(p.progress)}%</span>
+          <span className="font-medium text-slate-500 dark:text-slate-400">{t('projects.field.progress')}</span>
+          <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{Math.round(p.progress)}%</span>
         </div>
         <ProgressBar value={p.progress} />
       </div>
 
       {/* Footer: dates + manager */}
-      <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
+      <div className="flex items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-700/70 pt-3 text-xs text-slate-500 dark:text-slate-400">
         <span className="inline-flex items-center gap-1.5">
-          <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
+          <CalendarDays className="h-3.5 w-3.5 text-slate-400 dark:text-slate-400" />
           {formatDate(p.start_date, lang)} – {formatDate(p.end_date, lang)}
         </span>
         <span className="inline-flex max-w-[45%] items-center gap-1.5 truncate">
-          <UserRound className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+          <UserRound className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-400" />
           <span className="truncate">{managerName}</span>
         </span>
       </div>

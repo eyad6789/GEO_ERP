@@ -34,7 +34,7 @@ export function StatusPanel({ apiMs }: { apiMs: number | null }) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <StatTile
           label={t('debug.status.apiTime')}
-          value={apiMs === null ? '…' : <>{formatNumber(apiMs, lang)} <span className="text-base font-normal text-slate-500">ms</span></>}
+          value={apiMs === null ? '…' : <>{formatNumber(apiMs, lang)} <span className="text-base font-normal text-slate-500 dark:text-slate-400">ms</span></>}
           hint={t('debug.status.apiHint')}
           icon={<Activity className="h-5 w-5" />}
           accent={apiAccent}
@@ -58,7 +58,7 @@ export function StatusPanel({ apiMs }: { apiMs: number | null }) {
 
         <StatTile
           label={t('debug.status.memory')}
-          value={<>{mem}<span className="text-base font-normal text-slate-500">%</span></>}
+          value={<>{mem}<span className="text-base font-normal text-slate-500 dark:text-slate-400">%</span></>}
           hint={t('debug.status.memHint')}
           icon={<Cpu className="h-5 w-5" />}
           accent={memAccent}
@@ -100,7 +100,7 @@ export function StatusPanel({ apiMs }: { apiMs: number | null }) {
 
         <StatTile
           label={t('debug.status.uptime')}
-          value={<span className="font-mono">99.98<span className="text-base font-normal text-slate-500">%</span></span>}
+          value={<span className="font-mono">99.98<span className="text-base font-normal text-slate-500 dark:text-slate-400">%</span></span>}
           hint={t('debug.status.uptimeHint')}
           icon={<Timer className="h-5 w-5" />}
           accent="sky"

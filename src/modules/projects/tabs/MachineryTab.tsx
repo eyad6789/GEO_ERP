@@ -25,12 +25,12 @@ export function MachineryTab({ projectId, companyId }: { projectId: string; comp
 
   const columns: Column<ProjectMachinery>[] = [
     { key: 'code', header: t('common.code'), sortable: true, width: '110px', render: (m) => <span className="font-mono text-xs font-semibold text-primary">{m.code}</span> },
-    { key: 'name', header: t('projects.mach.name'), accessor: (m) => m.name_ar, sortable: true, render: (m) => <span className="font-medium text-slate-800">{m.name_ar}</span> },
+    { key: 'name', header: t('projects.mach.name'), accessor: (m) => m.name_ar, sortable: true, render: (m) => <span className="font-medium text-slate-800 dark:text-slate-100">{m.name_ar}</span> },
     { key: 'type', header: t('projects.mach.type'), sortable: true },
     { key: 'operator', header: t('projects.mach.operator'), accessor: (m) => operatorName(m), render: (m) => operatorName(m) },
     { key: 'assigned_date', header: t('projects.mach.assigned'), accessor: (m) => m.assigned_date, sortable: true, render: (m) => formatDate(m.assigned_date, lang) },
-    { key: 'hours_worked', header: t('projects.mach.hours'), accessor: (m) => m.hours_worked, sortable: true, align: 'end', render: (m) => <span className="tabular-nums text-slate-700">{formatNumber(m.hours_worked, lang)}</span> },
-    { key: 'fuel_consumed', header: t('projects.mach.fuel'), accessor: (m) => m.fuel_consumed, sortable: true, align: 'end', render: (m) => <span className="tabular-nums text-slate-700">{formatNumber(m.fuel_consumed, lang)}</span> },
+    { key: 'hours_worked', header: t('projects.mach.hours'), accessor: (m) => m.hours_worked, sortable: true, align: 'end', render: (m) => <span className="tabular-nums text-slate-700 dark:text-slate-200">{formatNumber(m.hours_worked, lang)}</span> },
+    { key: 'fuel_consumed', header: t('projects.mach.fuel'), accessor: (m) => m.fuel_consumed, sortable: true, align: 'end', render: (m) => <span className="tabular-nums text-slate-700 dark:text-slate-200">{formatNumber(m.fuel_consumed, lang)}</span> },
     { key: 'status', header: t('common.status'), accessor: (m) => m.status, render: (m) => <StatusBadge status={m.status} /> },
   ]
 

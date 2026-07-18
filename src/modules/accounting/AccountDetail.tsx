@@ -154,7 +154,7 @@ export default function AccountDetail() {
       key: 'code',
       header: t('accounting.chart.code'),
       width: '90px',
-      render: (a) => <span className="font-mono text-xs font-semibold text-slate-500">{a.code}</span>,
+      render: (a) => <span className="font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">{a.code}</span>,
     },
     {
       key: 'name',
@@ -165,9 +165,9 @@ export default function AccountDetail() {
           {a.is_posting ? (
             <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
           ) : (
-            <Layers className="h-3.5 w-3.5 text-slate-400" />
+            <Layers className="h-3.5 w-3.5 text-slate-400 dark:text-slate-400" />
           )}
-          <span className={a.is_posting ? 'text-slate-700' : 'font-semibold text-slate-800'}>{pickName(a, lang)}</span>
+          <span className={a.is_posting ? 'text-slate-700 dark:text-slate-200' : 'font-semibold text-slate-800 dark:text-slate-100'}>{pickName(a, lang)}</span>
         </span>
       ),
     },
@@ -191,8 +191,8 @@ export default function AccountDetail() {
         const r = rollup.get(a.code) ?? { iqd: 0, usd: 0 }
         return (
           <span className="inline-flex flex-col items-end tabular-nums">
-            <span className="font-semibold text-slate-700">{formatCurrency(r.iqd, 'IQD', lang)}</span>
-            {r.usd !== 0 && <span className="text-[11px] text-emerald-600">{formatCurrency(r.usd, 'USD', lang)}</span>}
+            <span className="font-semibold text-slate-700 dark:text-slate-200">{formatCurrency(r.iqd, 'IQD', lang)}</span>
+            {r.usd !== 0 && <span className="text-[11px] text-emerald-600 dark:text-emerald-300">{formatCurrency(r.usd, 'USD', lang)}</span>}
           </span>
         )
       },
@@ -218,7 +218,7 @@ export default function AccountDetail() {
       accessor: (r) => r.debit,
       render: (r) =>
         r.debit ? (
-          <span className="tabular-nums text-slate-700">
+          <span className="tabular-nums text-slate-700 dark:text-slate-200">
             {formatCurrency(r.debit, r.currency === 'USD' ? 'USD' : 'IQD', lang)}
           </span>
         ) : (
@@ -232,7 +232,7 @@ export default function AccountDetail() {
       accessor: (r) => r.credit,
       render: (r) =>
         r.credit ? (
-          <span className="tabular-nums text-slate-700">
+          <span className="tabular-nums text-slate-700 dark:text-slate-200">
             {formatCurrency(r.credit, r.currency === 'USD' ? 'USD' : 'IQD', lang)}
           </span>
         ) : (
@@ -263,13 +263,13 @@ export default function AccountDetail() {
         }
         subtitle={
           <span className="inline-flex flex-wrap items-center gap-1.5 text-xs">
-            <Link to="/accounting?tab=chart" className="text-slate-400 hover:text-primary">
+            <Link to="/accounting?tab=chart" className="text-slate-400 dark:text-slate-400 hover:text-primary">
               {t('accounting.chart.title')}
             </Link>
             {ancestors.map((p) => (
               <span key={p.code} className="inline-flex items-center gap-1.5">
                 <ChevronLeft className="h-3 w-3 text-slate-300 rtl:rotate-180" />
-                <Link to={`/accounting/accounts/${p.code}`} className="text-slate-400 hover:text-primary">
+                <Link to={`/accounting/accounts/${p.code}`} className="text-slate-400 dark:text-slate-400 hover:text-primary">
                   {pickName(p, lang)}
                 </Link>
               </span>
@@ -391,24 +391,24 @@ export default function AccountDetail() {
             emptyTitle={t('accounting.reports.ledger_empty')}
           />
           {ledger.length > 0 && (
-            <div className="flex flex-wrap items-center justify-end gap-x-8 gap-y-2 border-t border-slate-200 bg-slate-50 px-5 py-3 text-sm">
+            <div className="flex flex-wrap items-center justify-end gap-x-8 gap-y-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-5 py-3 text-sm">
               <span className="flex items-center gap-2">
-                <span className="font-semibold text-slate-500">{t('accounting.new.total_debit')}:</span>
+                <span className="font-semibold text-slate-500 dark:text-slate-400">{t('accounting.new.total_debit')}:</span>
                 <span className="inline-flex flex-col items-end tabular-nums">
-                  <span className="font-bold text-emerald-700">{formatCurrency(ledgerTotals.dIqd, 'IQD', lang)}</span>
-                  {ledgerTotals.dUsd !== 0 && <span className="text-[11px] text-emerald-600">{formatCurrency(ledgerTotals.dUsd, 'USD', lang)}</span>}
+                  <span className="font-bold text-emerald-700 dark:text-emerald-300">{formatCurrency(ledgerTotals.dIqd, 'IQD', lang)}</span>
+                  {ledgerTotals.dUsd !== 0 && <span className="text-[11px] text-emerald-600 dark:text-emerald-300">{formatCurrency(ledgerTotals.dUsd, 'USD', lang)}</span>}
                 </span>
               </span>
               <span className="flex items-center gap-2">
-                <span className="font-semibold text-slate-500">{t('accounting.new.total_credit')}:</span>
+                <span className="font-semibold text-slate-500 dark:text-slate-400">{t('accounting.new.total_credit')}:</span>
                 <span className="inline-flex flex-col items-end tabular-nums">
-                  <span className="font-bold text-sky-700">{formatCurrency(ledgerTotals.cIqd, 'IQD', lang)}</span>
-                  {ledgerTotals.cUsd !== 0 && <span className="text-[11px] text-sky-600">{formatCurrency(ledgerTotals.cUsd, 'USD', lang)}</span>}
+                  <span className="font-bold text-sky-700 dark:text-sky-300">{formatCurrency(ledgerTotals.cIqd, 'IQD', lang)}</span>
+                  {ledgerTotals.cUsd !== 0 && <span className="text-[11px] text-sky-600 dark:text-sky-300">{formatCurrency(ledgerTotals.cUsd, 'USD', lang)}</span>}
                 </span>
               </span>
               {/* Net balance = total debit − total credit (collects مدين and دائن). */}
-              <span className="flex items-center gap-2 border-s border-slate-300 ps-8">
-                <span className="font-semibold text-slate-600">{t('accounting.account.net_balance')}:</span>
+              <span className="flex items-center gap-2 border-s border-slate-300 dark:border-slate-600 ps-8">
+                <span className="font-semibold text-slate-600 dark:text-slate-300">{t('accounting.account.net_balance')}:</span>
                 <span className="inline-flex flex-col items-end tabular-nums">
                   <span className="font-bold text-primary">{formatCurrency(ledgerTotals.dIqd - ledgerTotals.cIqd, 'IQD', lang)}</span>
                   {(ledgerTotals.dUsd - ledgerTotals.cUsd) !== 0 && (
@@ -441,8 +441,8 @@ export default function AccountDetail() {
 function Row({ label, value }: { label: ReactNode; value: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-slate-50 pb-2 last:border-0 last:pb-0">
-      <span className="text-slate-400">{label}</span>
-      <span className="font-medium text-slate-700">{value ?? '—'}</span>
+      <span className="text-slate-400 dark:text-slate-400">{label}</span>
+      <span className="font-medium text-slate-700 dark:text-slate-200">{value ?? '—'}</span>
     </div>
   )
 }

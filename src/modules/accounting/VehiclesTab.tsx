@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Card, CardHeader, LoadingState, Dialog, Badge, SearchSelect } from '../../components/ui'
 import { KpiCard, ChartCard, EmptyState, ArabicTable, type Column } from '../../components/shared'
 import { useApi, useResource } from '../../hooks/useResource'
+import { useChartTheme } from '../../hooks/useChartTheme'
 import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { formatCurrency, formatNumber, formatDate, pickName } from '../../lib/format'
@@ -70,7 +71,7 @@ function Dual({ iqd, usd, lang }: { iqd: number; usd: number; lang: 'ar' | 'en' 
   return (
     <span className="flex flex-col leading-tight">
       <span>{formatCurrency(iqd, 'IQD', lang)}</span>
-      <span className="mt-0.5 text-base font-semibold text-emerald-600">{formatCurrency(usd, 'USD', lang)}</span>
+      <span className="mt-0.5 text-base font-semibold text-emerald-600 dark:text-emerald-300">{formatCurrency(usd, 'USD', lang)}</span>
     </span>
   )
 }
@@ -78,6 +79,7 @@ function Dual({ iqd, usd, lang }: { iqd: number; usd: number; lang: 'ar' | 'en' 
 export function VehiclesTab() {
   const t = useT()
   const { lang } = useLang()
+  const ct = useChartTheme()
   const { companyId, role } = useCompany()
   const canEdit = canEditAccounting(role.key)
   const [selected, setSelected] = useState<VehicleRow | null>(null)
@@ -155,12 +157,12 @@ export function VehiclesTab() {
       header: t('accounting.vehicles.vehicle'),
       render: (r) => (
         <span className="flex flex-col">
-          <span className="font-medium text-slate-800">{lang === 'en' ? r.name_en || r.name_ar : r.name_ar}</span>
-          <span className="font-mono text-[11px] text-slate-400">{r.code}</span>
+          <span className="font-medium text-slate-800 dark:text-slate-100">{lang === 'en' ? r.name_en || r.name_ar : r.name_ar}</span>
+          <span className="font-mono text-[11px] text-slate-400 dark:text-slate-400">{r.code}</span>
         </span>
       ),
     },
-    { key: 'plate', header: t('accounting.vehicles.plate'), render: (r) => <span className="font-mono text-xs text-slate-600">{r.plate_number || '—'}</span> },
+    { key: 'plate', header: t('accounting.vehicles.plate'), render: (r) => <span className="font-mono text-xs text-slate-600 dark:text-slate-300">{r.plate_number || '—'}</span> },
     { key: 'driver', header: t('accounting.vehicles.driver'), render: (r) => r.driver_name || '—' },
     { key: 'status', header: t('accounting.vehicles.status'), render: (r) => <Badge color={STATUS_COLOR[r.status] ?? 'gray'}>{t(`accounting.vehicles.st.${r.status}`)}</Badge> },
     {
@@ -170,8 +172,8 @@ export function VehiclesTab() {
       accessor: (r) => r.iqd,
       render: (r) => (
         <span className="inline-flex flex-col items-end tabular-nums">
-          <span className="font-semibold text-slate-800">{formatCurrency(r.iqd, 'IQD', lang)}</span>
-          {r.usd ? <span className="text-[11px] text-emerald-600">{formatCurrency(r.usd, 'USD', lang)}</span> : null}
+          <span className="font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(r.iqd, 'IQD', lang)}</span>
+          {r.usd ? <span className="text-[11px] text-emerald-600 dark:text-emerald-300">{formatCurrency(r.usd, 'USD', lang)}</span> : null}
         </span>
       ),
     },
@@ -187,8 +189,8 @@ export function VehiclesTab() {
       accessor: (r) => r.iqd,
       render: (r) => (
         <span className="inline-flex flex-col items-end tabular-nums">
-          <span className="text-slate-800">{formatCurrency(r.iqd, 'IQD', lang)}</span>
-          {r.usd ? <span className="text-[11px] text-emerald-600">{formatCurrency(r.usd, 'USD', lang)}</span> : null}
+          <span className="text-slate-800 dark:text-slate-100">{formatCurrency(r.iqd, 'IQD', lang)}</span>
+          {r.usd ? <span className="text-[11px] text-emerald-600 dark:text-emerald-300">{formatCurrency(r.usd, 'USD', lang)}</span> : null}
         </span>
       ),
     },
@@ -198,7 +200,7 @@ export function VehiclesTab() {
     <div className="space-y-5">
       {/* Filter toolbar — by company / project / vehicle (car). Always visible so
           filters can be changed or cleared even when the result is empty. */}
-      <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 shadow-sm">
         <div className="flex flex-wrap items-center gap-2.5">
           <span className="flex h-9 shrink-0 items-center gap-2 rounded-lg bg-primary/10 px-3 text-sm font-medium text-primary">
             <Filter className="h-4 w-4" />
@@ -210,7 +212,7 @@ export function VehiclesTab() {
           {hasFilter && (
             <button
               onClick={clearFilters}
-              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-danger"
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 transition hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-danger"
               title={t('accounting.journal.clear_filters')}
             >
               <X className="h-3.5 w-3.5" />
@@ -278,7 +280,7 @@ export function VehiclesTab() {
         {monthChart.length ? (
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={monthChart} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatNumber(Number(v), lang)} width={70} />
               <Tooltip formatter={(v) => formatCurrency(Number(v), 'IQD', lang)} />
@@ -297,16 +299,16 @@ export function VehiclesTab() {
           <div className="space-y-2 p-4">
             {data.by_category.length ? (
               data.by_category.map((c) => (
-                <div key={c.category} className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2.5">
-                  <span className="flex items-center gap-2 text-sm font-medium text-slate-600">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                <div key={c.category} className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-700/70 px-3 py-2.5">
+                  <span className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-300">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                       {CAT_ICON[c.category] ?? <Coins className="h-4 w-4" />}
                     </span>
                     {t(`accounting.vehicles.cat.${c.category}`)}
                   </span>
                   <span className="inline-flex flex-col items-end tabular-nums">
-                    <span className="font-semibold text-slate-800">{formatCurrency(c.iqd, 'IQD', lang)}</span>
-                    {c.usd ? <span className="text-[11px] text-emerald-600">{formatCurrency(c.usd, 'USD', lang)}</span> : null}
+                    <span className="font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(c.iqd, 'IQD', lang)}</span>
+                    {c.usd ? <span className="text-[11px] text-emerald-600 dark:text-emerald-300">{formatCurrency(c.usd, 'USD', lang)}</span> : null}
                   </span>
                 </div>
               ))
@@ -322,11 +324,11 @@ export function VehiclesTab() {
           <div className="space-y-2 p-4">
             {data.by_year.length ? (
               data.by_year.map((y) => (
-                <div key={y.year} className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2.5">
-                  <span className="text-sm font-semibold text-slate-700">{y.year}</span>
+                <div key={y.year} className="flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-700/70 px-3 py-2.5">
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{y.year}</span>
                   <span className="inline-flex flex-col items-end tabular-nums">
-                    <span className="font-semibold text-slate-800">{formatCurrency(y.iqd, 'IQD', lang)}</span>
-                    {y.usd ? <span className="text-[11px] text-emerald-600">{formatCurrency(y.usd, 'USD', lang)}</span> : null}
+                    <span className="font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(y.iqd, 'IQD', lang)}</span>
+                    {y.usd ? <span className="text-[11px] text-emerald-600 dark:text-emerald-300">{formatCurrency(y.usd, 'USD', lang)}</span> : null}
                   </span>
                 </div>
               ))
@@ -407,9 +409,9 @@ function VehicleDetailDialog({ vehicle, onClose, onOpenEntry }: { vehicle: Vehic
   const costColumns: Column<CostRow>[] = [
     { key: 'date', header: t('accounting.vehicles.date'), accessor: (r) => r.date, render: (r) => formatDate(r.date, lang) },
     { key: 'category', header: t('accounting.vehicles.type'), render: (r) => t(`accounting.vehicles.cat.${r.category}`) },
-    { key: 'project', header: t('common.project'), render: (r) => (r.project_id ? <span className="text-slate-600">{(lang === 'en' ? r.project_name_en || r.project_name_ar : r.project_name_ar) || '—'}</span> : <span className="text-slate-300">—</span>) },
+    { key: 'project', header: t('common.project'), render: (r) => (r.project_id ? <span className="text-slate-600 dark:text-slate-300">{(lang === 'en' ? r.project_name_en || r.project_name_ar : r.project_name_ar) || '—'}</span> : <span className="text-slate-300">—</span>) },
     { key: 'doc', header: t('accounting.journal.serial'), render: (r) => (r.serial_number ? <span className="font-mono text-xs text-primary">{r.serial_number}</span> : <span className="text-slate-300">—</span>) },
-    { key: 'note', header: t('accounting.vehicles.note'), render: (r) => <span className="text-slate-500">{r.note || '—'}</span> },
+    { key: 'note', header: t('accounting.vehicles.note'), render: (r) => <span className="text-slate-500 dark:text-slate-400">{r.note || '—'}</span> },
     { key: 'amount', header: t('accounting.vehicles.spend'), align: 'end', accessor: (r) => r.amount, render: (r) => <span className="tabular-nums">{formatCurrency(r.amount, r.currency, lang)}</span> },
   ]
 
@@ -421,7 +423,7 @@ function VehicleDetailDialog({ vehicle, onClose, onOpenEntry }: { vehicle: Vehic
         <div className="space-y-5">
           {/* totals */}
           <div className="flex items-center justify-between rounded-2xl bg-primary/5 px-4 py-3">
-            <span className="text-sm font-semibold text-slate-600">{t('accounting.vehicles.total_spend')}</span>
+            <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">{t('accounting.vehicles.total_spend')}</span>
             <Dual iqd={vehicle.iqd} usd={vehicle.usd} lang={lang} />
           </div>
 
@@ -432,7 +434,7 @@ function VehicleDetailDialog({ vehicle, onClose, onOpenEntry }: { vehicle: Vehic
               e.g. how many fuel fills / maintenances. Click a card to filter below. */}
           {(data?.by_category.length ?? 0) > 0 && (
             <div>
-              <p className="mb-2 text-sm font-semibold text-slate-600">{t('accounting.vehicles.by_category')}</p>
+              <p className="mb-2 text-sm font-semibold text-slate-600 dark:text-slate-300">{t('accounting.vehicles.by_category')}</p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {data!.by_category.map((c) => (
                   <button
@@ -441,18 +443,18 @@ function VehicleDetailDialog({ vehicle, onClose, onOpenEntry }: { vehicle: Vehic
                     onClick={() => setCatFilter((cur) => (cur === c.category ? '' : c.category))}
                     className={
                       'rounded-xl border px-3 py-2 text-start transition ' +
-                      (catFilter === c.category ? 'border-primary bg-primary/5' : 'border-slate-100 hover:bg-slate-50')
+                      (catFilter === c.category ? 'border-primary bg-primary/5' : 'border-slate-100 dark:border-slate-700/70 hover:bg-slate-50 dark:hover:bg-slate-800')
                     }
                   >
-                    <span className="flex items-center justify-between gap-1.5 text-xs font-medium text-slate-500">
+                    <span className="flex items-center justify-between gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
                       <span className="flex items-center gap-1.5">
                         {CAT_ICON[c.category] ?? <Coins className="h-3.5 w-3.5" />}
                         {t(`accounting.vehicles.cat.${c.category}`)}
                       </span>
-                      <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">×{c.count}</span>
+                      <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400">×{c.count}</span>
                     </span>
-                    <span className="mt-1 block text-sm font-semibold tabular-nums text-slate-800">{formatCurrency(c.iqd, 'IQD', lang)}</span>
-                    {c.usd ? <span className="block text-[11px] tabular-nums text-emerald-600">{formatCurrency(c.usd, 'USD', lang)}</span> : null}
+                    <span className="mt-1 block text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-100">{formatCurrency(c.iqd, 'IQD', lang)}</span>
+                    {c.usd ? <span className="block text-[11px] tabular-nums text-emerald-600 dark:text-emerald-300">{formatCurrency(c.usd, 'USD', lang)}</span> : null}
                   </button>
                 ))}
               </div>
@@ -462,7 +464,7 @@ function VehicleDetailDialog({ vehicle, onClose, onOpenEntry }: { vehicle: Vehic
           {/* cost history — filter chips + clickable rows (journal-sourced rows open the entry) */}
           <div>
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm font-semibold text-slate-600">{t('accounting.vehicles.recent_costs')}</p>
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">{t('accounting.vehicles.recent_costs')}</p>
               {catChips.length > 1 && (
                 <div className="flex flex-wrap gap-1">
                   {catChips.map((c) => (
@@ -472,7 +474,7 @@ function VehicleDetailDialog({ vehicle, onClose, onOpenEntry }: { vehicle: Vehic
                       onClick={() => setCatFilter(c.value)}
                       className={
                         'rounded-full px-2.5 py-1 text-[11px] font-medium transition ' +
-                        (catFilter === c.value ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')
+                        (catFilter === c.value ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200')
                       }
                     >
                       {c.label}

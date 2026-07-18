@@ -78,7 +78,7 @@ export function ArchivePage() {
     icon: docTypeIcon(type),
     badge:
       typeCounts[type] != null ? (
-        <span className="ms-1 rounded-full bg-slate-200/80 px-1.5 text-[11px] font-semibold text-slate-600">
+        <span className="ms-1 rounded-full bg-slate-200/80 dark:bg-slate-700 px-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
           {typeCounts[type]}
         </span>
       ) : undefined,
@@ -91,7 +91,7 @@ export function ArchivePage() {
       header: t('archive.col.date'),
       sortable: true,
       accessor: (r) => r.date,
-      render: (r) => <span className="tabular-nums text-slate-500">{formatDate(r.date, lang)}</span>,
+      render: (r) => <span className="tabular-nums text-slate-500 dark:text-slate-400">{formatDate(r.date, lang)}</span>,
     }
     const attachCol: Column<ArchiveDocument> = {
       key: 'attachments_count',
@@ -101,8 +101,8 @@ export function ArchivePage() {
       accessor: (r) => r.attachments_count,
       render: (r) =>
         r.attachments_count > 0 ? (
-          <span className="inline-flex items-center gap-1 text-slate-600">
-            <Paperclip className="h-3.5 w-3.5 text-slate-400" />
+          <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300">
+            <Paperclip className="h-3.5 w-3.5 text-slate-400 dark:text-slate-400" />
             {formatNumber(r.attachments_count, lang)}
           </span>
         ) : (
@@ -125,7 +125,7 @@ export function ArchivePage() {
       key: 'ref_number',
       header: t('archive.col.ref_number'),
       sortable: true,
-      render: (r) => <span className="font-mono text-xs text-slate-500">{r.ref_number}</span>,
+      render: (r) => <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{r.ref_number}</span>,
     }
 
     if (activeType === 'CV') {
@@ -134,7 +134,7 @@ export function ArchivePage() {
           key: 'title',
           header: t('archive.col.title'),
           sortable: true,
-          render: (r) => <span className="font-medium text-slate-800">{r.title}</span>,
+          render: (r) => <span className="font-medium text-slate-800 dark:text-slate-100">{r.title}</span>,
         },
         { key: 'category', header: t('archive.col.category'), render: (r) => (r.category ? <Badge color="primary">{r.category}</Badge> : '—') },
         { key: 'author', header: t('archive.col.author'), sortable: true },
@@ -150,7 +150,7 @@ export function ArchivePage() {
           key: 'title',
           header: t('archive.col.title'),
           sortable: true,
-          render: (r) => <span className="font-medium text-slate-800">{r.title}</span>,
+          render: (r) => <span className="font-medium text-slate-800 dark:text-slate-100">{r.title}</span>,
         },
         { key: 'category', header: t('archive.col.category'), render: (r) => (r.category ? <Badge color="amber">{r.category}</Badge> : '—') },
         {
@@ -160,7 +160,7 @@ export function ArchivePage() {
           sortable: true,
           accessor: (r) => r.amount ?? 0,
           render: (r) => (
-            <span className="font-semibold tabular-nums text-slate-800">
+            <span className="font-semibold tabular-nums text-slate-800 dark:text-slate-100">
               {formatCurrency(r.amount, r.currency ?? 'IQD', lang)}
             </span>
           ),
@@ -176,7 +176,7 @@ export function ArchivePage() {
         key: 'subject',
         header: t('archive.col.subject'),
         sortable: true,
-        render: (r) => <span className="font-medium text-slate-800">{r.subject || r.title}</span>,
+        render: (r) => <span className="font-medium text-slate-800 dark:text-slate-100">{r.subject || r.title}</span>,
       },
       { key: 'from_party', header: t('archive.col.from'), render: (r) => r.from_party || '—' },
       { key: 'to_party', header: t('archive.col.to'), render: (r) => r.to_party || '—' },
@@ -272,7 +272,7 @@ export function ArchivePage() {
       {/* Shared toolbar: search + company filter */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="relative min-w-[240px] flex-1">
-          <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}

@@ -29,7 +29,7 @@ export function WarehouseTab({ companyId, companyName }: { companyId: string; co
       header: t('companies.wh.serial'),
       sortable: true,
       width: '120px',
-      render: (x) => <span className="font-mono text-xs text-slate-500">{x.serial_number}</span>,
+      render: (x) => <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{x.serial_number}</span>,
     },
     {
       key: 'date',
@@ -55,7 +55,7 @@ export function WarehouseTab({ companyId, companyName }: { companyId: string; co
       key: 'doc_number',
       header: t('companies.wh.doc'),
       accessor: (x) => x.doc_number,
-      render: (x) => <span className="font-mono text-xs text-slate-500">{x.doc_number}</span>,
+      render: (x) => <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{x.doc_number}</span>,
     },
     {
       key: 'total_value',
@@ -64,7 +64,7 @@ export function WarehouseTab({ companyId, companyName }: { companyId: string; co
       sortable: true,
       align: 'end',
       render: (x) => (
-        <span className="font-semibold tabular-nums text-slate-700">
+        <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">
           {formatCurrency(x.total_value, x.currency, lang)}
         </span>
       ),

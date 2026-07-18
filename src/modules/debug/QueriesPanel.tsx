@@ -41,8 +41,8 @@ export function QueriesPanel() {
                   {q.table}
                 </span>
               </DTd>
-              <DTd className="text-end font-mono tabular-nums text-slate-400">{formatNumber(q.rows, lang)}</DTd>
-              <DTd className="text-end font-mono tabular-nums text-slate-400">{formatNumber(q.calls, lang)}</DTd>
+              <DTd className="text-end font-mono tabular-nums text-slate-400 dark:text-slate-400">{formatNumber(q.rows, lang)}</DTd>
+              <DTd className="text-end font-mono tabular-nums text-slate-400 dark:text-slate-400">{formatNumber(q.calls, lang)}</DTd>
               <DTd className="text-end">
                 <span className={cn('font-mono font-bold tabular-nums', slow ? 'text-amber-300' : 'text-emerald-300')}>
                   {formatNumber(q.ms, lang)} ms

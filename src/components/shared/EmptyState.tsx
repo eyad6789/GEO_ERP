@@ -16,12 +16,12 @@ export function EmptyState({
   const t = useT()
   return (
     <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-300">
+      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600">
         {icon ?? <Inbox className="h-7 w-7" />}
       </span>
       <div>
-        <p className="font-semibold text-slate-600">{title ?? t('common.empty')}</p>
-        <p className="mt-1 text-sm text-slate-400">{hint ?? t('common.empty_hint')}</p>
+        <p className="font-semibold text-slate-600 dark:text-slate-300">{title ?? t('common.empty')}</p>
+        <p className="mt-1 text-sm text-slate-400 dark:text-slate-400">{hint ?? t('common.empty_hint')}</p>
       </div>
       {action}
     </div>

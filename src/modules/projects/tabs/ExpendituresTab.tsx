@@ -33,13 +33,13 @@ export function ExpendituresTab({ projectId, currency }: { projectId: string; cu
   }
 
   const columns: Column<ProjectExpenditure>[] = [
-    { key: 'serial_number', header: t('projects.exp.serial'), sortable: true, width: '120px', render: (e) => <span className="font-mono text-xs text-slate-500">{e.serial_number}</span> },
-    { key: 'doc_number', header: t('projects.exp.doc'), render: (e) => <span className="font-mono text-xs text-slate-500">{e.doc_number}</span> },
+    { key: 'serial_number', header: t('projects.exp.serial'), sortable: true, width: '120px', render: (e) => <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{e.serial_number}</span> },
+    { key: 'doc_number', header: t('projects.exp.doc'), render: (e) => <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{e.doc_number}</span> },
     { key: 'date', header: t('common.date'), accessor: (e) => e.date, sortable: true, render: (e) => formatDate(e.date, lang) },
     { key: 'category', header: t('projects.exp.category'), sortable: true, render: (e) => <Badge color="sky">{e.category}</Badge> },
-    { key: 'description', header: t('common.description'), render: (e) => <span className="text-slate-700">{e.description}</span> },
-    { key: 'amount', header: t('common.amount'), accessor: (e) => e.amount, sortable: true, align: 'end', render: (e) => <span className="font-semibold tabular-nums text-slate-800">{formatCurrency(e.amount, e.currency, lang)}</span> },
-    { key: 'paid_to', header: t('projects.exp.paid_to'), render: (e) => <span className="text-slate-700">{e.paid_to || '—'}</span> },
+    { key: 'description', header: t('common.description'), render: (e) => <span className="text-slate-700 dark:text-slate-200">{e.description}</span> },
+    { key: 'amount', header: t('common.amount'), accessor: (e) => e.amount, sortable: true, align: 'end', render: (e) => <span className="font-semibold tabular-nums text-slate-800 dark:text-slate-100">{formatCurrency(e.amount, e.currency, lang)}</span> },
+    { key: 'paid_to', header: t('projects.exp.paid_to'), render: (e) => <span className="text-slate-700 dark:text-slate-200">{e.paid_to || '—'}</span> },
     { key: 'payment_method', header: t('projects.exp.method'), accessor: (e) => methodLabel(e.payment_method), render: (e) => methodLabel(e.payment_method) },
   ]
 

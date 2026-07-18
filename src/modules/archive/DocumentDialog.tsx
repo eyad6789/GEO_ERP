@@ -18,11 +18,11 @@ import { docTypeIcon, docStatusColor, parseTags } from './helpers'
 function MetaRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 py-2">
-      <span className="flex items-center gap-2 text-sm text-slate-500">
-        <span className="text-slate-400">{icon}</span>
+      <span className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+        <span className="text-slate-400 dark:text-slate-400">{icon}</span>
         {label}
       </span>
-      <span className="text-sm font-medium text-slate-800 text-end">{value || '—'}</span>
+      <span className="text-sm font-medium text-slate-800 dark:text-slate-100 text-end">{value || '—'}</span>
     </div>
   )
 }
@@ -55,7 +55,7 @@ export function DocumentDialog({
           </span>
           <span className="min-w-0">
             <span className="block truncate">{doc.title || t('archive.dialog.no_subject')}</span>
-            <span className="block text-xs font-normal text-slate-400">{t(`archive.type.${doc.doc_type}`)}</span>
+            <span className="block text-xs font-normal text-slate-400 dark:text-slate-400">{t(`archive.type.${doc.doc_type}`)}</span>
           </span>
         </span>
       }
@@ -71,7 +71,7 @@ export function DocumentDialog({
           )}
           {doc.category && <Badge color="primary">{doc.category}</Badge>}
           {tags.map((tag) => (
-            <span key={tag} className="inline-flex items-center gap-1 text-xs text-slate-500">
+            <span key={tag} className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
               <Tag className="h-3 w-3" />
               {tag}
             </span>
@@ -79,13 +79,13 @@ export function DocumentDialog({
         </div>
 
         {/* Subject + body */}
-        <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <div className="rounded-xl border border-slate-100 dark:border-slate-700/70 bg-slate-50/60 dark:bg-slate-800/60 p-4">
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">
             {t('archive.col.subject')}
           </p>
-          <p className="font-medium text-slate-800">{doc.subject || t('archive.dialog.no_subject')}</p>
-          <div className="mt-3 border-t border-slate-200/70 pt-3">
-            <p className="whitespace-pre-line text-sm leading-relaxed text-slate-600">
+          <p className="font-medium text-slate-800 dark:text-slate-100">{doc.subject || t('archive.dialog.no_subject')}</p>
+          <div className="mt-3 border-t border-slate-200/70 dark:border-slate-700 pt-3">
+            <p className="whitespace-pre-line text-sm leading-relaxed text-slate-600 dark:text-slate-300">
               {doc.body || t('archive.dialog.no_body')}
             </p>
           </div>
@@ -94,12 +94,12 @@ export function DocumentDialog({
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           {/* Parties */}
           {showParties && (
-            <div className="rounded-xl border border-slate-100 p-4">
-              <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <div className="rounded-xl border border-slate-100 dark:border-slate-700/70 p-4">
+              <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
                 <ArrowLeftRight className="h-4 w-4 text-primary" />
                 {t('archive.dialog.parties')}
               </p>
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-slate-100 dark:divide-slate-700">
                 <MetaRow icon={<User2 className="h-4 w-4" />} label={t('archive.col.from')} value={doc.from_party} />
                 <MetaRow icon={<User2 className="h-4 w-4" />} label={t('archive.col.to')} value={doc.to_party} />
                 {doc.cc && (
@@ -110,12 +110,12 @@ export function DocumentDialog({
           )}
 
           {/* Metadata */}
-          <div className="rounded-xl border border-slate-100 p-4">
-            <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <div className="rounded-xl border border-slate-100 dark:border-slate-700/70 p-4">
+            <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
               <Hash className="h-4 w-4 text-primary" />
               {t('archive.dialog.meta')}
             </p>
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-slate-100 dark:divide-slate-700">
               <MetaRow icon={<CalendarDays className="h-4 w-4" />} label={t('archive.col.date')} value={formatDate(doc.date, lang)} />
               {doc.author && (
                 <MetaRow icon={<User2 className="h-4 w-4" />} label={t('archive.col.author')} value={doc.author} />
@@ -140,7 +140,7 @@ export function DocumentDialog({
         </div>
 
         {/* Notes widget */}
-        <div className="border-t border-slate-100 pt-4">
+        <div className="border-t border-slate-100 dark:border-slate-700/70 pt-4">
           <NoteWidget recordType="archive_documents" recordId={doc.id} moduleId="archive" />
         </div>
       </div>

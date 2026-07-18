@@ -116,7 +116,7 @@ export function LeavesBoard({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="flex items-center gap-1.5 text-xs text-slate-400">
+        <p className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-400">
           <HelpCircle className="h-3.5 w-3.5 shrink-0" />
           {t('hr.leave.board.month_hint')}
         </p>
@@ -127,15 +127,15 @@ export function LeavesBoard({
       </div>
 
       {loading ? (
-        <p className="py-10 text-center text-sm text-slate-400">{t('common.loading')}</p>
+        <p className="py-10 text-center text-sm text-slate-400 dark:text-slate-400">{t('common.loading')}</p>
       ) : leaves.length === 0 ? (
         <EmptyState title={t('hr.leave.empty')} />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {COLUMNS.map((col) => (
             <div key={col.bucket} className={`card border-t-4 ${col.accent}`}>
-              <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
-                <h3 className="text-sm font-bold text-slate-700">{t(col.labelKey)}</h3>
+              <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700/70 px-4 py-3">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200">{t(col.labelKey)}</h3>
                 <Badge color={col.badge}>{formatNumber(buckets[col.bucket].length, lang)}</Badge>
               </div>
               <div className="space-y-3 p-3">
@@ -246,7 +246,7 @@ export function LeavesBoard({
         </Field>
         <button
           type="button"
-          className="mt-2 rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 transition hover:bg-sky-100"
+          className="mt-2 rounded-full bg-sky-50 dark:bg-sky-500/15 px-3 py-1 text-xs font-medium text-sky-700 dark:text-sky-300 transition hover:bg-sky-100"
           onClick={() => setAskText(t('hr.leave.ask_ph'))}
         >
           {t('hr.leave.ask_ph')}
@@ -311,7 +311,7 @@ export function LeavesBoard({
           </div>
         }
       >
-        <p className="text-sm leading-relaxed text-slate-600">{t('hr.leave.summon_desc')}</p>
+        <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{t('hr.leave.summon_desc')}</p>
       </Dialog>
 
       {/* Recall from leave — cut an ongoing approved leave; unused days return */}
@@ -428,7 +428,7 @@ function LeaveCard({
     canManage && bucket === 'APPROVED' && !hourly && !recalled && leave.end_date >= todayKey()
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:shadow-card">
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm transition hover:shadow-card">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <EmployeeCell employee={emp} />
@@ -448,8 +448,8 @@ function LeaveCard({
         </span>
       </div>
 
-      <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-        <CalendarClock className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+      <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+        <CalendarClock className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-400" />
         <span className="tabular-nums">
           {hourly
             ? formatDate(leave.start_date, lang)
@@ -460,16 +460,16 @@ function LeaveCard({
       </p>
 
       {leave.reason && (
-        <p className="mt-1.5 text-sm leading-relaxed text-slate-600 line-clamp-2" title={leave.reason}>
+        <p className="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300 line-clamp-2" title={leave.reason}>
           {leave.reason}
         </p>
       )}
 
       {/* Summoned marker — the employee must visit the office for a talk */}
       {summoned && bucket !== 'APPROVED' && bucket !== 'REJECTED' && (
-        <div className="mt-2 flex items-center gap-1.5 rounded-lg border-s-2 border-violet-300 bg-violet-50 px-2.5 py-1.5">
+        <div className="mt-2 flex items-center gap-1.5 rounded-lg border-s-2 border-violet-300 bg-violet-50 dark:bg-violet-500/15 px-2.5 py-1.5">
           <PhoneCall className="h-3.5 w-3.5 shrink-0 text-violet-500" />
-          <p className="text-xs leading-relaxed text-violet-800">
+          <p className="text-xs leading-relaxed text-violet-800 dark:text-violet-200">
             {t('hr.leave.summoned_since').replace('{date}', formatDate(leave.summoned_at!, lang))}
           </p>
         </div>
@@ -477,39 +477,39 @@ function LeaveCard({
 
       {/* Recalled marker — leave was cut short; he is back at work */}
       {recalled && (
-        <div className="mt-2 rounded-lg border-s-2 border-teal-300 bg-teal-50 px-2.5 py-1.5">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-teal-700">
+        <div className="mt-2 rounded-lg border-s-2 border-teal-300 bg-teal-50 dark:bg-teal-500/15 px-2.5 py-1.5">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-teal-700 dark:text-teal-300">
             <Undo2 className="h-3.5 w-3.5 shrink-0" />
             {t('hr.leave.recalled_badge').replace('{date}', formatDate(leave.recalled_at!, lang))}
           </p>
-          {leave.recall_note && <p className="mt-0.5 text-xs leading-relaxed text-slate-600">{leave.recall_note}</p>}
+          {leave.recall_note && <p className="mt-0.5 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{leave.recall_note}</p>}
         </div>
       )}
 
       {/* Q&A thread */}
       {(leave.manager_question ?? '').trim() !== '' && (
         <div className="mt-2 space-y-1.5">
-          <div className="rounded-lg border-s-2 border-sky-300 bg-sky-50 px-2.5 py-1.5">
-            <p className="text-[11px] font-semibold text-sky-600">{t('hr.leave.question_label')}</p>
-            <p className="text-xs leading-relaxed text-slate-700">{leave.manager_question}</p>
+          <div className="rounded-lg border-s-2 border-sky-300 bg-sky-50 dark:bg-sky-500/15 px-2.5 py-1.5">
+            <p className="text-[11px] font-semibold text-sky-600 dark:text-sky-300">{t('hr.leave.question_label')}</p>
+            <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-200">{leave.manager_question}</p>
           </div>
           {(leave.question_answer ?? '').trim() !== '' ? (
-            <div className="rounded-lg border-s-2 border-slate-300 bg-slate-50 px-2.5 py-1.5">
-              <p className="text-[11px] font-semibold text-slate-500">{t('hr.leave.answer_label')}</p>
-              <p className="text-xs leading-relaxed text-slate-700">{leave.question_answer}</p>
+            <div className="rounded-lg border-s-2 border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/60 px-2.5 py-1.5">
+              <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{t('hr.leave.answer_label')}</p>
+              <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-200">{leave.question_answer}</p>
             </div>
           ) : (
-            <p className="text-xs italic text-slate-400">{t('hr.leave.waiting_answer')}</p>
+            <p className="text-xs italic text-slate-400 dark:text-slate-400">{t('hr.leave.waiting_answer')}</p>
           )}
         </div>
       )}
 
       {/* Decision note on decided cards */}
       {(bucket === 'APPROVED' || bucket === 'REJECTED') && (leave.decision_note || leave.approved_by) && (
-        <div className="mt-2 rounded-lg bg-slate-50 px-2.5 py-1.5">
-          {leave.decision_note && <p className="text-xs leading-relaxed text-slate-600">{leave.decision_note}</p>}
+        <div className="mt-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 px-2.5 py-1.5">
+          {leave.decision_note && <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">{leave.decision_note}</p>}
           {leave.approved_by && (
-            <p className="mt-0.5 text-[11px] text-slate-400">
+            <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-400">
               {t('hr.leave.decided_by')}: {leave.approved_by}
             </p>
           )}
@@ -518,7 +518,7 @@ function LeaveCard({
 
       {/* Actions */}
       {(bucket === 'INQUIRY' || (canManage && bucket === 'PENDING') || recallable) && (
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-2.5">
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-slate-100 dark:border-slate-700/70 pt-2.5">
           {bucket === 'INQUIRY' && !summoned && (
             <Button size="sm" onClick={onAnswer}>
               <Reply className="h-3.5 w-3.5" />
@@ -647,15 +647,15 @@ function RequestLeaveDialog({
       <div className="space-y-4">
         {/* يومية / زمنية toggle */}
         <div>
-          <p className="mb-1.5 text-sm font-medium text-slate-600">{t('hr.leave.kind')}</p>
-          <div className="inline-flex rounded-xl bg-slate-100 p-1">
+          <p className="mb-1.5 text-sm font-medium text-slate-600 dark:text-slate-300">{t('hr.leave.kind')}</p>
+          <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
             {(['daily', 'hourly'] as const).map((k) => (
               <button
                 key={k}
                 type="button"
                 onClick={() => setKind(k)}
                 className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-medium transition ${
-                  kind === k ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  kind === k ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'
                 }`}
               >
                 {k === 'daily' ? <CalendarDays className="h-4 w-4" /> : <Clock className="h-4 w-4" />}

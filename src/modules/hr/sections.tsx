@@ -97,9 +97,9 @@ export function DepartmentsSection({
         description={sel ? `${pickName(coMap.get(sel.company_id), lang)} · ${selEmployees.length} ${t('hr.dept.employees')}` : undefined}
       >
         {selEmployees.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-400">{t('hr.dept.no_employees')}</p>
+          <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-400">{t('hr.dept.no_employees')}</p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700">
             {selEmployees.map((e) => (
               <li
                 key={e.id}
@@ -108,7 +108,7 @@ export function DepartmentsSection({
               >
                 <EmployeeCell employee={e} />
                 <span className="flex items-center gap-3">
-                  {e.job_title && <span className="text-xs text-slate-400">{e.job_title}</span>}
+                  {e.job_title && <span className="text-xs text-slate-400 dark:text-slate-400">{e.job_title}</span>}
                   <StatusBadge status={e.status} />
                 </span>
               </li>
@@ -245,7 +245,7 @@ export function AttendanceSection({
       {monthCounts.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
           {monthCounts.map(([status, count]) => (
-            <span key={status} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+            <span key={status} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
               <StatusBadge status={status} />
               <span className="tabular-nums">{formatNumber(count, lang)}</span> {t('hr.att.days')}
             </span>
@@ -294,15 +294,15 @@ export function AttendanceSection({
       >
         <div className="mb-4 flex flex-wrap gap-2">
           {historyCounts.map(([status, count]) => (
-            <span key={status} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+            <span key={status} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
               <StatusBadge status={status} />
               <span className="tabular-nums">{formatNumber(count, lang)}</span> {t('hr.att.days')}
             </span>
           ))}
         </div>
-        <div className="max-h-[50vh] overflow-y-auto rounded-xl border border-slate-200">
+        <div className="max-h-[50vh] overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
               <tr>
                 <th className="px-3 py-2 text-start">{t('common.date')}</th>
                 <th className="px-3 py-2 text-center">{t('common.status')}</th>
@@ -311,10 +311,10 @@ export function AttendanceSection({
                 <th className="px-3 py-2 text-center">{t('hr.att.worked_hours')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {history.map((a) => (
                 <tr key={a.id}>
-                  <td className="px-3 py-2 tabular-nums text-slate-600">{formatDate(a.date, lang)}</td>
+                  <td className="px-3 py-2 tabular-nums text-slate-600 dark:text-slate-300">{formatDate(a.date, lang)}</td>
                   <td className="px-3 py-2 text-center"><StatusBadge status={a.status} /></td>
                   <td className="px-3 py-2 text-center tabular-nums">{a.check_in ?? '—'}</td>
                   <td className="px-3 py-2 text-center tabular-nums">{a.check_out ?? '—'}</td>

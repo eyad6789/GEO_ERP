@@ -116,7 +116,7 @@ export function HRTab() {
 
   const dash = <span className="text-slate-300">—</span>
   const columns: Column<Row>[] = [
-    { key: 'name', header: t('accounting.hr.employee'), sortable: true, accessor: (r) => r.name, render: (r) => <span className="font-medium text-slate-700">{r.name}</span> },
+    { key: 'name', header: t('accounting.hr.employee'), sortable: true, accessor: (r) => r.name, render: (r) => <span className="font-medium text-slate-700 dark:text-slate-200">{r.name}</span> },
     { key: 'company', header: t('common.company'), accessor: (r) => r.company },
     { key: 'job_title', header: t('accounting.hr.job'), accessor: (r) => r.job_title || '' },
     {
@@ -125,7 +125,7 @@ export function HRTab() {
       align: 'end',
       sortable: true,
       accessor: (r) => r.salary,
-      render: (r) => (r.salary ? <span className="tabular-nums text-slate-700">{formatCurrency(r.salary, 'IQD', lang)}</span> : dash),
+      render: (r) => (r.salary ? <span className="tabular-nums text-slate-700 dark:text-slate-200">{formatCurrency(r.salary, 'IQD', lang)}</span> : dash),
     },
     {
       key: 'advances',
@@ -135,7 +135,7 @@ export function HRTab() {
       accessor: (r) => r.advances_iqd,
       render: (r) =>
         r.advances_iqd || r.advances_usd ? (
-          <span className="inline-flex flex-col items-end tabular-nums text-amber-700">
+          <span className="inline-flex flex-col items-end tabular-nums text-amber-700 dark:text-amber-300">
             {r.advances_iqd ? <span>{formatCurrency(r.advances_iqd, 'IQD', lang)}</span> : null}
             {r.advances_usd ? <span className="text-[11px]">{formatCurrency(r.advances_usd, 'USD', lang)}</span> : null}
           </span>
@@ -161,7 +161,7 @@ export function HRTab() {
           value={
             <span className="inline-flex flex-col">
               <span>{formatCurrency(totals.adv_iqd, 'IQD', lang)}</span>
-              {totals.adv_usd ? <span className="text-sm font-semibold text-emerald-600">{formatCurrency(totals.adv_usd, 'USD', lang)}</span> : null}
+              {totals.adv_usd ? <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-300">{formatCurrency(totals.adv_usd, 'USD', lang)}</span> : null}
             </span>
           }
           hint={t('accounting.hr.total_open_advances_hint')}
@@ -173,7 +173,7 @@ export function HRTab() {
           value={
             <span className="inline-flex flex-col">
               <span>{formatCurrency(staffAdvanceBalance.iqd, 'IQD', lang)}</span>
-              {staffAdvanceBalance.usd ? <span className="text-sm font-semibold text-emerald-600">{formatCurrency(staffAdvanceBalance.usd, 'USD', lang)}</span> : null}
+              {staffAdvanceBalance.usd ? <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-300">{formatCurrency(staffAdvanceBalance.usd, 'USD', lang)}</span> : null}
             </span>
           }
           hint={t('accounting.hr.staff_advance_account_hint')}
@@ -183,10 +183,10 @@ export function HRTab() {
       </div>
 
       {/* Toolbar: search + company filter + jump to the HR module */}
-      <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 shadow-sm">
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="relative min-w-[180px] flex-1">
-            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('accounting.hr.search_ph')} className="h-10 ps-9" />
           </div>
           <div className="w-48 shrink-0">
@@ -194,7 +194,7 @@ export function HRTab() {
           </div>
           <Link
             to="/hr"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:border-primary hover:text-primary"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 transition hover:border-primary hover:text-primary"
           >
             <ExternalLink className="h-3.5 w-3.5" />
             {t('accounting.hr.open_hr')}
@@ -327,24 +327,24 @@ function EmployeeFinanceDialog({
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl bg-primary/5 p-3 text-center">
           <p className="text-lg font-bold tabular-nums text-primary">{formatCurrency(totals.salaries, 'IQD', lang)}</p>
-          <p className="text-xs text-slate-500">{t('accounting.hr.fin.total_salaries')}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{t('accounting.hr.fin.total_salaries')}</p>
         </div>
-        <div className="rounded-xl bg-amber-50 p-3 text-center">
-          <p className="text-lg font-bold tabular-nums text-amber-700">{formatCurrency(totals.advTotal, 'IQD', lang)}</p>
-          <p className="text-xs text-slate-500">{t('accounting.hr.fin.total_advances')}</p>
+        <div className="rounded-xl bg-amber-50 dark:bg-amber-500/15 p-3 text-center">
+          <p className="text-lg font-bold tabular-nums text-amber-700 dark:text-amber-300">{formatCurrency(totals.advTotal, 'IQD', lang)}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{t('accounting.hr.fin.total_advances')}</p>
         </div>
-        <div className="rounded-xl bg-rose-50 p-3 text-center">
-          <p className="text-lg font-bold tabular-nums text-rose-700">{formatCurrency(totals.advOpen, 'IQD', lang)}</p>
-          <p className="text-xs text-slate-500">{t('accounting.hr.fin.open_advances')}</p>
+        <div className="rounded-xl bg-rose-50 dark:bg-rose-500/15 p-3 text-center">
+          <p className="text-lg font-bold tabular-nums text-rose-700 dark:text-rose-300">{formatCurrency(totals.advOpen, 'IQD', lang)}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{t('accounting.hr.fin.open_advances')}</p>
         </div>
       </div>
 
       {rows.length === 0 ? (
-        <p className="py-10 text-center text-sm text-slate-400">{t('accounting.hr.fin.empty')}</p>
+        <p className="py-10 text-center text-sm text-slate-400 dark:text-slate-400">{t('accounting.hr.fin.empty')}</p>
       ) : (
-        <div className="max-h-[50vh] overflow-y-auto rounded-xl border border-slate-200">
+        <div className="max-h-[50vh] overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
               <tr>
                 <th className="px-3 py-2 text-start">{t('common.date')}</th>
                 <th className="px-3 py-2 text-center">{t('accounting.hr.fin.kind')}</th>
@@ -353,10 +353,10 @@ function EmployeeFinanceDialog({
                 <th className="px-3 py-2 text-center">{t('common.status')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {rows.map((r) => (
                 <tr key={r.key} className="align-top">
-                  <td className="whitespace-nowrap px-3 py-2 tabular-nums text-slate-600">
+                  <td className="whitespace-nowrap px-3 py-2 tabular-nums text-slate-600 dark:text-slate-300">
                     {/^\d{4}-\d{2}$/.test(r.date) ? r.date : formatDate(r.date, lang)}
                   </td>
                   <td className="px-3 py-2 text-center">
@@ -366,8 +366,8 @@ function EmployeeFinanceDialog({
                       <Badge color="amber">{t('accounting.hr.fin.advance')}</Badge>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-slate-600">{r.detail}</td>
-                  <td className="whitespace-nowrap px-3 py-2 text-end tabular-nums font-semibold text-slate-800">
+                  <td className="px-3 py-2 text-slate-600 dark:text-slate-300">{r.detail}</td>
+                  <td className="whitespace-nowrap px-3 py-2 text-end tabular-nums font-semibold text-slate-800 dark:text-slate-100">
                     {formatCurrency(r.amount, r.currency, lang)}
                   </td>
                   <td className="px-3 py-2 text-center">

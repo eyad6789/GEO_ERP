@@ -75,34 +75,34 @@ export function CompanyDetail() {
   return (
     <div>
       {/* Breadcrumb */}
-      <nav className="mb-4 flex items-center gap-1.5 text-sm text-slate-400">
+      <nav className="mb-4 flex items-center gap-1.5 text-sm text-slate-400 dark:text-slate-400">
         <Link to="/companies" className="transition hover:text-primary">
           {t('companies.title')}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" />
-        <span className="font-medium text-slate-600">{companyName}</span>
+        <span className="font-medium text-slate-600 dark:text-slate-300">{companyName}</span>
       </nav>
 
       {/* Header banner */}
-      <div className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
+      <div className="mb-6 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-card">
         <div className="h-20 bg-gradient-to-l from-primary/10 via-primary/5 to-transparent" style={{ borderBottom: `3px solid ${company.logo_color}` }} />
         <div className="flex flex-wrap items-end justify-between gap-4 px-6 pb-5">
           <div className="-mt-9 flex items-end gap-4">
-            <span className="rounded-2xl bg-white p-1 shadow-md">
+            <span className="rounded-2xl bg-white dark:bg-slate-800 p-1 shadow-md">
               <Avatar name={companyName} color={company.logo_color} size="xl" />
             </span>
             <div className="pb-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-bold text-slate-800">{companyName}</h1>
+                <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{companyName}</h1>
                 <StatusBadge status={company.status} />
                 <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
                   {company.type === 'PARENT' ? t('companies.parent') : t('companies.subsidiary')}
                 </span>
               </div>
-              <p className="mt-0.5 text-sm text-slate-400">
+              <p className="mt-0.5 text-sm text-slate-400 dark:text-slate-400">
                 {lang === 'ar' ? company.name_en : company.name_ar}
               </p>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
                 <span className="font-mono text-primary">{company.code}</span>
                 <span className="flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5" />
@@ -116,7 +116,7 @@ export function CompanyDetail() {
             <NoteWidget recordType="companies" recordId={id} moduleId="companies" />
             <Link
               to="/companies"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               <ArrowRight className="h-4 w-4 rtl:rotate-180" />
               {t('common.back')}

@@ -67,7 +67,7 @@ export function ArchiveTab() {
       <button
         type="button"
         onClick={() => setPickFocus(f)}
-        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-500 transition hover:border-primary hover:text-primary"
+        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 px-2.5 py-1 text-xs font-medium text-slate-500 dark:text-slate-400 transition hover:border-primary hover:text-primary"
       >
         <Plus className="h-3.5 w-3.5" />{t('fleet.add.new')}
       </button>
@@ -131,17 +131,17 @@ export function ArchiveTab() {
         {list.length ? (
           list.slice(0, 7).map((v) => (
             <ListItem key={v.id} onClick={() => openCar(v, focus)}>
-              <VehicleTypeIcon type={v.vehicle_type} className="h-5 w-5 shrink-0 text-slate-500 opacity-60" />
+              <VehicleTypeIcon type={v.vehicle_type} className="h-5 w-5 shrink-0 text-slate-500 dark:text-slate-400 opacity-60" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-slate-600" dir="ltr">{v.plate_number}</p>
-                <p className="truncate text-xs text-slate-400">{pickName(v, lang)}{v.model_year ? ` · ${v.model_year}` : ''}</p>
+                <p className="truncate text-sm font-medium text-slate-600 dark:text-slate-300" dir="ltr">{v.plate_number}</p>
+                <p className="truncate text-xs text-slate-400 dark:text-slate-400">{pickName(v, lang)}{v.model_year ? ` · ${v.model_year}` : ''}</p>
               </div>
               <StatusBadge status={v.status} />
             </ListItem>
           ))
         ) : (
           <CardBody>
-            <p className="text-center text-sm text-slate-400">{t('fleet.empty')}</p>
+            <p className="text-center text-sm text-slate-400 dark:text-slate-400">{t('fleet.empty')}</p>
           </CardBody>
         )}
       </div>
@@ -181,10 +181,10 @@ export function ArchiveTab() {
               const rs = regState(v.registration_expiry)
               return (
                 <ListItem key={v.id} onClick={() => openCar(v, 'registration')}>
-                  <VehicleTypeIcon type={v.vehicle_type} className="h-5 w-5 shrink-0 text-slate-500" />
+                  <VehicleTypeIcon type={v.vehicle_type} className="h-5 w-5 shrink-0 text-slate-500 dark:text-slate-400" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-700" dir="ltr">{v.plate_number}</p>
-                    <p className="truncate text-xs text-slate-400">{pickName(v, lang)}</p>
+                    <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-200" dir="ltr">{v.plate_number}</p>
+                    <p className="truncate text-xs text-slate-400 dark:text-slate-400">{pickName(v, lang)}</p>
                   </div>
                   <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${REG_CHIP[rs]}`}>
                     {t(REG_LABEL_KEY[rs])}
@@ -215,15 +215,15 @@ export function ArchiveTab() {
                     <IdCard className="h-4 w-4" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-700">{name}</p>
-                    <p className="flex items-center gap-1.5 text-xs text-slate-400">
+                    <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-200">{name}</p>
+                    <p className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-400">
                       <Car className="h-3 w-3" />{carN} {t('fleet.driver.cars_count')}
                     </p>
                   </div>
                   <span
                     className={
                       'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ' +
-                      (docN > 0 ? 'bg-success/10 text-success' : 'bg-slate-100 text-slate-400')
+                      (docN > 0 ? 'bg-success/10 text-success' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-400')
                     }
                   >
                     <FileText className="h-3 w-3" />
@@ -232,7 +232,7 @@ export function ArchiveTab() {
                 </ListItem>
               )
             })}
-            {drivers.length === 0 && <p className="px-5 py-6 text-center text-xs text-slate-400">{t('fleet.empty')}</p>}
+            {drivers.length === 0 && <p className="px-5 py-6 text-center text-xs text-slate-400 dark:text-slate-400">{t('fleet.empty')}</p>}
           </div>
         </Card>
 
@@ -243,7 +243,7 @@ export function ArchiveTab() {
         {soldRetiredCard(t('fleet.arch.retired_cars'), retired, 'retire')}
       </div>
 
-      <p className="text-center text-xs text-slate-400">{t('fleet.arch.placeholder')}</p>
+      <p className="text-center text-xs text-slate-400 dark:text-slate-400">{t('fleet.arch.placeholder')}</p>
 
       {openDriver && (
         <DriverDialog

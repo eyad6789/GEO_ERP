@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import { useT, useLang } from '../../../context/LangContext'
 import { useApi } from '../../../hooks/useResource'
+import { useChartTheme } from '../../../hooks/useChartTheme'
 import {
   KpiCard,
   ChartCard,
@@ -60,17 +61,16 @@ registerStrings({
 })
 
 // ---- Chart tooltip helpers -------------------------------------------------
-const AXIS_STYLE = { fontSize: 11, fill: '#64748b' }
 
 function DualCurrencyTooltip({ active, payload, label, lang }: {
   active?: boolean; payload?: any[]; label?: string; lang: Lang
 }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-card" dir="ltr">
-      <p className="mb-1 font-semibold text-slate-700">{label}</p>
+    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs shadow-card" dir="ltr">
+      <p className="mb-1 font-semibold text-slate-700 dark:text-slate-200">{label}</p>
       {payload.map((p: any) => (
-        <p key={p.dataKey} className="flex items-center gap-1.5 text-slate-600">
+        <p key={p.dataKey} className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
           <span className="inline-block h-2 w-2 rounded-full" style={{ background: p.color }} />
           <span>{p.name}:</span>
           <span className="font-medium tabular-nums">
@@ -95,6 +95,8 @@ export function AccountingTab() {
   const t = useT()
   const { lang } = useLang()
   const l = lang as Lang
+  const ct = useChartTheme()
+  const AXIS_STYLE = { fontSize: 11, fill: ct.axis }
 
   const { data: costs, loading } = useApi<FleetCosts>('/fleet/costs')
 
@@ -116,7 +118,7 @@ export function AccountingTab() {
       header: t('fleet.acc.category'),
       accessor: (r) => t(CAT_KEYS[r.category] ?? r.category),
       render: (r) => (
-        <span className="font-medium text-slate-700">
+        <span className="font-medium text-slate-700 dark:text-slate-200">
           {t(CAT_KEYS[r.category] ?? r.category)}
         </span>
       ),
@@ -127,7 +129,7 @@ export function AccountingTab() {
       align: 'end',
       accessor: (r) => r.iqd,
       render: (r) => (
-        <span className="tabular-nums text-slate-700">
+        <span className="tabular-nums text-slate-700 dark:text-slate-200">
           {formatCurrency(r.iqd, 'IQD', l)}
         </span>
       ),
@@ -138,7 +140,7 @@ export function AccountingTab() {
       align: 'end',
       accessor: (r) => r.usd,
       render: (r) => (
-        <span className="tabular-nums font-medium text-emerald-700">
+        <span className="tabular-nums font-medium text-emerald-700 dark:text-emerald-300">
           {formatCurrency(r.usd, 'USD', l)}
         </span>
       ),
@@ -156,7 +158,7 @@ export function AccountingTab() {
           ? r.name_ar || t('fleet.card.no_project')
           : r.name_ar || t('fleet.card.no_project'),
       render: (r) => (
-        <span className="font-medium text-slate-700">
+        <span className="font-medium text-slate-700 dark:text-slate-200">
           {r.name_ar || t('fleet.card.no_project')}
         </span>
       ),
@@ -167,7 +169,7 @@ export function AccountingTab() {
       align: 'center',
       accessor: (r) => r.vehicles,
       render: (r) => (
-        <span className="tabular-nums text-slate-500">{r.vehicles}</span>
+        <span className="tabular-nums text-slate-500 dark:text-slate-400">{r.vehicles}</span>
       ),
     },
     {
@@ -176,7 +178,7 @@ export function AccountingTab() {
       align: 'end',
       accessor: (r) => r.iqd,
       render: (r) => (
-        <span className="tabular-nums text-slate-700">
+        <span className="tabular-nums text-slate-700 dark:text-slate-200">
           {formatCurrency(r.iqd, 'IQD', l)}
         </span>
       ),
@@ -187,7 +189,7 @@ export function AccountingTab() {
       align: 'end',
       accessor: (r) => r.usd,
       render: (r) => (
-        <span className="tabular-nums font-medium text-emerald-700">
+        <span className="tabular-nums font-medium text-emerald-700 dark:text-emerald-300">
           {formatCurrency(r.usd, 'USD', l)}
         </span>
       ),
@@ -312,17 +314,17 @@ export function AccountingTab() {
               <div className="flex items-center gap-2">
                 <Truck className="h-4 w-4 shrink-0 text-primary" />
                 <div>
-                  <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
                     {t('fleet.acc.by_vehicle.title')}
                     <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold tabular-nums text-primary">
                       {formatCompact(vehFiltered.length, l)} {t('fleet.inventory.count')}
                     </span>
                   </h3>
-                  <p className="text-xs text-slate-400">{t('fleet.acc.by_vehicle.subtitle')}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-400">{t('fleet.acc.by_vehicle.subtitle')}</p>
                 </div>
               </div>
               <div className="relative">
-                <Search className="absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <Search className="absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
                 <Input
                   value={vehSearch}
                   onChange={(e) => setVehSearch(e.target.value)}
@@ -361,11 +363,11 @@ export function AccountingTab() {
                     <div key={projectId ?? '__unassigned__'}>
                       <div className="mb-3 flex items-center gap-2">
                         <FolderOpen className="h-4 w-4 text-accent" />
-                        <h4 className="text-sm font-semibold text-slate-700">{groupName}</h4>
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs tabular-nums text-slate-500">
+                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{groupName}</h4>
+                        <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs tabular-nums text-slate-500 dark:text-slate-400">
                           {formatCompact(groupVehicles.length, l)}
                         </span>
-                        <div className="h-px flex-1 bg-slate-100" />
+                        <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
                       </div>
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                         {groupVehicles.map((v) => (

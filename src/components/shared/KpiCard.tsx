@@ -25,9 +25,9 @@ export function KpiCard({ label, value, icon, hint, trend, accent = 'primary' }:
     <div className="card p-5 transition hover:shadow-card-hover">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-500">{label}</p>
-          <p className="mt-2 text-2xl font-bold text-slate-800 tabular-nums">{value}</p>
-          {hint && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
+          <p className="mt-2 text-2xl font-bold text-slate-800 dark:text-slate-100 tabular-nums">{value}</p>
+          {hint && <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">{hint}</p>}
         </div>
         {icon && (
           <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', ACCENTS[accent])}>

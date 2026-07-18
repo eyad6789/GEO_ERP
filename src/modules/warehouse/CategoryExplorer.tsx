@@ -348,11 +348,11 @@ export function CategoryExplorer({
                           close()
                         }}
                         className={cn(
-                          'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition hover:bg-slate-50',
-                          warehouseId === w.id ? 'font-semibold text-primary' : 'text-slate-600',
+                          'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition hover:bg-slate-50 dark:hover:bg-slate-800',
+                          warehouseId === w.id ? 'font-semibold text-primary' : 'text-slate-600 dark:text-slate-300',
                         )}
                       >
-                        <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
+                        <MapPin className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-400" />
                         {shortWarehouseName(pickName(w, lang))}
                       </button>
                     ))}
@@ -363,7 +363,7 @@ export function CategoryExplorer({
           })()}
         </div>
         <div className="relative min-w-[220px] flex-1">
-          <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
           <input
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -431,7 +431,7 @@ export function CategoryExplorer({
                   >
                     <Icon className="h-5 w-5" />
                   </span>
-                  <p className="min-w-0 flex-1 font-bold leading-snug text-slate-800">
+                  <p className="min-w-0 flex-1 font-bold leading-snug text-slate-800 dark:text-slate-100">
                     {categoryLabel(taxonomy, id, lang)}
                   </p>
                   <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 opacity-0 transition group-hover:opacity-100 rtl:rotate-180" />
@@ -439,19 +439,19 @@ export function CategoryExplorer({
 
                 {/* Count row — the نفد badge lives here, never crowding the title */}
                 <div className="mt-4 flex items-baseline gap-1.5">
-                  <span className="text-3xl font-extrabold leading-none tabular-nums text-slate-800">
+                  <span className="text-3xl font-extrabold leading-none tabular-nums text-slate-800 dark:text-slate-100">
                     {formatNumber(bucket.length, lang)}
                   </span>
-                  <span className="text-xs text-slate-400">{t('warehouse.explorer.items_unit')}</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-400">{t('warehouse.explorer.items_unit')}</span>
                   {outCount > 0 && (
-                    <span className="ms-auto inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600 ring-1 ring-inset ring-red-100">
+                    <span className="ms-auto inline-flex items-center rounded-full bg-red-50 dark:bg-red-500/15 px-2 py-0.5 text-[11px] font-semibold text-red-600 dark:text-red-300 ring-1 ring-inset ring-red-100">
                       {t('warehouse.stock.OUT')} {formatNumber(outCount, lang)}
                     </span>
                   )}
                 </div>
 
                 {/* Share of the whole inventory — size at a glance */}
-                <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                   <div
                     className={cn('h-full rounded-full', meta.bar)}
                     style={{ width: `${Math.max(6, Math.round((bucket.length / maxCount) * 100))}%` }}
@@ -460,12 +460,12 @@ export function CategoryExplorer({
 
                 {/* Sub-categories as calm text, pinned to the card bottom */}
                 {chips.length > 0 && (
-                  <p className="mt-auto flex flex-wrap items-center gap-x-1.5 gap-y-1 pt-3.5 text-xs leading-relaxed text-slate-400">
+                  <p className="mt-auto flex flex-wrap items-center gap-x-1.5 gap-y-1 pt-3.5 text-xs leading-relaxed text-slate-400 dark:text-slate-400">
                     {chips.map((s, i) => (
                       <span key={s.id} className="inline-flex items-center gap-1">
                         {i > 0 && <span className="text-slate-200">·</span>}
                         {subCategoryLabel(taxonomy, s.id, lang)}
-                        <span className="font-semibold tabular-nums text-slate-600">{formatNumber(s.count, lang)}</span>
+                        <span className="font-semibold tabular-nums text-slate-600 dark:text-slate-300">{formatNumber(s.count, lang)}</span>
                       </span>
                     ))}
                   </p>
@@ -526,7 +526,7 @@ function CategoryDetail({
       <div className="flex items-center gap-3">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+          className="flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800"
         >
           <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
           {t('common.back')}
@@ -535,8 +535,8 @@ function CategoryDetail({
           <Icon className="h-5 w-5" />
         </span>
         <div className="min-w-0">
-          <h3 className="truncate font-bold text-slate-800">{categoryLabel(taxonomy, catId, lang)}</h3>
-          <p className="text-xs text-slate-400">
+          <h3 className="truncate font-bold text-slate-800 dark:text-slate-100">{categoryLabel(taxonomy, catId, lang)}</h3>
+          <p className="text-xs text-slate-400 dark:text-slate-400">
             <span className="tabular-nums">{formatNumber(rows.length, lang)}</span> {t('warehouse.explorer.items_unit')}
           </p>
         </div>
@@ -588,7 +588,7 @@ function CategoryDetail({
           <EmptyState title={t('warehouse.items.empty')} />
         </Card>
       ) : (
-        <Card className="divide-y divide-slate-100 overflow-hidden">
+        <Card className="divide-y divide-slate-100 dark:divide-slate-700 overflow-hidden">
           {listRows.map((r) => (
             <ItemRow
               key={r.item_id}
@@ -645,7 +645,7 @@ function BulkMinStockButton({ listRows }: { listRows: StockSummaryRow[] }) {
           <button
             onClick={toggle}
             disabled={listRows.length === 0}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <BellRing className="h-3.5 w-3.5" />
             {t('warehouse.radar.set_min_bulk')} ({formatNumber(listRows.length, lang)})
@@ -713,7 +713,7 @@ function SearchResults({
         <EmptyState title={t('warehouse.explorer.no_results')} icon={<PackageSearch className="h-7 w-7" />} />
         {didYouMean.length > 0 && (
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <span className="text-sm font-medium text-slate-500">{t('warehouse.search.did_you_mean')}</span>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{t('warehouse.search.did_you_mean')}</span>
             {didYouMean.map((word) => (
               <button
                 key={word}
@@ -731,11 +731,11 @@ function SearchResults({
   }
   return (
     <div>
-      <p className="mb-3 text-sm text-slate-500">
-        <span className="font-semibold text-slate-700 tabular-nums">{formatNumber(total, lang)}</span>{' '}
+      <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
+        <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">{formatNumber(total, lang)}</span>{' '}
         {t('warehouse.explorer.results')}
       </p>
-      <Card className="divide-y divide-slate-100 overflow-hidden">
+      <Card className="divide-y divide-slate-100 dark:divide-slate-700 overflow-hidden">
         {rows.map((r) => (
           <ItemRow
             key={r.item_id}
@@ -788,7 +788,7 @@ function ItemRow({
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="truncate font-medium text-slate-800">{pickName(row, lang)}</span>
+          <span className="truncate font-medium text-slate-800 dark:text-slate-100">{pickName(row, lang)}</span>
           {showCategoryChip && (
             <span
               className={cn(
@@ -801,7 +801,7 @@ function ItemRow({
             </span>
           )}
         </div>
-        <p className="mt-0.5 truncate text-xs text-slate-400">
+        <p className="mt-0.5 truncate text-xs text-slate-400 dark:text-slate-400">
           <span className="font-mono">{row.code}</span>
           {row.size_label ? <span dir="ltr"> · {row.size_label}</span> : null}
           {row.spec ? <> · {row.spec}</> : null}
@@ -816,8 +816,8 @@ function ItemRow({
 
       <div className="flex shrink-0 items-center gap-2.5">
         <div className="text-end tabular-nums">
-          <span className="font-semibold text-slate-800">{formatNumber(row.quantity, lang)}</span>
-          <span className="ms-1 text-xs font-normal text-slate-400">{row.uom}</span>
+          <span className="font-semibold text-slate-800 dark:text-slate-100">{formatNumber(row.quantity, lang)}</span>
+          <span className="ms-1 text-xs font-normal text-slate-400 dark:text-slate-400">{row.uom}</span>
         </div>
         {(row.condition === 'BROKEN' || row.condition === 'NEEDS_REPAIR') && (
           <Badge color={CONDITION_COLOR[row.condition]}>{t(`warehouse.condition.${row.condition}`)}</Badge>
@@ -833,14 +833,14 @@ function ItemRow({
               return (
                 <span
                   key={d.warehouse_id}
-                  className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] tabular-nums text-slate-500"
+                  className="rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[11px] tabular-nums text-slate-500 dark:text-slate-400"
                 >
                   {nm} {formatNumber(d.quantity, lang)}
                 </span>
               )
             })}
             {moreDist > 0 && (
-              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] tabular-nums text-slate-400">
+              <span className="rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[11px] tabular-nums text-slate-400 dark:text-slate-400">
                 +{formatNumber(moreDist, lang)}
               </span>
             )}
@@ -870,7 +870,7 @@ function Chip({
       onClick={onClick}
       className={cn(
         'rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset transition',
-        active ? cn(meta.chip, 'font-semibold') : 'bg-white text-slate-500 ring-slate-200 hover:bg-slate-50',
+        active ? cn(meta.chip, 'font-semibold') : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 ring-slate-200 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800',
       )}
     >
       {children}
@@ -895,7 +895,7 @@ function WarehousePill({
       onClick={onClick}
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ring-1 ring-inset transition',
-        active ? 'bg-primary text-white ring-primary' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50',
+        active ? 'bg-primary text-white ring-primary' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-slate-200 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800',
       )}
     >
       {children}
@@ -924,11 +924,11 @@ function SubTile({
       onClick={onClick}
       className={cn(
         'flex min-w-[72px] flex-col items-center gap-0.5 rounded-xl px-4 py-2 ring-1 ring-inset transition hover:ring-primary/40',
-        active ? meta.chip : 'bg-white text-slate-600 ring-slate-200',
+        active ? meta.chip : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-slate-200 dark:ring-slate-700',
       )}
     >
-      <span className={cn('text-lg font-bold tabular-nums', active ? meta.text : 'text-slate-800')}>{count}</span>
-      <span className="max-w-[7.5rem] truncate text-[11px] text-slate-500">{label}</span>
+      <span className={cn('text-lg font-bold tabular-nums', active ? meta.text : 'text-slate-800 dark:text-slate-100')}>{count}</span>
+      <span className="max-w-[7.5rem] truncate text-[11px] text-slate-500 dark:text-slate-400">{label}</span>
     </button>
   )
 }
@@ -947,13 +947,13 @@ const CATEGORY_BORDER: Record<string, string> = {
   SCAFFOLDING: 'border-lime-300',
   FINISHING: 'border-pink-300',
   SANITARY: 'border-teal-300',
-  TOOLS: 'border-slate-300',
+  TOOLS: 'border-slate-300 dark:border-slate-600',
   SAFETY: 'border-red-300',
   SITE: 'border-emerald-300',
   OTHER: 'border-gray-300',
 }
 function categoryBorder(id: string): string {
-  return CATEGORY_BORDER[id] ?? 'border-slate-300'
+  return CATEGORY_BORDER[id] ?? 'border-slate-300 dark:border-slate-600'
 }
 
 // ---------------------------------------------------------------------------
@@ -992,12 +992,12 @@ function SizeCircle({
         className={cn(
           'flex items-center justify-center rounded-full border-2 px-0.5 text-center font-semibold tabular-nums transition',
           innerSize,
-          active ? cn(meta.tile, activeBorder) : 'border-slate-300 bg-white text-slate-600',
+          active ? cn(meta.tile, activeBorder) : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300',
         )}
       >
         {innerLabel}
       </span>
-      <span className="text-[10px] tabular-nums text-slate-400">{formatNumber(size.count, lang)}</span>
+      <span className="text-[10px] tabular-nums text-slate-400 dark:text-slate-400">{formatNumber(size.count, lang)}</span>
     </button>
   )
 }

@@ -16,7 +16,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
       {open && <div className="fixed inset-0 z-30 bg-slate-900/40 md:hidden" onClick={onClose} />}
       <aside
         className={cn(
-          'z-40 w-[var(--sidebar-w)] shrink-0 flex-col border-e border-slate-200 bg-white',
+          'z-40 w-[var(--sidebar-w)] shrink-0 flex-col border-e border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800',
           'fixed inset-y-0 start-0 md:static',
           open ? 'flex' : 'hidden',
         )}
@@ -54,11 +54,11 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                   item.variant === 'debug'
                     ? isActive
                       ? 'bg-debug-bg text-white'
-                      : 'text-slate-500 hover:bg-slate-900 hover:text-white'
+                      : 'text-slate-500 dark:text-slate-400 hover:bg-slate-900 hover:text-white'
                     : isActive
                       ? 'bg-primary text-white shadow-sm'
-                      : 'text-slate-600 hover:bg-primary/5 hover:text-primary',
-                  locked && !isActive && 'text-slate-400',
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-primary/5 hover:text-primary',
+                  locked && !isActive && 'text-slate-400 dark:text-slate-400',
                 )
               }
             >
@@ -70,10 +70,10 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         })}
       </nav>
 
-      <div className="border-t border-slate-100 p-3">
-        <div className="rounded-lg bg-slate-50 p-3 text-center">
-          <p className="text-xs font-semibold text-slate-500">al-qabas E.G. ERP · v1.0</p>
-          <p className="mt-0.5 text-[10px] text-slate-400">نسخة تجريبية للعرض</p>
+      <div className="border-t border-slate-100 dark:border-slate-700/70 p-3">
+        <div className="rounded-lg bg-slate-50 dark:bg-slate-800/60 p-3 text-center">
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">al-qabas E.G. ERP · v1.0</p>
+          <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-400">نسخة تجريبية للعرض</p>
         </div>
       </div>
     </aside>

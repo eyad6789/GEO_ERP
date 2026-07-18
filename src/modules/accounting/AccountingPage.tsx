@@ -129,11 +129,11 @@ export default function AccountingPage() {
       />
 
       {!canEdit && (
-        <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 no-print">
+        <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/15 px-4 py-3 no-print">
           <Lock className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
           <div>
-            <p className="text-sm font-semibold text-amber-800">{t('accounting.readonly.title')}</p>
-            <p className="text-xs text-amber-700">{t('accounting.readonly.hint')}</p>
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">{t('accounting.readonly.title')}</p>
+            <p className="text-xs text-amber-700 dark:text-amber-300">{t('accounting.readonly.hint')}</p>
           </div>
         </div>
       )}

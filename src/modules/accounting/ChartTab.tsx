@@ -303,18 +303,18 @@ export function ChartTab() {
             </div>
           }
         />
-        <div className="border-b border-slate-100 p-3">
+        <div className="border-b border-slate-100 dark:border-slate-700/70 p-3">
           <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('common.search')} className="max-w-sm" />
         </div>
 
         {loading ? (
-          <div className="p-10 text-center text-sm text-slate-400">{t('common.loading')}</div>
+          <div className="p-10 text-center text-sm text-slate-400 dark:text-slate-400">{t('common.loading')}</div>
         ) : filtered.length === 0 ? (
           <EmptyState title={t('common.empty')} hint={t('common.empty_hint')} />
         ) : (
           <div className="py-1">
             {/* Column captions for the balances */}
-            <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50/60 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-700/70 bg-slate-50/60 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">
               <span className="w-4 shrink-0" />
               <span className="w-20 shrink-0">{t('accounting.chart.code')}</span>
               <span className="flex-1">{t('accounting.chart.name')}</span>
@@ -384,31 +384,31 @@ export function ChartTab() {
       >
         {del && (
           <div className="space-y-3">
-            <p className="font-semibold text-slate-700">
-              <span className="font-mono text-slate-500">{del.node.code}</span> — {pickName(del.node, lang)}
+            <p className="font-semibold text-slate-700 dark:text-slate-200">
+              <span className="font-mono text-slate-500 dark:text-slate-400">{del.node.code}</span> — {pickName(del.node, lang)}
             </p>
             {del.blocked ? (
-              <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
+              <div className="flex items-start gap-3 rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 p-3">
                 <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-danger" />
-                <p className="text-sm text-red-700">{t('accounting.del.blocked')}</p>
+                <p className="text-sm text-red-700 dark:text-red-300">{t('accounting.del.blocked')}</p>
               </div>
             ) : (
               <>
                 {del.hasFile ? (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                    <p className="flex items-center gap-2 font-semibold text-amber-800">
+                  <div className="rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/15 p-3">
+                    <p className="flex items-center gap-2 font-semibold text-amber-800 dark:text-amber-200">
                       <AlertTriangle className="h-4 w-4" />
                       {t('accounting.del.warn_title')}
                     </p>
-                    <p className="mt-1 text-sm text-amber-700">
+                    <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
                       {t('accounting.del.warn_file')} <span className="font-bold tabular-nums">{del.fileCount}</span>{' '}
                       {t('accounting.del.movements')}
                     </p>
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-600">{t('accounting.del.confirm_empty')}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">{t('accounting.del.confirm_empty')}</p>
                 )}
-                <p className="rounded-lg bg-slate-50 p-2.5 text-xs leading-relaxed text-slate-500">{t('accounting.del.soft')}</p>
+                <p className="rounded-lg bg-slate-50 dark:bg-slate-800/60 p-2.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{t('accounting.del.soft')}</p>
               </>
             )}
           </div>
@@ -468,8 +468,8 @@ function RecodeDialog({
     >
       {node && (
         <div className="space-y-3">
-          <p className="text-sm text-slate-600">
-            <span className="font-mono font-semibold text-slate-500">{node.code}</span> — {pickName(node, lang)}
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            <span className="font-mono font-semibold text-slate-500 dark:text-slate-400">{node.code}</span> — {pickName(node, lang)}
           </p>
           <Field label={t('accounting.recode.new_code')} required>
             <Input
@@ -483,7 +483,7 @@ function RecodeDialog({
               dir="ltr"
             />
           </Field>
-          <p className="rounded-lg bg-amber-50 p-2.5 text-xs leading-relaxed text-amber-700">{t('accounting.recode.warn')}</p>
+          <p className="rounded-lg bg-amber-50 dark:bg-amber-500/15 p-2.5 text-xs leading-relaxed text-amber-700 dark:text-amber-300">{t('accounting.recode.warn')}</p>
         </div>
       )}
     </Dialog>
@@ -578,14 +578,14 @@ function AccountRow({
         title={hasChildren ? (isOpen ? t('accounting.chart.collapse_all') : t('accounting.account.open')) : t('accounting.account.open')}
       >
         {hasChildren ? (
-          <span className="text-slate-400 group-hover:text-primary">
+          <span className="text-slate-400 dark:text-slate-400 group-hover:text-primary">
             {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4 rtl:rotate-180" />}
           </span>
         ) : (
           <span className={'mx-1 h-1.5 w-1.5 rounded-full ' + ACCOUNT_TYPE_DOT[type]} />
         )}
 
-        <span className="w-20 shrink-0 font-mono text-xs font-semibold text-slate-500">{node.code}</span>
+        <span className="w-20 shrink-0 font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">{node.code}</span>
         {editing ? (
           <span className="flex flex-1 items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <Input
@@ -604,10 +604,10 @@ function AccountRow({
               onBlur={commitEdit}
               className="h-8 py-1"
             />
-            <button type="button" title={t('common.save')} onMouseDown={(e) => e.preventDefault()} onClick={commitEdit} className="rounded p-1 text-emerald-600 hover:bg-emerald-50">
+            <button type="button" title={t('common.save')} onMouseDown={(e) => e.preventDefault()} onClick={commitEdit} className="rounded p-1 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-50">
               <Check className="h-4 w-4" />
             </button>
-            <button type="button" title={t('common.cancel')} onMouseDown={(e) => e.preventDefault()} onClick={() => setEditing(false)} className="rounded p-1 text-slate-400 hover:bg-slate-100">
+            <button type="button" title={t('common.cancel')} onMouseDown={(e) => e.preventDefault()} onClick={() => setEditing(false)} className="rounded p-1 text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
               <X className="h-4 w-4" />
             </button>
           </span>
@@ -618,7 +618,7 @@ function AccountRow({
             title={t('accounting.account.open')}
             className={
               'flex-1 truncate hover:text-primary hover:underline ' +
-              (depth === 0 ? 'font-bold text-slate-800' : node.is_posting ? 'text-slate-600' : 'font-medium text-slate-700')
+              (depth === 0 ? 'font-bold text-slate-800 dark:text-slate-100' : node.is_posting ? 'text-slate-600 dark:text-slate-300' : 'font-medium text-slate-700 dark:text-slate-200')
             }
           >
             {pickName(node, lang)}
@@ -627,17 +627,17 @@ function AccountRow({
 
         {depth === 0 && <Badge color={ACCOUNT_TYPE_COLOR[type]}>{t(`accounting.type.${type}`)}</Badge>}
         {node.is_posting === 1 && (
-          <span className="hidden items-center gap-1 text-xs text-emerald-600 sm:inline-flex">
+          <span className="hidden items-center gap-1 text-xs text-emerald-600 dark:text-emerald-300 sm:inline-flex">
             <Dot className="h-4 w-4" />
             {t('accounting.chart.posting')}
           </span>
         )}
 
         {/* Rolled-up balance (parents = sum of their leaves) — IQD then USD */}
-        <span className={'w-36 shrink-0 text-end tabular-nums ' + (hasChildren || depth === 0 ? 'font-bold text-slate-800' : 'text-slate-600')}>
+        <span className={'w-36 shrink-0 text-end tabular-nums ' + (hasChildren || depth === 0 ? 'font-bold text-slate-800 dark:text-slate-100' : 'text-slate-600 dark:text-slate-300')}>
           {formatCurrency(rolled.iqd.get(node.code) ?? 0, 'IQD', lang)}
         </span>
-        <span className={'w-28 shrink-0 text-end tabular-nums ' + (hasChildren || depth === 0 ? 'font-bold text-emerald-700' : 'text-emerald-600')}>
+        <span className={'w-28 shrink-0 text-end tabular-nums ' + (hasChildren || depth === 0 ? 'font-bold text-emerald-700 dark:text-emerald-300' : 'text-emerald-600 dark:text-emerald-300')}>
           {formatCurrency(rolled.usd.get(node.code) ?? 0, 'USD', lang)}
         </span>
 
@@ -650,7 +650,7 @@ function AccountRow({
                 e.stopPropagation()
                 startEdit()
               }}
-              className="rounded p-1 text-slate-400 transition hover:bg-primary/10 hover:text-primary"
+              className="rounded p-1 text-slate-400 dark:text-slate-400 transition hover:bg-primary/10 hover:text-primary"
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
@@ -661,7 +661,7 @@ function AccountRow({
                 e.stopPropagation()
                 onEditCode(node)
               }}
-              className="rounded p-1 text-slate-400 transition hover:bg-primary/10 hover:text-primary"
+              className="rounded p-1 text-slate-400 dark:text-slate-400 transition hover:bg-primary/10 hover:text-primary"
             >
               <Hash className="h-3.5 w-3.5" />
             </button>
@@ -672,7 +672,7 @@ function AccountRow({
                 e.stopPropagation()
                 onAddChild(node.code)
               }}
-              className="rounded p-1 text-slate-400 transition hover:bg-primary/10 hover:text-primary"
+              className="rounded p-1 text-slate-400 dark:text-slate-400 transition hover:bg-primary/10 hover:text-primary"
             >
               <FolderPlus className="h-3.5 w-3.5" />
             </button>
@@ -683,7 +683,7 @@ function AccountRow({
                 e.stopPropagation()
                 onDelete(node)
               }}
-              className="rounded p-1 text-slate-400 transition hover:bg-red-50 hover:text-danger"
+              className="rounded p-1 text-slate-400 dark:text-slate-400 transition hover:bg-red-50 hover:text-danger"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>

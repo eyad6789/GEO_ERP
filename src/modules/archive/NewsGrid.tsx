@@ -58,14 +58,14 @@ export function NewsGrid({
           </div>
 
           <div className="flex flex-1 flex-col p-4">
-            <h3 className="font-bold leading-snug text-slate-800 line-clamp-2 group-hover:text-primary">
+            <h3 className="font-bold leading-snug text-slate-800 dark:text-slate-100 line-clamp-2 group-hover:text-primary">
               {doc.title}
             </h3>
-            <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-500 line-clamp-3">
+            <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400 line-clamp-3">
               {excerpt(doc.body, 140) || t('archive.dialog.no_body')}
             </p>
 
-            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-400">
+            <div className="mt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-700/70 pt-3 text-xs text-slate-400 dark:text-slate-400">
               <span className="flex items-center gap-1.5">
                 <User2 className="h-3.5 w-3.5" />
                 {doc.author || '—'}

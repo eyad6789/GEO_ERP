@@ -133,10 +133,10 @@ export function ArabicTable<T>({
     <div className="card overflow-hidden">
       {/* Toolbar */}
       {(searchable || toolbar || exportName) && (
-        <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 p-3">
+        <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-slate-700/70 p-3">
           {searchable && (
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
               <input
                 value={query}
                 onChange={(e) => {
@@ -165,7 +165,7 @@ export function ArabicTable<T>({
       ) : (
         <div className="w-full overflow-x-auto">
           <table className="w-full border-collapse text-sm">
-            <thead className="bg-slate-50 text-slate-500">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400">
               <tr>
                 {columns.map((col) => (
                   <th
@@ -174,7 +174,7 @@ export function ArabicTable<T>({
                     className={cn(
                       'px-4 py-3 text-xs font-semibold uppercase tracking-wide select-none',
                       alignCls(col.align),
-                      col.sortable && 'cursor-pointer hover:text-slate-700',
+                      col.sortable && 'cursor-pointer hover:text-slate-700 dark:hover:text-slate-200',
                     )}
                     onClick={() => col.sortable && toggleSort(col.key)}
                   >
@@ -196,7 +196,7 @@ export function ArabicTable<T>({
                 {actions && <th className="px-4 py-3 text-end text-xs font-semibold uppercase">{t('common.actions')}</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {pageRows.map((row, i) => (
                 <tr
                   key={rowKey ? rowKey(row, i) : i}
@@ -206,7 +206,7 @@ export function ArabicTable<T>({
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className={cn(dense ? 'px-4 py-2' : 'px-4 py-3', 'text-slate-700', alignCls(col.align), col.className)}
+                      className={cn(dense ? 'px-4 py-2' : 'px-4 py-3', 'text-slate-700 dark:text-slate-200', alignCls(col.align), col.className)}
                     >
                       {col.render ? col.render(row) : String(rawValue(row, col) || '—')}
                     </td>
@@ -225,7 +225,7 @@ export function ArabicTable<T>({
 
       {/* Pagination */}
       {!loading && sorted.length > pageSize && (
-        <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-sm text-slate-500">
+        <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-700/70 px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
           <span>
             {sorted.length} {t('common.results')}
           </span>

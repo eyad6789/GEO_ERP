@@ -67,7 +67,7 @@ export function UsersPanel() {
               <span className="font-mono tabular-nums text-emerald-300">{durationSince(u.startedAt, lang)}</span>
             </DTd>
             <DTd>
-              <code className="font-mono text-xs text-slate-400" dir="ltr">{u.ip}</code>
+              <code className="font-mono text-xs text-slate-400 dark:text-slate-400" dir="ltr">{u.ip}</code>
             </DTd>
             <DTd className="text-end">
               <button
@@ -82,7 +82,7 @@ export function UsersPanel() {
         ))}
         {users.length === 0 && (
           <tr>
-            <td colSpan={6} className="px-4 py-10 text-center text-slate-500">—</td>
+            <td colSpan={6} className="px-4 py-10 text-center text-slate-500 dark:text-slate-400">—</td>
           </tr>
         )}
       </DTable>

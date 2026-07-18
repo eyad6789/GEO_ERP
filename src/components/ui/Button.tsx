@@ -7,9 +7,9 @@ type Size = 'sm' | 'md' | 'lg' | 'icon'
 const VARIANTS: Record<Variant, string> = {
   primary: 'bg-primary text-white hover:bg-primary-dark shadow-sm',
   accent: 'bg-accent text-white hover:bg-accent-dark shadow-sm',
-  secondary: 'bg-slate-100 text-slate-700 hover:bg-slate-200',
-  outline: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400',
-  ghost: 'text-slate-600 hover:bg-slate-100',
+  secondary: 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600',
+  outline: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:border-slate-500',
+  ghost: 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800',
   subtle: 'bg-primary/10 text-primary hover:bg-primary/15',
   danger: 'bg-danger text-white hover:brightness-95 shadow-sm',
 }

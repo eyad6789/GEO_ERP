@@ -52,14 +52,14 @@ export const ACTION_COLOR: Record<string, BadgeColor> = {
 
 // Icon + tint per module (used in the module cell + detail dialog)
 export const MODULE_META: Record<string, { icon: LucideIcon; className: string }> = {
-  ACCOUNTING: { icon: Calculator, className: 'text-emerald-600 bg-emerald-50' },
-  HR: { icon: Users, className: 'text-violet-600 bg-violet-50' },
-  WAREHOUSE: { icon: Warehouse, className: 'text-amber-600 bg-amber-50' },
-  PROJECTS: { icon: HardHat, className: 'text-sky-600 bg-sky-50' },
+  ACCOUNTING: { icon: Calculator, className: 'text-emerald-600 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/15' },
+  HR: { icon: Users, className: 'text-violet-600 dark:text-violet-300 bg-violet-50 dark:bg-violet-500/15' },
+  WAREHOUSE: { icon: Warehouse, className: 'text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/15' },
+  PROJECTS: { icon: HardHat, className: 'text-sky-600 dark:text-sky-300 bg-sky-50 dark:bg-sky-500/15' },
   COMPANIES: { icon: Building2, className: 'text-primary bg-primary/10' },
-  ARCHIVE: { icon: Archive, className: 'text-rose-600 bg-rose-50' },
-  LOGS: { icon: ScrollText, className: 'text-slate-600 bg-slate-100' },
-  GENERAL: { icon: Layers, className: 'text-slate-500 bg-slate-100' },
+  ARCHIVE: { icon: Archive, className: 'text-rose-600 dark:text-rose-300 bg-rose-50 dark:bg-rose-500/15' },
+  LOGS: { icon: ScrollText, className: 'text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800' },
+  GENERAL: { icon: Layers, className: 'text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800' },
 }
 
 export function moduleMeta(module: string) {

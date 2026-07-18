@@ -23,9 +23,9 @@ export function LockedPage({ moduleKey }: { moduleKey: string }) {
       </div>
 
       <div>
-        {item && <p className="mb-1 text-sm font-semibold text-slate-400">{t(item.labelKey)}</p>}
-        <h2 className="text-3xl font-extrabold text-slate-700">{t('locked.title')}</h2>
-        <p className="mx-auto mt-2 max-w-sm text-sm text-slate-400">{t('locked.hint')}</p>
+        {item && <p className="mb-1 text-sm font-semibold text-slate-400 dark:text-slate-400">{t(item.labelKey)}</p>}
+        <h2 className="text-3xl font-extrabold text-slate-700 dark:text-slate-200">{t('locked.title')}</h2>
+        <p className="mx-auto mt-2 max-w-sm text-sm text-slate-400 dark:text-slate-400">{t('locked.hint')}</p>
       </div>
 
       <Button variant="primary" onClick={() => navigate(LANDING_PATH)}>

@@ -91,8 +91,8 @@ export function ApiPanel() {
                   </span>
                 )}
               </DTd>
-              <DTd className="text-end font-mono text-xs tabular-nums text-slate-400">{c.size}</DTd>
-              <DTd className="text-end text-xs text-slate-500">{relTime(c.at, lang)}</DTd>
+              <DTd className="text-end font-mono text-xs tabular-nums text-slate-400 dark:text-slate-400">{c.size}</DTd>
+              <DTd className="text-end text-xs text-slate-500 dark:text-slate-400">{relTime(c.at, lang)}</DTd>
             </tr>
           )
         })}

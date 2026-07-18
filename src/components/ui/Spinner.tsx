@@ -7,7 +7,7 @@ export function Spinner({ className }: { className?: string }) {
 
 export function LoadingState({ label }: { label?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-400">
+    <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-400 dark:text-slate-400">
       <Spinner className="h-7 w-7" />
       {label && <span className="text-sm">{label}</span>}
     </div>

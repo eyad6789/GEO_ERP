@@ -46,21 +46,21 @@ export function ItemsTab({
       header: t('warehouse.col.code'),
       sortable: true,
       width: '110px',
-      render: (r) => <span className="font-mono text-xs font-semibold text-slate-500">{r.code}</span>,
+      render: (r) => <span className="font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">{r.code}</span>,
     },
     {
       key: 'name',
       header: t('warehouse.col.name'),
       accessor: (r) => pickName(r, lang),
       sortable: true,
-      render: (r) => <span className="font-medium text-slate-800">{pickName(r, lang)}</span>,
+      render: (r) => <span className="font-medium text-slate-800 dark:text-slate-100">{pickName(r, lang)}</span>,
     },
     {
       key: 'category',
       header: t('warehouse.col.category'),
       accessor: (r) => categoryLabel(taxonomy, r.category, lang),
       sortable: true,
-      render: (r) => <span className="text-slate-500">{categoryLabel(taxonomy, r.category, lang)}</span>,
+      render: (r) => <span className="text-slate-500 dark:text-slate-400">{categoryLabel(taxonomy, r.category, lang)}</span>,
     },
     {
       key: 'sub_category',
@@ -68,21 +68,21 @@ export function ItemsTab({
       accessor: (r) => subCategoryLabel(taxonomy, r.sub_category, lang),
       sortable: true,
       render: (r) => (
-        <span className="text-slate-500">{subCategoryLabel(taxonomy, r.sub_category, lang) || '—'}</span>
+        <span className="text-slate-500 dark:text-slate-400">{subCategoryLabel(taxonomy, r.sub_category, lang) || '—'}</span>
       ),
     },
     {
       key: 'size',
       header: t('warehouse.col.size'),
       accessor: (r) => r.size_label,
-      render: (r) => (r.size_label ? <span dir="ltr" className="text-slate-600">{r.size_label}</span> : '—'),
+      render: (r) => (r.size_label ? <span dir="ltr" className="text-slate-600 dark:text-slate-300">{r.size_label}</span> : '—'),
     },
     {
       key: 'spec',
       header: t('warehouse.col.spec'),
       accessor: (r) => r.spec,
       sortable: true,
-      render: (r) => <span className="text-slate-500">{r.spec || '—'}</span>,
+      render: (r) => <span className="text-slate-500 dark:text-slate-400">{r.spec || '—'}</span>,
     },
     { key: 'uom', header: t('warehouse.col.uom'), align: 'center' },
     {
