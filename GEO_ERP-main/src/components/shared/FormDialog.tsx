@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Dialog } from '../ui/Dialog'
 import { Button } from '../ui/Button'
 import { Input, Textarea, Field } from '../ui/Input'
@@ -32,6 +32,8 @@ export interface FormDialogProps {
   onSubmit: (values: Record<string, unknown>) => Promise<void> | void
   submitLabel?: string
   size?: 'sm' | 'md' | 'lg' | 'xl'
+  /** Custom content rendered above the fields grid (e.g. an avatar uploader). */
+  header?: ReactNode
 }
 
 function buildInitial(fields: FormFieldConfig[], initial?: Record<string, unknown>): Record<string, unknown> {
@@ -52,6 +54,7 @@ export function FormDialog({
   onSubmit,
   submitLabel,
   size = 'md',
+  header,
 }: FormDialogProps) {
   const t = useT()
   const toast = useToast()
@@ -109,6 +112,7 @@ export function FormDialog({
         </>
       }
     >
+      {header && <div className="mb-5">{header}</div>}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2" {...formNav}>
         {fields.map((f) => {
           const span = (f.colSpan ?? (f.type === 'textarea' ? 2 : 1)) === 2 ? 'sm:col-span-2' : ''

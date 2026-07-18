@@ -39,7 +39,7 @@ export default function HrShell() {
     order: 'DESC',
   })
   const { data: leavesAll, loading: lvLoading, refetch: refetchLeaves } = useResource<LeaveRequest>('leave_requests')
-  const { data: allDocs } = useApi<EmployeeDoc[]>('/employee-documents')
+  const { data: allDocs, refetch: refetchDocs } = useApi<EmployeeDoc[]>('/employee-documents')
 
   // Month + employee filter — shared across every tab.
   const [month, setMonth] = useState(currentMonthKey())
@@ -183,6 +183,7 @@ export default function HrShell() {
             empFilter={empFilter}
             stats={stats}
             photoMap={photoMap}
+            refetchDocs={refetchDocs}
           />
         )}
         {tab === 'followup' && (

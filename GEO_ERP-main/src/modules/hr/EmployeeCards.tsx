@@ -11,6 +11,7 @@ import { apiPost, apiPut } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import { formatNumber, pickName } from '../../lib/format'
 import type { Company, Department, Employee } from '../../types'
+import { AvatarUploadField } from './AvatarUploadField'
 import { DeleteEmployeeDialog } from './DeleteEmployeeDialog'
 import { EmployeeCard } from './EmployeeCard'
 import { EDIT_FIELDS } from './employeeForm'
@@ -30,6 +31,7 @@ export function EmployeeCardsSection({
   empFilter,
   stats,
   photoMap,
+  refetchDocs,
 }: {
   companyId: string | null
   employees: Employee[]
@@ -42,6 +44,7 @@ export function EmployeeCardsSection({
   empFilter: string
   stats: Map<string, MonthStats>
   photoMap: Map<string, string>
+  refetchDocs: () => void
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -309,7 +312,7 @@ export function EmployeeCardsSection({
         }}
       />
 
-      {/* Quick edit from a card — same field set as the profile-page edit. */}
+      {/* Quick edit from a card — same field set + avatar as the profile edit. */}
       {editing && (
         <FormDialog
           open={!!editing}
@@ -319,6 +322,15 @@ export function EmployeeCardsSection({
           initial={editing as unknown as Record<string, unknown>}
           fields={EDIT_FIELDS(t)}
           submitLabel={t('common.save')}
+          header={
+            <AvatarUploadField
+              employeeId={editing.id}
+              name={pickName(editing, lang)}
+              color={editing.photo_color}
+              currentPhotoDocId={photoMap.get(editing.id)}
+              onChanged={refetchDocs}
+            />
+          }
           onSubmit={async (values) => {
             await apiPut(`/employees/${editing.id}`, values)
             refetch()

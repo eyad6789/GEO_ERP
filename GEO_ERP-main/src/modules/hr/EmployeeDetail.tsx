@@ -36,8 +36,10 @@ import { useApi, useRecord, useResource } from '@/hooks/useResource'
 import { apiDelete, apiPost, apiPut } from '@/lib/api'
 import { formatCurrency, formatDate, formatNumber, pickName } from '@/lib/format'
 import type { Attendance, Company, Department, Employee, EmployeeDoc, LeaveRequest } from '@/types'
+import { AvatarUploadField } from './AvatarUploadField'
 import { DeleteEmployeeDialog } from './DeleteEmployeeDialog'
 import { EDIT_FIELDS } from './employeeForm'
+import { deleteEmployeePhoto, uploadEmployeePhoto } from './photo'
 import { MiniBar } from './lib'
 import { typeLabel } from './LeavesBoard'
 import { MonthPicker } from './MonthPicker'
@@ -94,23 +96,7 @@ export default function EmployeeDetail() {
     if (!id) return
     setPhotoBusy(true)
     try {
-      const data64 = await new Promise<string>((resolve, reject) => {
-        const r = new FileReader()
-        r.onload = () => resolve(String(r.result))
-        r.onerror = () => reject(new Error('read failed'))
-        r.readAsDataURL(file)
-      })
-      // Upload the replacement FIRST — deleting first would lose the old photo
-      // for good if the POST fails.
-      await apiPost('/employee-documents', {
-        employee_id: id,
-        doc_type: 'PHOTO',
-        title: t('hr.doc.PHOTO'),
-        file_name: file.name,
-        mime: file.type || 'image/jpeg',
-        data: data64,
-      })
-      if (photoDoc) await apiDelete(`/employee-documents/${photoDoc.id}`).catch(() => undefined)
+      await uploadEmployeePhoto(id, file, t('hr.doc.PHOTO'), photoDoc?.id)
       refetchDocs()
       toast.success(t('hr.photo.saved'))
     } catch (e) {
@@ -124,7 +110,7 @@ export default function EmployeeDetail() {
     if (!photoDoc || !window.confirm(t('hr.photo.confirm_delete'))) return
     setPhotoBusy(true)
     try {
-      await apiDelete(`/employee-documents/${photoDoc.id}`)
+      await deleteEmployeePhoto(photoDoc.id)
       refetchDocs()
       toast.success(t('hr.photo.deleted'))
     } catch (e) {
@@ -382,9 +368,19 @@ export default function EmployeeDetail() {
           initial={emp as unknown as Record<string, unknown>}
           fields={EDIT_FIELDS(t)}
           submitLabel={t('common.save')}
+          header={
+            <AvatarUploadField
+              employeeId={emp.id}
+              name={pickName(emp, lang)}
+              color={emp.photo_color}
+              currentPhotoDocId={photoDoc?.id}
+              onChanged={refetchDocs}
+            />
+          }
           onSubmit={async (values) => {
             // Let errors propagate — FormDialog toasts and keeps the dialog
-            // open on failure, closes + toasts success otherwise.
+            // open on failure, closes + toasts success otherwise. (The avatar
+            // uploads immediately from its own control, not here.)
             await apiPut(`/employees/${emp.id}`, values)
             refetch()
           }}
