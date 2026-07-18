@@ -18,6 +18,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         </ToastProvider>
       </CompanyProvider>
     </LangProvider>
-    <Qapture config={qaConfig} />
+    {import.meta.env.DEV && <Qapture config={qaConfig} />}
   </React.StrictMode>,
 )
