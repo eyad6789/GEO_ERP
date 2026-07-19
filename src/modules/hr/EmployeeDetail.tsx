@@ -384,7 +384,7 @@ export default function EmployeeDetail() {
 
 function StatTile({ label, value, bar, icon }: { label: string; value: string; bar: ReactNode; icon: ReactNode }) {
   return (
-    <div className="rounded-xl border border-slate-100 dark:border-slate-700/70 bg-slate-50/50 p-3.5">
+    <div className="rounded-xl border border-slate-100 dark:border-slate-700/70 bg-slate-50/50 dark:bg-slate-800/50 p-3.5">
       <div className="mb-1 flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
           <span className="text-slate-400 dark:text-slate-400">{icon}</span>

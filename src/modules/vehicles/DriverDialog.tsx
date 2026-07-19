@@ -173,7 +173,7 @@ export function DriverDialog({
             </h4>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {cars.map((c) => (
-                <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 dark:border-slate-700/70 bg-slate-50/60 px-3 py-2">
+                <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 dark:border-slate-700/70 bg-slate-50/60 dark:bg-slate-800/60 px-3 py-2">
                   <span className="truncate text-sm font-medium text-slate-700 dark:text-slate-200" dir="ltr">{c.plate_number}</span>
                   <span className="truncate text-xs text-slate-400 dark:text-slate-400">{pickName(c, lang)}</span>
                 </div>

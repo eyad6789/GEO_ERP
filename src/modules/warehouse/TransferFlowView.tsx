@@ -282,7 +282,7 @@ export function TransferFlowView({
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 px-4 py-3">
             <div className="flex items-center gap-2.5">
               <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                 {selectedRow.type === 'IN'

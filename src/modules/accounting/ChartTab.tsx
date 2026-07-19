@@ -314,7 +314,7 @@ export function ChartTab() {
         ) : (
           <div className="py-1">
             {/* Column captions for the balances */}
-            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-700/70 bg-slate-50/60 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">
+            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-700/70 bg-slate-50/60 dark:bg-slate-800/60 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">
               <span className="w-4 shrink-0" />
               <span className="w-20 shrink-0">{t('accounting.chart.code')}</span>
               <span className="flex-1">{t('accounting.chart.name')}</span>

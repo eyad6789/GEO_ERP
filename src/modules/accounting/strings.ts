@@ -149,6 +149,8 @@ registerStrings({
   'accounting.parties.total_ap': { ar: 'إجمالي ذمم الموردين', en: 'Total Supplier Balances' },
   'accounting.parties.net': { ar: 'صافي المركز', en: 'Net Position' },
   'accounting.parties.balance': { ar: 'الرصيد', en: 'Balance' },
+  'accounting.parties.balance_iqd': { ar: 'الرصيد (دينار)', en: 'Balance (IQD)' },
+  'accounting.parties.balance_usd': { ar: 'الرصيد (دولار)', en: 'Balance (USD)' },
   'accounting.parties.empty': { ar: 'لا توجد أرصدة', en: 'No balances' },
 
   // ---- Cash & Bank tab ----

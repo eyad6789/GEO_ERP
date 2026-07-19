@@ -79,7 +79,7 @@ export function DocumentDialog({
         </div>
 
         {/* Subject + body */}
-        <div className="rounded-xl border border-slate-100 dark:border-slate-700/70 bg-slate-50/60 dark:bg-slate-800/60 p-4">
+        <div className="rounded-xl border border-slate-100 dark:border-slate-700/70 bg-slate-50/60 dark:bg-slate-800/60 dark:bg-slate-800/60 p-4">
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400">
             {t('archive.col.subject')}
           </p>

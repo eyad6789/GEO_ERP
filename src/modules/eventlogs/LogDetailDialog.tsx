@@ -51,7 +51,7 @@ export function LogDetailDialog({ log, onClose }: { log: EventLog | null; onClos
     >
       <div className="space-y-6">
         {/* Top summary strip */}
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-100 dark:border-slate-700/70 bg-slate-50/60 dark:bg-slate-800/60 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-100 dark:border-slate-700/70 bg-slate-50/60 dark:bg-slate-800/60 dark:bg-slate-800/60 px-4 py-3">
           <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${meta.className}`}>
             <ModuleIcon className="h-5 w-5" />
           </span>

@@ -153,7 +153,7 @@ export function ItemDetailDialog({ itemId, onClose }: { itemId: string | null; o
                 )}
               </>
             ) : (
-              <div className="flex h-32 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/60">
+              <div className="flex h-32 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60">
                 <Button
                   variant="outline"
                   onClick={() => fileInputRef.current?.click()}
@@ -313,7 +313,7 @@ function Meta({ label, children }: { label: string; children: ReactNode }) {
 function Section({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
-      <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-700/70 bg-slate-50/60 px-4 py-2.5">
+      <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-700/70 bg-slate-50/60 dark:bg-slate-800/60 px-4 py-2.5">
         {icon}
         <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{title}</h4>
       </div>

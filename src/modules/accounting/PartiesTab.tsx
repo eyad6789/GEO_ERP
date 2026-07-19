@@ -13,7 +13,8 @@ import { AR_PARENT, AP_PARENT, resolvePostingDescendants, type TrialBalanceResp 
 interface PartyRow {
   code: string
   name: string
-  balance: number
+  iqd: number
+  usd: number
 }
 
 export function PartiesTab() {
@@ -25,10 +26,15 @@ export function PartiesTab() {
   const { data: accounts, loading } = useResource<Account>('accounts')
   const { data: trial } = useApi<TrialBalanceResp>('/reports/trial-balance', companyId ? { company_id: companyId } : undefined)
 
-  const balanceMap = useMemo(() => {
-    const m = new Map<string, number>()
-    for (const r of trial?.rows ?? []) m.set(r.code, r.balance)
-    return m
+  // Balance per account code, IQD and USD kept separate (never converted).
+  const balance = useMemo(() => {
+    const iqd = new Map<string, number>()
+    const usd = new Map<string, number>()
+    for (const r of trial?.rows ?? []) {
+      iqd.set(r.code, r.balance_iqd ?? r.balance)
+      usd.set(r.code, r.balance_usd ?? 0)
+    }
+    return { iqd, usd }
   }, [trial])
 
   // Everything under the debtors root (16 المدينون) = customers/receivables,
@@ -37,45 +43,61 @@ export function PartiesTab() {
   const customerCodes = useMemo(() => new Set(resolvePostingDescendants([AR_PARENT], accounts)), [accounts])
   const supplierCodes = useMemo(() => new Set(resolvePostingDescendants([AP_PARENT], accounts)), [accounts])
 
-  const receivables: PartyRow[] = useMemo(
-    () =>
-      accounts
-        .filter((a) => customerCodes.has(a.code))
-        .map((a) => ({ code: a.code, name: pickName(a, lang), balance: balanceMap.get(a.code) ?? 0 }))
-        .sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance)),
-    [accounts, customerCodes, balanceMap, lang],
-  )
-  const payables: PartyRow[] = useMemo(
-    () =>
-      accounts
-        .filter((a) => supplierCodes.has(a.code))
-        .map((a) => ({ code: a.code, name: pickName(a, lang), balance: balanceMap.get(a.code) ?? 0 }))
-        .sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance)),
-    [accounts, supplierCodes, balanceMap, lang],
-  )
+  const toRows = (codes: Set<string>): PartyRow[] =>
+    accounts
+      .filter((a) => codes.has(a.code))
+      .map((a) => ({ code: a.code, name: pickName(a, lang), iqd: balance.iqd.get(a.code) ?? 0, usd: balance.usd.get(a.code) ?? 0 }))
+      .sort((a, b) => Math.abs(b.iqd) - Math.abs(a.iqd))
 
-  const totalAR = receivables.reduce((s, r) => s + r.balance, 0)
-  const totalAP = payables.reduce((s, r) => s + r.balance, 0)
+  const receivables = useMemo(() => toRows(customerCodes), [accounts, customerCodes, balance, lang]) // eslint-disable-line react-hooks/exhaustive-deps
+  const payables = useMemo(() => toRows(supplierCodes), [accounts, supplierCodes, balance, lang]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const totalARi = receivables.reduce((s, r) => s + r.iqd, 0)
+  const totalARu = receivables.reduce((s, r) => s + r.usd, 0)
+  const totalAPi = payables.reduce((s, r) => s + r.iqd, 0)
+  const totalAPu = payables.reduce((s, r) => s + r.usd, 0)
+
+  const dash = <span className="text-slate-300 dark:text-slate-600">—</span>
   const columns = (accent: string): Column<PartyRow>[] => [
-    { key: 'code', header: t('accounting.chart.code'), width: '80px', render: (r) => <span className="font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">{r.code}</span> },
     { key: 'name', header: t('accounting.chart.name'), render: (r) => <span className="text-slate-700 dark:text-slate-200">{r.name}</span> },
     {
-      key: 'balance',
-      header: t('accounting.parties.balance'),
+      key: 'iqd',
+      header: t('accounting.parties.balance_iqd'),
       align: 'end',
-      accessor: (r) => r.balance,
-      render: (r) => <span className={'tabular-nums font-semibold ' + accent}>{formatCurrency(r.balance, 'IQD', lang)}</span>,
+      accessor: (r) => r.iqd,
+      render: (r) => (r.iqd ? <span className={'tabular-nums font-semibold ' + accent}>{formatCurrency(r.iqd, 'IQD', lang)}</span> : dash),
     },
-    { key: 'go', header: '', width: '36px', align: 'end', render: () => <ChevronLeft className="h-4 w-4 text-slate-300 rtl:rotate-180" /> },
+    {
+      key: 'usd',
+      header: t('accounting.parties.balance_usd'),
+      align: 'end',
+      accessor: (r) => r.usd,
+      render: (r) => (r.usd ? <span className="tabular-nums font-semibold text-emerald-700 dark:text-emerald-300">{formatCurrency(r.usd, 'USD', lang)}</span> : dash),
+    },
+    { key: 'go', header: '', width: '36px', align: 'end', render: () => <ChevronLeft className="h-4 w-4 text-slate-300 dark:text-slate-600 rtl:rotate-180" /> },
   ]
 
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <KpiCard label={t('accounting.parties.total_ar')} value={formatCurrency(totalAR, 'IQD', lang)} icon={<Users className="h-5 w-5" />} accent="info" />
-        <KpiCard label={t('accounting.parties.total_ap')} value={formatCurrency(totalAP, 'IQD', lang)} icon={<Truck className="h-5 w-5" />} accent="warning" />
-        <KpiCard label={t('accounting.parties.net')} value={formatCurrency(totalAR - totalAP, 'IQD', lang)} icon={<Scale className="h-5 w-5" />} accent="primary" />
+        <KpiCard
+          label={t('accounting.parties.total_ar')}
+          value={<CurrencyPair iqd={totalARi} usd={totalARu} lang={lang} />}
+          icon={<Users className="h-5 w-5" />}
+          accent="info"
+        />
+        <KpiCard
+          label={t('accounting.parties.total_ap')}
+          value={<CurrencyPair iqd={totalAPi} usd={totalAPu} lang={lang} />}
+          icon={<Truck className="h-5 w-5" />}
+          accent="warning"
+        />
+        <KpiCard
+          label={t('accounting.parties.net')}
+          value={<CurrencyPair iqd={totalARi - totalAPi} usd={totalARu - totalAPu} lang={lang} />}
+          icon={<Scale className="h-5 w-5" />}
+          accent="primary"
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
@@ -105,5 +127,14 @@ export function PartiesTab() {
         </Card>
       </div>
     </div>
+  )
+}
+
+function CurrencyPair({ iqd, usd, lang }: { iqd: number; usd: number; lang: 'ar' | 'en' }) {
+  return (
+    <span className="inline-flex flex-col">
+      <span>{formatCurrency(iqd, 'IQD', lang)}</span>
+      {usd ? <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-300">{formatCurrency(usd, 'USD', lang)}</span> : null}
+    </span>
   )
 }

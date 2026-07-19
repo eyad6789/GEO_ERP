@@ -9,7 +9,7 @@ export function MapComingSoon({ minHeight = 360 }: { minHeight?: number }) {
   const t = useT()
   return (
     <div
-      className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/60 p-8 text-center"
+      className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 p-8 text-center"
       style={{ minHeight }}
     >
       <div className="relative">

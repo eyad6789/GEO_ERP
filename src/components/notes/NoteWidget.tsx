@@ -95,7 +95,7 @@ export function NoteWidget({
             <p className="py-4 text-center text-sm text-slate-400 dark:text-slate-400">{t('notes.empty')}</p>
           ) : (
             notes.map((n) => (
-              <div key={n.id} className="rounded-lg border border-slate-100 dark:border-slate-700/70 bg-slate-50/60 dark:bg-slate-800/60 p-2.5">
+              <div key={n.id} className="rounded-lg border border-slate-100 dark:border-slate-700/70 bg-slate-50/60 dark:bg-slate-800/60 dark:bg-slate-800/60 p-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{n.author}</span>
                   <div className="flex items-center gap-1">

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, Bell, Languages, ChevronDown, Menu, AlertTriangle, Clock, Sun, Moon } from 'lucide-react'
+import { Bell, Languages, ChevronDown, Menu, AlertTriangle, Clock, Sun, Moon } from 'lucide-react'
 import { CompanySelector } from './CompanySelector'
 import { useLang, useT } from '../../context/LangContext'
 import { useTheme } from '../../context/ThemeContext'
@@ -58,16 +58,7 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
         <Menu className="h-5 w-5" />
       </button>
 
-      {/* Global search */}
-      <div className="relative hidden flex-1 max-w-md lg:block">
-        <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-400" />
-        <input
-          placeholder={t('header.search_global')}
-          className="input-base h-9 ps-9 bg-slate-50 dark:bg-slate-800/60 border-transparent focus:bg-white dark:focus:bg-slate-800"
-        />
-      </div>
-
-      <div className="flex flex-1 items-center justify-end gap-2 lg:flex-none">
+      <div className="flex flex-1 items-center justify-end gap-2">
         <CompanySelector />
 
         {/* Theme (light/dark) toggle */}
