@@ -33,12 +33,12 @@ const LIGHT: ChartTheme = {
 
 const DARK: ChartTheme = {
   axis: '#94a3b8', // slate-400
-  grid: '#1e293b', // slate-800
-  axisLine: '#334155', // slate-700
-  tooltipBg: '#1e293b', // slate-800
-  tooltipBorder: '#334155', // slate-700
+  grid: '#23262f', // deep border (matches .dark --slate-700)
+  axisLine: '#23262f',
+  tooltipBg: '#16181e', // card surface (matches .dark --slate-800)
+  tooltipBorder: '#23262f',
   tooltipText: '#e2e8f0', // slate-200
-  pieStroke: '#0f172a', // slate-900 (matches page bg)
+  pieStroke: '#090a0d', // page bg (matches .dark --slate-900)
 }
 
 export function useChartTheme(): ChartTheme {

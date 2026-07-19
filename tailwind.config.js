@@ -5,6 +5,15 @@ export default {
   theme: {
     extend: {
       colors: {
+        // The dark neutral surfaces (600-900) are driven by CSS variables so the
+        // whole dark theme can be deepened in one place (see .dark in index.css).
+        // :root keeps the original slate values, so light mode is unchanged.
+        slate: {
+          600: 'rgb(var(--slate-600) / <alpha-value>)',
+          700: 'rgb(var(--slate-700) / <alpha-value>)',
+          800: 'rgb(var(--slate-800) / <alpha-value>)',
+          900: 'rgb(var(--slate-900) / <alpha-value>)',
+        },
         primary: {
           DEFAULT: '#1a5f7a',
           light: '#2d9cdb',

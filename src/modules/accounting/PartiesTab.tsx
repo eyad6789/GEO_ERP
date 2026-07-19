@@ -8,7 +8,7 @@ import { useLang, useT } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { formatCurrency, pickName } from '../../lib/format'
 import type { Account } from '../../types'
-import { CUSTOMER_ROOTS, SUPPLIER_ROOTS, CONTRACTOR_ROOTS, resolvePostingDescendants, type TrialBalanceResp } from './shared'
+import { AR_PARENT, AP_PARENT, resolvePostingDescendants, type TrialBalanceResp } from './shared'
 
 interface PartyRow {
   code: string
@@ -31,13 +31,12 @@ export function PartiesTab() {
     return m
   }, [trial])
 
-  // Posting leaves under each configured node (chart-agnostic via the tree).
-  const customerCodes = useMemo(() => new Set(resolvePostingDescendants(CUSTOMER_ROOTS, accounts)), [accounts])
-  const supplierCodes = useMemo(() => new Set(resolvePostingDescendants(SUPPLIER_ROOTS, accounts)), [accounts])
-  const contractorCodes = useMemo(() => new Set(resolvePostingDescendants(CONTRACTOR_ROOTS, accounts)), [accounts])
+  // Everything under the debtors root (16 المدينون) = customers/receivables,
+  // everything under the creditors root (26 الدائنون) = suppliers/payables —
+  // all posting leaves, resolved straight from the chart of accounts.
+  const customerCodes = useMemo(() => new Set(resolvePostingDescendants([AR_PARENT], accounts)), [accounts])
+  const supplierCodes = useMemo(() => new Set(resolvePostingDescendants([AP_PARENT], accounts)), [accounts])
 
-  // Customers (العملاء) = debit-normal, balance positive. Suppliers (الموردون)
-  // here come from the debtors tree, so they read as debit-normal too.
   const receivables: PartyRow[] = useMemo(
     () =>
       accounts
@@ -53,15 +52,6 @@ export function PartiesTab() {
         .map((a) => ({ code: a.code, name: pickName(a, lang), balance: balanceMap.get(a.code) ?? 0 }))
         .sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance)),
     [accounts, supplierCodes, balanceMap, lang],
-  )
-
-  const contractors: PartyRow[] = useMemo(
-    () =>
-      accounts
-        .filter((a) => contractorCodes.has(a.code))
-        .map((a) => ({ code: a.code, name: pickName(a, lang), balance: balanceMap.get(a.code) ?? 0 }))
-        .sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance)),
-    [accounts, contractorCodes, balanceMap, lang],
   )
 
   const totalAR = receivables.reduce((s, r) => s + r.balance, 0)
@@ -90,7 +80,7 @@ export function PartiesTab() {
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card className="overflow-hidden">
-          <CardHeader title={t('accounting.parties.receivables')} icon={<Users className="h-5 w-5" />} />
+          <CardHeader title={t('accounting.parties.receivables')} subtitle={t('accounting.parties.receivables_sub')} icon={<Users className="h-5 w-5" />} />
           <ArabicTable
             columns={columns('text-emerald-700 dark:text-emerald-300')}
             data={receivables}
@@ -102,22 +92,10 @@ export function PartiesTab() {
           />
         </Card>
         <Card className="overflow-hidden">
-          <CardHeader title={t('accounting.parties.payables')} icon={<Truck className="h-5 w-5" />} />
+          <CardHeader title={t('accounting.parties.payables')} subtitle={t('accounting.parties.payables_sub')} icon={<Truck className="h-5 w-5" />} />
           <ArabicTable
             columns={columns('text-amber-700 dark:text-amber-300')}
             data={payables}
-            loading={loading}
-            rowKey={(r) => r.code}
-            onRowClick={(r) => navigate(`/accounting/accounts/${r.code}`)}
-            searchable={false}
-            emptyTitle={t('accounting.parties.empty')}
-          />
-        </Card>
-        <Card className="overflow-hidden">
-          <CardHeader title={t('accounting.parties.contractors')} icon={<Truck className="h-5 w-5" />} />
-          <ArabicTable
-            columns={columns('text-violet-700 dark:text-violet-300')}
-            data={contractors}
             loading={loading}
             rowKey={(r) => r.code}
             onRowClick={(r) => navigate(`/accounting/accounts/${r.code}`)}
