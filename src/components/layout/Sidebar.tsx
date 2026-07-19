@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Lock, X } from 'lucide-react'
+import { Lock, PanelLeftClose } from 'lucide-react'
 import { NAV_ITEMS, isModuleLocked } from '../../config/nav'
 import { useT } from '../../context/LangContext'
 import { cn } from '../../lib/cn'
@@ -31,10 +31,11 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         </div>
         <button
           onClick={onClose}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/80 transition hover:bg-white/15 md:hidden"
-          title={t('common.close')}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/80 transition hover:bg-white/15"
+          title={t('header.toggle_sidebar')}
+          aria-label={t('header.toggle_sidebar')}
         >
-          <X className="h-5 w-5" />
+          <PanelLeftClose className="h-5 w-5 rtl:-scale-x-100" />
         </button>
       </div>
 

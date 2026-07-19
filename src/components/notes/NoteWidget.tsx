@@ -6,8 +6,10 @@ import { Textarea } from '../ui/Input'
 import { Select } from '../ui/Select'
 import { Badge } from '../ui/Badge'
 import { useT, useLang } from '../../context/LangContext'
+import { useCompany } from '../../context/CompanyContext'
 import { apiGet, apiPost } from '../../lib/api'
 import { formatDateTime } from '../../lib/format'
+import { noteVisibleTo } from './visibility'
 import type { Note, NoteVisibility } from '../../types'
 
 /**
@@ -27,15 +29,19 @@ export function NoteWidget({
 }) {
   const t = useT()
   const { lang } = useLang()
-  const [notes, setNotes] = useState<Note[]>([])
+  const { currentUser } = useCompany()
+  const [allNotes, setAllNotes] = useState<Note[]>([])
   const [content, setContent] = useState('')
   const [visibility, setVisibility] = useState<NoteVisibility>('PRIVATE')
   const [loading, setLoading] = useState(false)
 
+  // Hide other people's PRIVATE notes from the current user.
+  const notes = allNotes.filter((n) => noteVisibleTo(n, currentUser.name))
+
   const load = () => {
     apiGet<Note[]>('/notes', { record_type: recordType, record_id: recordId })
-      .then((rows) => setNotes(Array.isArray(rows) ? rows : []))
-      .catch(() => setNotes([]))
+      .then((rows) => setAllNotes(Array.isArray(rows) ? rows : []))
+      .catch(() => setAllNotes([]))
   }
 
   useEffect(load, [recordType, recordId])
@@ -50,7 +56,7 @@ export function NoteWidget({
         record_id: recordId,
         content: content.trim(),
         visibility,
-        author: 'أحمد المدير',
+        author: currentUser.name,
         pinned: 0,
       })
       setContent('')

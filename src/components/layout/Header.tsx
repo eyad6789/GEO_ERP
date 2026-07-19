@@ -1,17 +1,18 @@
 import { useState } from 'react'
-import { Bell, Languages, ChevronDown, Menu, AlertTriangle, Clock, Sun, Moon } from 'lucide-react'
+import { Bell, Languages, ChevronDown, AlertTriangle, Clock, Sun, Moon } from 'lucide-react'
 import { CompanySelector } from './CompanySelector'
 import { useLang, useT } from '../../context/LangContext'
 import { useTheme } from '../../context/ThemeContext'
 import { useCompany, ROLES } from '../../context/CompanyContext'
-import { useApi } from '../../hooks/useResource'
+import { useApi, useResource } from '../../hooks/useResource'
 import { apiGet } from '../../lib/api'
 import { Avatar } from '../ui/Avatar'
 import { Popover } from '../ui/Popover'
 import { Badge } from '../ui/Badge'
 import { formatDate } from '../../lib/format'
 import { VehicleModule } from '../../modules/vehicles/VehicleModule'
-import type { Vehicle } from '../../types'
+import { DEFAULT_USER } from '../../context/CompanyContext'
+import type { Vehicle, Employee } from '../../types'
 
 interface LicenseAlert {
   id: string
@@ -24,11 +25,15 @@ interface LicenseAlert {
   kind: 'expired' | 'soon'
 }
 
-export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
+export function Header() {
   const t = useT()
   const { lang, toggle } = useLang()
   const { theme, toggle: toggleTheme } = useTheme()
-  const { role, setRole } = useCompany()
+  const { role, setRole, currentUser, setCurrentUser } = useCompany()
+
+  // People you can "act as": the default manager + every employee.
+  const { data: employees } = useResource<Employee>('employees')
+  const people = [DEFAULT_USER, ...employees.map((e) => ({ id: e.id, name: lang === 'ar' ? e.full_name_ar : e.full_name_en || e.full_name_ar }))]
 
   // Vehicle license / registration expiry notifications — for the FLEET MANAGER only.
   const isFleetManager = role.key === 'fleet_manager'
@@ -48,15 +53,6 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   return (
     <>
     <header className="sticky top-0 z-30 flex h-[var(--header-h)] items-center gap-3 border-b border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 px-4 backdrop-blur sm:px-6">
-      {/* Sidebar toggle */}
-      <button
-        onClick={onToggleSidebar}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800"
-        title={t('header.toggle_sidebar')}
-        aria-label={t('header.toggle_sidebar')}
-      >
-        <Menu className="h-5 w-5" />
-      </button>
 
       <div className="flex flex-1 items-center justify-end gap-2">
         <CompanySelector />
@@ -155,14 +151,14 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
           )}
         </Popover>
 
-        {/* Role / user menu (cosmetic) */}
+        {/* User / person switcher + role menu */}
         <Popover
-          width="w-56"
+          width="w-64"
           trigger={({ toggle: tg }) => (
             <button onClick={tg} className="flex items-center gap-2 rounded-lg p-1 pe-2 transition hover:bg-slate-50 dark:hover:bg-slate-800">
-              <Avatar name="أحمد المدير" color="#1a5f7a" size="sm" />
+              <Avatar name={currentUser.name} color="#1a5f7a" size="sm" />
               <div className="hidden text-start sm:block">
-                <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">أحمد المدير</p>
+                <p className="max-w-[9rem] truncate text-xs font-semibold text-slate-700 dark:text-slate-200">{currentUser.name}</p>
                 <p className="text-[10px] text-slate-400 dark:text-slate-400">{lang === 'ar' ? role.label_ar : role.label_en}</p>
               </div>
               <ChevronDown className="h-4 w-4 text-slate-400 dark:text-slate-400" />
@@ -170,24 +166,45 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
           )}
         >
           {(close) => (
-            <div className="space-y-1">
-              <p className="px-2 py-1 text-xs font-semibold text-slate-400 dark:text-slate-400">{t('header.role')}</p>
-              {ROLES.map((r) => (
-                <button
-                  key={r.key}
-                  onClick={() => {
-                    setRole(r)
-                    close()
-                  }}
-                  className={
-                    'flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm transition hover:bg-slate-50 dark:hover:bg-slate-800 ' +
-                    (r.key === role.key ? 'text-primary font-semibold' : 'text-slate-600 dark:text-slate-300')
-                  }
-                >
-                  {lang === 'ar' ? r.label_ar : r.label_en}
-                  {r.key === role.key && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
-                </button>
-              ))}
+            <div className="space-y-2">
+              {/* Acting-as person switcher */}
+              <div>
+                <p className="px-2 py-1 text-xs font-semibold text-slate-400 dark:text-slate-400">{t('header.acting_as')}</p>
+                <div className="-mx-1 max-h-56 space-y-0.5 overflow-y-auto px-1">
+                  {people.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => { setCurrentUser(p); close() }}
+                      className={
+                        'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition hover:bg-slate-50 dark:hover:bg-slate-800 ' +
+                        (p.id === currentUser.id ? 'text-primary font-semibold' : 'text-slate-600 dark:text-slate-300')
+                      }
+                    >
+                      <Avatar name={p.name} size="sm" />
+                      <span className="flex-1 truncate text-start">{p.name}</span>
+                      {p.id === currentUser.id && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Role (cosmetic) */}
+              <div className="border-t border-slate-100 dark:border-slate-700/70 pt-1.5">
+                <p className="px-2 py-1 text-xs font-semibold text-slate-400 dark:text-slate-400">{t('header.role')}</p>
+                {ROLES.map((r) => (
+                  <button
+                    key={r.key}
+                    onClick={() => { setRole(r); close() }}
+                    className={
+                      'flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm transition hover:bg-slate-50 dark:hover:bg-slate-800 ' +
+                      (r.key === role.key ? 'text-primary font-semibold' : 'text-slate-600 dark:text-slate-300')
+                    }
+                  >
+                    {lang === 'ar' ? r.label_ar : r.label_en}
+                    {r.key === role.key && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </Popover>

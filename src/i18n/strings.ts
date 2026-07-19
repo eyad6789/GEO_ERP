@@ -108,6 +108,7 @@ registerStrings({
   // Header
   'header.company_all': { ar: 'كل الشركات', en: 'All Companies' },
   'header.role': { ar: 'الدور', en: 'Role' },
+  'header.acting_as': { ar: 'الدخول باسم', en: 'Acting as' },
   'header.search_global': { ar: 'بحث في النظام...', en: 'Search the system...' },
   'header.toggle_sidebar': { ar: 'إظهار/إخفاء القائمة', en: 'Toggle menu' },
   'header.theme.dark': { ar: 'الوضع الداكن', en: 'Dark mode' },

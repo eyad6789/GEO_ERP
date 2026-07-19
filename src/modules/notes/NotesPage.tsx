@@ -11,6 +11,7 @@ import { useCompany } from '../../context/CompanyContext'
 import { apiGet, apiPost, apiDelete } from '../../lib/api'
 import { formatDateTime } from '../../lib/format'
 import { NOTE_RECORD_TYPE } from '../../components/notes/ModuleNotes'
+import { noteVisibleTo } from '../../components/notes/visibility'
 import type { Note } from '../../types'
 
 // Modules that can hold notes. label keys resolved via i18n.
@@ -23,7 +24,7 @@ const MODULES = [
 export default function NotesPage() {
   const t = useT()
   const { lang } = useLang()
-  const { role } = useCompany()
+  const { currentUser } = useCompany()
   const toast = useToast()
   const [notes, setNotes] = useState<Note[]>([])
   const [q, setQ] = useState('')
@@ -48,11 +49,13 @@ export default function NotesPage() {
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase()
-    if (!needle) return notes
-    return notes.filter(
+    // Only the current user's own private notes (plus all public/restricted).
+    const visible = notes.filter((n) => noteVisibleTo(n, currentUser.name))
+    if (!needle) return visible
+    return visible.filter(
       (n) => n.content.toLowerCase().includes(needle) || moduleLabel(n.record_id).toLowerCase().includes(needle),
     )
-  }, [notes, q, moduleLabel])
+  }, [notes, q, moduleLabel, currentUser.name])
 
   const add = async () => {
     if (!content.trim()) return
@@ -64,7 +67,7 @@ export default function NotesPage() {
         record_id: target,
         content: content.trim(),
         visibility: 'PRIVATE',
-        author: lang === 'ar' ? role.label_ar : role.label_en,
+        author: currentUser.name,
         pinned: 0,
       })
       setContent('')

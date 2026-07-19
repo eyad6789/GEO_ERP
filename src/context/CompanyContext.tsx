@@ -19,12 +19,23 @@ export const ROLES: RoleOption[] = [
   { key: 'viewer', label_ar: 'عارض', label_en: 'Viewer' },
 ]
 
+/** The person currently using the app ("acting as"). No real auth — lets each
+ *  person see only their own private notes and own leaves/attendance. */
+export interface AppUser {
+  id: string
+  name: string
+}
+
+export const DEFAULT_USER: AppUser = { id: 'ahmed', name: 'أحمد المدير' }
+
 interface CompanyContextValue {
   /** Currently selected company id, or null for "all companies". */
   companyId: string | null
   setCompanyId: (id: string | null) => void
   role: RoleOption
   setRole: (r: RoleOption) => void
+  currentUser: AppUser
+  setCurrentUser: (u: AppUser) => void
 }
 
 const CompanyContext = createContext<CompanyContextValue | null>(null)
@@ -32,8 +43,9 @@ const CompanyContext = createContext<CompanyContextValue | null>(null)
 export function CompanyProvider({ children }: { children: ReactNode }) {
   const [companyId, setCompanyId] = useState<string | null>(null)
   const [role, setRole] = useState<RoleOption>(ROLES[0])
+  const [currentUser, setCurrentUser] = useState<AppUser>(DEFAULT_USER)
   return (
-    <CompanyContext.Provider value={{ companyId, setCompanyId, role, setRole }}>
+    <CompanyContext.Provider value={{ companyId, setCompanyId, role, setRole, currentUser, setCurrentUser }}>
       {children}
     </CompanyContext.Provider>
   )

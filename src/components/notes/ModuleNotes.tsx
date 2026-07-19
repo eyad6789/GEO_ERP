@@ -15,6 +15,7 @@ import { useT, useLang } from '../../context/LangContext'
 import { useCompany } from '../../context/CompanyContext'
 import { apiGet, apiPost, apiDelete } from '../../lib/api'
 import { formatDateTime } from '../../lib/format'
+import { noteVisibleTo } from './visibility'
 import type { Note } from '../../types'
 
 export const NOTE_RECORD_TYPE = 'module-note'
@@ -33,11 +34,14 @@ export function useModuleNotes(moduleKey: string) {
 export function NotesButton({ moduleKey, moduleLabel }: { moduleKey: string; moduleLabel?: string }) {
   const t = useT()
   const { lang } = useLang()
-  const { role } = useCompany()
+  const { currentUser } = useCompany()
   const navigate = useNavigate()
-  const { notes, reload } = useModuleNotes(moduleKey)
+  const { notes: allNotes, reload } = useModuleNotes(moduleKey)
   const [content, setContent] = useState('')
   const [busy, setBusy] = useState(false)
+
+  // Hide other people's PRIVATE notes from the current user.
+  const notes = allNotes.filter((n) => noteVisibleTo(n, currentUser.name))
 
   const add = async () => {
     if (!content.trim()) return
@@ -49,7 +53,7 @@ export function NotesButton({ moduleKey, moduleLabel }: { moduleKey: string; mod
         record_id: moduleKey,
         content: content.trim(),
         visibility: 'PRIVATE',
-        author: lang === 'ar' ? role.label_ar : role.label_en,
+        author: currentUser.name,
         pinned: 0,
       })
       setContent('')
