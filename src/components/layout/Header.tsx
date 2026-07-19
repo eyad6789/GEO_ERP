@@ -1,18 +1,19 @@
-import { useState } from 'react'
-import { Bell, Languages, ChevronDown, AlertTriangle, Clock, Sun, Moon } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Bell, Languages, ChevronDown, AlertTriangle, Clock, Sun, Moon, Camera } from 'lucide-react'
 import { CompanySelector } from './CompanySelector'
 import { useLang, useT } from '../../context/LangContext'
 import { useTheme } from '../../context/ThemeContext'
 import { useCompany, ROLES } from '../../context/CompanyContext'
 import { useApi, useResource } from '../../hooks/useResource'
-import { apiGet } from '../../lib/api'
+import { apiGet, apiPost, apiDelete } from '../../lib/api'
 import { Avatar } from '../ui/Avatar'
 import { Popover } from '../ui/Popover'
 import { Badge } from '../ui/Badge'
+import { useToast } from '../ui/Toast'
 import { formatDate } from '../../lib/format'
 import { VehicleModule } from '../../modules/vehicles/VehicleModule'
 import { DEFAULT_USER } from '../../context/CompanyContext'
-import type { Vehicle, Employee } from '../../types'
+import type { Vehicle, Employee, EmployeeDoc } from '../../types'
 
 interface LicenseAlert {
   id: string
@@ -34,6 +35,59 @@ export function Header() {
   // People you can "act as": the default manager + every employee.
   const { data: employees } = useResource<Employee>('employees')
   const people = [DEFAULT_USER, ...employees.map((e) => ({ id: e.id, name: lang === 'ar' ? e.full_name_ar : e.full_name_en || e.full_name_ar }))]
+
+  // Current user's profile photo. Employees store it as a PHOTO document; the
+  // default manager (no employee record) keeps it in the browser (localStorage).
+  const toast = useToast()
+  const isEmployeeUser = currentUser.id !== DEFAULT_USER.id
+  const [photoReload, setPhotoReload] = useState(0)
+  const { data: myDocs } = useApi<EmployeeDoc[]>(
+    isEmployeeUser ? '/employee-documents' : null,
+    isEmployeeUser ? { employee_id: currentUser.id, _r: photoReload } : undefined,
+  )
+  const photoDoc = (myDocs ?? []).find((d) => d.doc_type === 'PHOTO')
+  const [localPhoto, setLocalPhoto] = useState<string | null>(() => {
+    try { return localStorage.getItem(`geo-erp-photo-${currentUser.id}`) } catch { return null }
+  })
+  const myPhotoUrl = isEmployeeUser
+    ? (photoDoc ? `/api/employee-documents/${photoDoc.id}/file` : undefined)
+    : (localPhoto ?? undefined)
+
+  const photoInputRef = useRef<HTMLInputElement>(null)
+  const [photoBusy, setPhotoBusy] = useState(false)
+  const uploadMyPhoto = async (file: File) => {
+    setPhotoBusy(true)
+    try {
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader()
+        r.onload = () => res(r.result as string)
+        r.onerror = rej
+        r.readAsDataURL(file)
+      })
+      if (isEmployeeUser) {
+        await apiPost('/employee-documents', {
+          employee_id: currentUser.id,
+          doc_type: 'PHOTO',
+          title: t('hr.doc.PHOTO'),
+          file_name: file.name,
+          mime: file.type || 'image/jpeg',
+          data: (dataUrl.split(',')[1] ?? ''),
+        })
+        // Drop the previous photo so only the newest remains.
+        if (photoDoc) await apiDelete(`/employee-documents/${photoDoc.id}`).catch(() => undefined)
+        setPhotoReload((n) => n + 1)
+      } else {
+        try { localStorage.setItem(`geo-erp-photo-${currentUser.id}`, dataUrl) } catch { /* ignore */ }
+        setLocalPhoto(dataUrl)
+      }
+      toast.success(t('header.photo.saved'))
+    } catch {
+      toast.error(t('common.error'))
+    } finally {
+      setPhotoBusy(false)
+      if (photoInputRef.current) photoInputRef.current.value = ''
+    }
+  }
 
   // Vehicle license / registration expiry notifications — for the FLEET MANAGER only.
   const isFleetManager = role.key === 'fleet_manager'
@@ -156,7 +210,7 @@ export function Header() {
           width="w-64"
           trigger={({ toggle: tg }) => (
             <button onClick={tg} className="flex items-center gap-2 rounded-lg p-1 pe-2 transition hover:bg-slate-50 dark:hover:bg-slate-800">
-              <Avatar name={currentUser.name} color="#1a5f7a" size="sm" />
+              <Avatar name={currentUser.name} src={myPhotoUrl} color="#1a5f7a" size="sm" />
               <div className="hidden text-start sm:block">
                 <p className="max-w-[9rem] truncate text-xs font-semibold text-slate-700 dark:text-slate-200">{currentUser.name}</p>
                 <p className="text-[10px] text-slate-400 dark:text-slate-400">{lang === 'ar' ? role.label_ar : role.label_en}</p>
@@ -167,6 +221,23 @@ export function Header() {
         >
           {(close) => (
             <div className="space-y-2">
+              {/* Current user + change profile photo */}
+              <div className="flex items-center gap-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 p-2">
+                <Avatar name={currentUser.name} src={myPhotoUrl} color="#1a5f7a" size="md" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">{currentUser.name}</p>
+                  <button
+                    type="button"
+                    onClick={() => photoInputRef.current?.click()}
+                    disabled={photoBusy}
+                    className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-primary transition hover:underline disabled:opacity-50"
+                  >
+                    <Camera className="h-3 w-3" />
+                    {myPhotoUrl ? t('header.photo.change') : t('header.photo.add')}
+                  </button>
+                </div>
+              </div>
+
               {/* Acting-as person switcher */}
               <div>
                 <p className="px-2 py-1 text-xs font-semibold text-slate-400 dark:text-slate-400">{t('header.acting_as')}</p>
@@ -209,6 +280,13 @@ export function Header() {
           )}
         </Popover>
       </div>
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMyPhoto(f) }}
+      />
     </header>
 
     {/* Full vehicle module opened from a license notification. */}
