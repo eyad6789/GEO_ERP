@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-do
 import { AppLayout } from './components/layout/AppLayout'
 import { LockedPage } from './components/shared/LockedPage'
 import { isModuleLocked, LANDING_PATH } from './config/nav'
+import { useT } from './context/LangContext'
 
 // Each module owns its own routes.tsx exporting `routes: RouteObject[]`.
 import { routes as dashboardRoutes } from './modules/dashboard/routes'
@@ -26,12 +27,13 @@ function gate(key: string, routes: RouteObject[]): RouteObject[] {
 }
 
 function NotFound() {
+  const t = useT()
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-2 text-center">
       <p className="text-5xl font-black text-primary/20">404</p>
-      <p className="text-lg font-semibold text-slate-600 dark:text-slate-300">الصفحة غير موجودة</p>
+      <p className="text-lg font-semibold text-slate-600 dark:text-slate-300">{t('notfound.title')}</p>
       <a href={LANDING_PATH} className="text-sm text-primary hover:underline">
-        العودة إلى المحاسبة
+        {t('notfound.back')}
       </a>
     </div>
   )

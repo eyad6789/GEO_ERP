@@ -482,6 +482,24 @@ warehouseRouter.post('/inventory_transactions', (req, res) => {
   if (type === 'TRANSFER' && !fromWarehouseId) {
     return res.status(400).json({ error: 'التحويل يتطلب مستودع المصدر / Transfer needs a source warehouse' })
   }
+  if (type === 'TRANSFER' && fromWarehouseId === warehouseId) {
+    return res.status(400).json({ error: 'مستودع المصدر والوجهة متطابقان / Source and destination warehouse are the same' })
+  }
+
+  // Guard: OUT/TRANSFER must not drive on-hand stock negative.
+  if (type === 'OUT' || type === 'TRANSFER') {
+    const srcWh = type === 'TRANSFER' ? fromWarehouseId! : warehouseId
+    const readQty = db.prepare('SELECT quantity FROM stock WHERE item_id = ? AND warehouse_id = ?')
+    for (const l of lines) {
+      const onHand = Number((readQty.get(l.item_id, srcWh) as { quantity: number } | undefined)?.quantity ?? 0)
+      const qty = Number(l.quantity) || 0
+      if (qty > onHand) {
+        return res.status(400).json({
+          error: `الكمية المطلوبة (${qty}) تتجاوز المتوفر (${onHand}) في المخزون / Requested quantity exceeds available stock`,
+        })
+      }
+    }
+  }
 
   const txnId = genId('inv')
   const totalValue = lines.reduce(
@@ -555,6 +573,51 @@ warehouseRouter.post('/inventory_transactions', (req, res) => {
     })
     const row = db.prepare('SELECT * FROM inventory_transactions WHERE id = ?').get(txnId)
     res.status(201).json(row)
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message })
+  }
+})
+
+// DELETE /api/inventory_transactions/:id — remove a transaction, its lines, and
+// REVERSE the stock movement it applied. (The generic DELETE would orphan the
+// lines and leave stock permanently drifted.)
+warehouseRouter.delete('/inventory_transactions/:id', (req, res) => {
+  const id = req.params.id
+  const txn = db.prepare('SELECT * FROM inventory_transactions WHERE id = ?').get(id) as
+    | { id: string; type: string; warehouse_id: string; from_warehouse_id: string | null; company_id: string | null }
+    | undefined
+  if (!txn) return res.status(404).json({ error: 'Not found' })
+  const lines = db
+    .prepare('SELECT item_id, quantity FROM inventory_lines WHERE transaction_id = ?')
+    .all(id) as { item_id: string; quantity: number }[]
+
+  const tx = db.transaction(() => {
+    for (const l of lines) {
+      const qty = Number(l.quantity) || 0
+      // Inverse of the deltas applied at create time.
+      if (txn.type === 'IN' || txn.type === 'RETURN') upsertStock(l.item_id, txn.warehouse_id, -qty)
+      else if (txn.type === 'OUT') upsertStock(l.item_id, txn.warehouse_id, qty)
+      else if (txn.type === 'ADJUST') upsertStock(l.item_id, txn.warehouse_id, -qty)
+      else if (txn.type === 'TRANSFER') {
+        if (txn.from_warehouse_id) upsertStock(l.item_id, txn.from_warehouse_id, qty)
+        upsertStock(l.item_id, txn.warehouse_id, -qty)
+      }
+    }
+    db.prepare('DELETE FROM inventory_lines WHERE transaction_id = ?').run(id)
+    db.prepare('DELETE FROM inventory_transactions WHERE id = ?').run(id)
+  })
+
+  try {
+    tx()
+    logEvent({
+      module: 'WAREHOUSE',
+      action: 'DELETE',
+      record_type: 'inventory_transactions',
+      record_id: id,
+      record_description: `حذف حركة ${txn.type} — عكس أثر المخزون`,
+      company_id: txn.company_id ?? null,
+    })
+    res.json({ ok: true })
   } catch (e) {
     res.status(500).json({ error: (e as Error).message })
   }

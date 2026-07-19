@@ -111,9 +111,17 @@ export function LeafletMap({ data, height = 400, compact = false, className, sel
   useEffect(() => () => { if (hintTimer.current != null) clearTimeout(hintTimer.current) }, [])
 
   useEffect(() => {
-    const L = (window as any).L as any
-    if (!L) return
     const container = containerRef.current
+    const L = (window as any).L as any
+    // Leaflet is loaded from a CDN in index.html. If it's unreachable (offline,
+    // firewall, CSP) show a clear message instead of a silent blank grey box.
+    if (!L) {
+      if (container) {
+        container.innerHTML =
+          `<div class="flex h-full w-full items-center justify-center p-6 text-center text-sm text-slate-500 dark:text-slate-400">${t('fleet.map.load_failed')}</div>`
+      }
+      return
+    }
     if (!container) return
 
     // Destroy previous instance if any (React strict-mode double-invoke guard)

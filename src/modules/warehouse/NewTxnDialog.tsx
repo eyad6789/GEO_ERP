@@ -153,13 +153,16 @@ export function NewTxnDialog({
     setLines((ls) => [...ls, makeLine(itemId)])
   }
   const removeLine = (key: string) => setLines((ls) => ls.filter((l) => l.key !== key))
+  // A stocktake ADJUST may correct downward, so it accepts negative quantities;
+  // every other movement type must stay ≥ 1.
+  const clampQty = (v: number) => (type === 'ADJUST' ? v : Math.max(1, v))
   const stepQty = (key: string, delta: number) =>
     setLines((ls) =>
-      ls.map((l) => (l.key === key ? { ...l, quantity: Math.max(1, (Number(l.quantity) || 0) + delta) } : l)),
+      ls.map((l) => (l.key === key ? { ...l, quantity: clampQty((Number(l.quantity) || 0) + delta) } : l)),
     )
   const setQty = (key: string, qty: number) =>
     setLines((ls) =>
-      ls.map((l) => (l.key === key ? { ...l, quantity: Math.max(1, Number.isFinite(qty) ? qty : 1) } : l)),
+      ls.map((l) => (l.key === key ? { ...l, quantity: clampQty(Number.isFinite(qty) ? qty : type === 'ADJUST' ? 0 : 1) } : l)),
     )
 
   const needsReceivedBy = type === 'OUT' || type === 'TRANSFER'
@@ -407,7 +410,7 @@ export function NewTxnDialog({
                       </button>
                       <Input
                         type="number"
-                        min={1}
+                        min={type === 'ADJUST' ? undefined : 1}
                         value={l.quantity}
                         onChange={(e) => setQty(l.key, Number(e.target.value))}
                         className="w-16 text-center tabular-nums"

@@ -100,6 +100,11 @@ registerStrings({
   'locked.cta': { ar: 'الذهاب إلى لوحة التحكم', en: 'Go to Dashboard' },
   'locked.badge': { ar: 'قريباً', en: 'Soon' },
 
+  // 404 + misc
+  'notfound.title': { ar: 'الصفحة غير موجودة', en: 'Page not found' },
+  'notfound.back': { ar: 'الذهاب إلى لوحة التحكم', en: 'Go to Dashboard' },
+  'fleet.map.load_failed': { ar: 'تعذّر تحميل الخريطة (تحقق من الاتصال بالإنترنت)', en: 'Map failed to load (check your internet connection)' },
+
   // Header
   'header.company_all': { ar: 'كل الشركات', en: 'All Companies' },
   'header.role': { ar: 'الدور', en: 'Role' },

@@ -78,7 +78,7 @@ function AlertCard({
 export function AlertsRow({ alerts }: { alerts: DashboardData['alerts'] }) {
   const t = useT()
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <AlertCard
         to="/warehouse"
         icon={<PackageX className="h-6 w-6" />}

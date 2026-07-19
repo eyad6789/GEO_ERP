@@ -40,12 +40,12 @@ const REGISTRY: Record<string, TableConfig> = {
   warehouses: { module: 'WAREHOUSE', search: ['name_ar', 'location'] },
   items: { module: 'WAREHOUSE', search: ['name_ar', 'name_en', 'code', 'category'] },
   search_synonyms: { module: 'WAREHOUSE', search: ['term', 'target'] },
-  stock: { module: 'WAREHOUSE' },
+  stock: { module: 'WAREHOUSE', readOnly: true }, // moved only via warehouse txn routes
   inventory_transactions: { module: 'WAREHOUSE', search: ['serial_number', 'doc_number', 'notes'], defaultSort: 'date' },
-  inventory_lines: { module: 'WAREHOUSE' },
+  inventory_lines: { module: 'WAREHOUSE', readOnly: true }, // written only with their parent transaction
   accounts: { idColumn: 'code', module: 'ACCOUNTING', search: ['code', 'name_ar', 'name_en'], defaultSort: 'code' },
   journal_entries: { module: 'ACCOUNTING', search: ['serial_number', 'doc_number', 'description'], defaultSort: 'date' },
-  journal_lines: { module: 'ACCOUNTING', search: ['description', 'account_code'] },
+  journal_lines: { module: 'ACCOUNTING', search: ['description', 'account_code'], readOnly: true }, // written only via balanced journal entries
   banks: { module: 'ACCOUNTING', search: ['name_ar', 'name_en', 'account_number', 'branch'], defaultSort: 'created_at' },
   archive_documents: { module: 'ARCHIVE', search: ['title', 'subject', 'ref_number', 'from_party', 'to_party', 'tags'], defaultSort: 'date' },
   notes: { module: 'GENERAL', search: ['content', 'author'] },
