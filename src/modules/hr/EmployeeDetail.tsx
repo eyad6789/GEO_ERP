@@ -206,7 +206,8 @@ export default function EmployeeDetail() {
             ) : (
               <Avatar name={pickName(emp, lang)} color={emp.photo_color} size="xl" />
             )}
-            {isHR && (
+            {/* Photo upload is always available (the role switcher is cosmetic). */}
+            {(
               <>
                 <input
                   ref={photoInputRef}
