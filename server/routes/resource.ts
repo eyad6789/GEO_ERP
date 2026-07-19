@@ -29,6 +29,7 @@ const REGISTRY: Record<string, TableConfig> = {
   payroll: { module: 'HR', search: ['period'] },
   gifts: { module: 'HR', search: ['occasion', 'description'] },
   performance_reviews: { module: 'HR', search: ['period'] },
+  trainings: { module: 'HR', search: ['title', 'provider', 'category'], defaultSort: 'date' },
   projects: { module: 'PROJECTS', search: ['name_ar', 'name_en', 'code', 'client', 'location'] },
   project_milestones: { module: 'PROJECTS', search: ['name_ar'] },
   project_machinery: { module: 'PROJECTS', search: ['name_ar', 'code', 'type'] },

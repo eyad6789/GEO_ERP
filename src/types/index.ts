@@ -116,6 +116,20 @@ export interface Attendance {
   notes: string
 }
 
+export interface Training {
+  id: ID
+  employee_id: ID
+  title: string
+  category: string
+  provider: string
+  date: ISODate
+  hours: number
+  status: string // PLANNED | IN_PROGRESS | COMPLETED
+  rating: number // 0-5 activity/performance rating
+  notes: string
+  created_at?: string
+}
+
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 export interface LeaveRequest {
   id: ID

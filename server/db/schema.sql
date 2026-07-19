@@ -165,6 +165,21 @@ CREATE TABLE IF NOT EXISTS performance_reviews (
   created_at TEXT
 );
 
+-- Training courses per employee, with an activity/performance rating (0-5).
+CREATE TABLE IF NOT EXISTS trainings (
+  id TEXT PRIMARY KEY,
+  employee_id TEXT,
+  title TEXT,
+  category TEXT,            -- TECHNICAL | SAFETY | SOFT_SKILLS | COMPLIANCE | LEADERSHIP | OTHER
+  provider TEXT,
+  date TEXT,
+  hours REAL DEFAULT 0,
+  status TEXT,             -- PLANNED | IN_PROGRESS | COMPLETED
+  rating REAL DEFAULT 0,   -- 0-5, how the employee performed in the training's activities
+  notes TEXT,
+  created_at TEXT
+);
+
 -- ---- Projects --------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,

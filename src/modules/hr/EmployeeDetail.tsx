@@ -8,6 +8,7 @@ import {
   Clock,
   FileText,
   FolderOpen,
+  GraduationCap,
   Hourglass,
   IdCard,
   Pencil,
@@ -42,8 +43,9 @@ import { MonthPicker } from './MonthPicker'
 import { currentMonthKey, minutesToHours, workedMinutes } from './hours'
 import { isHourlyLeave } from './policy'
 import { computeMonthStats } from './useHrStats'
+import { EmployeeTraining } from './EmployeeTraining'
 
-type DetailTab = 'info' | 'documents' | 'attendance' | 'leaves'
+type DetailTab = 'info' | 'documents' | 'attendance' | 'leaves' | 'training'
 
 const EMPLOYEE_DOC_TYPES = ['PHOTO', 'NATIONAL_ID', 'DRIVER_LICENSE', 'PASSPORT', 'CONTRACT', 'CERTIFICATE', 'OTHER'] as const
 
@@ -177,6 +179,7 @@ export default function EmployeeDetail() {
     { key: 'documents', label: t('hr.detail.tab.documents'), icon: <FolderOpen className="h-4 w-4" /> },
     { key: 'attendance', label: t('hr.detail.tab.attendance'), icon: <CalendarCheck className="h-4 w-4" /> },
     { key: 'leaves', label: t('hr.detail.tab.leaves'), icon: <CalendarClock className="h-4 w-4" /> },
+    { key: 'training', label: t('hr.detail.tab.training'), icon: <GraduationCap className="h-4 w-4" /> },
   ]
 
   const fmtOf = (x: number, y: number, key: string, dec = 0) =>
@@ -361,6 +364,7 @@ export default function EmployeeDetail() {
       {tab === 'documents' && <EmployeeDocuments employeeId={emp.id} />}
       {tab === 'attendance' && <EmployeeAttendance data={attendance} loading={attLoading} />}
       {tab === 'leaves' && <EmployeeLeaves data={leaves} loading={lvLoading} />}
+      {tab === 'training' && <EmployeeTraining employeeId={emp.id} />}
 
       {editing && (
         <FormDialog
