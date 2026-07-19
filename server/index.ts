@@ -3,7 +3,7 @@
 // serves the whole app. Run `npm run build` first.
 import express from 'express'
 import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
+import { dirname, join, sep } from 'node:path'
 import { existsSync } from 'node:fs'
 import './db/connection.js' // ensures schema exists
 import { dashboardRouter } from './routes/dashboard.js'
@@ -46,9 +46,29 @@ app.use('/api', resourceRouter)
 // Serve the built SPA (production). Falls back to index.html for client routes.
 const distDir = join(__dirname, '..', 'dist')
 if (existsSync(distDir)) {
-  app.use(express.static(distDir))
+  app.use(
+    express.static(distDir, {
+      // Serve index.html only through the no-cache fallback below, never as a
+      // cacheable static file.
+      index: false,
+      setHeaders(res, filePath) {
+        if (filePath.endsWith('index.html')) {
+          // The SPA shell must always revalidate: a new deploy renames the
+          // hashed JS/CSS bundles, and a stale cached shell would point at
+          // bundles that no longer exist → a half-broken, version-skewed page
+          // (e.g. theme styles and app code from different builds).
+          res.setHeader('Cache-Control', 'no-cache')
+        } else if (filePath.includes(`${sep}assets${sep}`)) {
+          // Everything under assets/ is content-hashed, so it can be cached
+          // forever — a changed file gets a new name.
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+        }
+      },
+    }),
+  )
   app.get('*', (req, res) => {
     if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Not found' })
+    res.setHeader('Cache-Control', 'no-cache')
     res.sendFile(join(distDir, 'index.html'))
   })
 }
