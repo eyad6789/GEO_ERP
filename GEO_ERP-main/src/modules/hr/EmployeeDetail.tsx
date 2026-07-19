@@ -333,6 +333,8 @@ export default function EmployeeDetail() {
             <InfoRow label={t('hr.f.company')} value={pickName(company, lang)} />
             <InfoRow label={t('hr.f.department')} value={department ? pickName(department, lang) : '—'} />
             <InfoRow label={t('hr.f.job_title')} value={emp.job_title} />
+            <InfoRow label={t('hr.f.education')} value={emp.education} />
+            <InfoRow label={t('hr.f.graduation_year')} value={<span dir="ltr">{emp.graduation_year}</span>} />
             <InfoRow label={t('hr.f.employment_type')} value={emp.employment_type ? t(`hr.etype.${emp.employment_type}`) : '—'} />
             <InfoRow label={t('hr.f.hire_date')} value={formatDate(emp.hire_date, lang)} />
             <InfoRow label={t('hr.f.contract_end')} value={emp.contract_end_date ? formatDate(emp.contract_end_date, lang) : '—'} />

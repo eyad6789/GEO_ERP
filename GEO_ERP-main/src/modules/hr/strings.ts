@@ -307,6 +307,8 @@ registerStrings({
   'hr.f.contract_end': { ar: 'نهاية العقد', en: 'Contract End' },
   'hr.f.manager': { ar: 'المدير المباشر', en: 'Reports To' },
   'hr.f.status': { ar: 'الحالة', en: 'Status' },
+  'hr.f.education': { ar: 'المؤهل الدراسي', en: 'Education' },
+  'hr.f.graduation_year': { ar: 'سنة التخرج', en: 'Graduation Year' },
 
   // Financial fields
   'hr.f.basic_salary': { ar: 'الراتب الأساسي', en: 'Basic Salary' },

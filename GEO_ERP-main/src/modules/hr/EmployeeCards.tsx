@@ -274,6 +274,8 @@ export function EmployeeCardsSection({
           { name: 'employee_number', label: t('hr.emp.number'), required: true },
           { name: 'national_id', label: t('hr.f.national_id'), dir: 'ltr' },
           { name: 'job_title', label: t('hr.emp.job_title') },
+          { name: 'education', label: t('hr.f.education') },
+          { name: 'graduation_year', label: t('hr.f.graduation_year'), dir: 'ltr' },
           { name: 'phone_primary', label: t('hr.f.phone_primary'), dir: 'ltr' },
           { name: 'address', label: t('hr.f.address'), colSpan: 2 },
           { name: 'emergency_name', label: t('hr.f.emergency_name') },

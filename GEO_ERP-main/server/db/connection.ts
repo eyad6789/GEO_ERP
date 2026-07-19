@@ -43,6 +43,15 @@ function migrate(): void {
     db.exec(`ALTER TABLE employees ADD COLUMN archived_at TEXT`)
   }
 
+  // Employees gained an educational qualification (المؤهل الدراسي) + graduation
+  // year (سنة التخرج) captured on the profile. Free text, nullable.
+  if (empCols.length && !empCols.some((c) => c.name === 'education')) {
+    db.exec(`ALTER TABLE employees ADD COLUMN education TEXT`)
+  }
+  if (empCols.length && !empCols.some((c) => c.name === 'graduation_year')) {
+    db.exec(`ALTER TABLE employees ADD COLUMN graduation_year TEXT`)
+  }
+
   // Journal entries gained a manual exchange rate (IQD<->USD conversion).
   const jeCols = db.prepare(`PRAGMA table_info(journal_entries)`).all() as Array<{ name: string }>
   if (!jeCols.some((c) => c.name === 'exchange_rate')) {

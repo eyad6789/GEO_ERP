@@ -76,6 +76,8 @@ CREATE TABLE IF NOT EXISTS employees (
   bank_name TEXT,
   bank_account TEXT,
   iban TEXT,
+  education TEXT,
+  graduation_year TEXT,
   created_at TEXT
 );
 

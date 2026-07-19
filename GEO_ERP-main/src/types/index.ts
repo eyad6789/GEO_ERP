@@ -88,6 +88,10 @@ export interface Employee {
   bank_name: string
   bank_account: string
   iban: string
+  /** Educational qualification (free text, e.g. "بكالوريوس هندسة مدنية"). */
+  education?: string
+  /** Graduation year (free text, e.g. "2015"). */
+  graduation_year?: string
   created_at?: string
   /** Soft-delete: 1 = archived (hidden from the active roster, restorable). */
   archived?: number

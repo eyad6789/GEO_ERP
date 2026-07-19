@@ -28,6 +28,8 @@ export function EDIT_FIELDS(t: (k: string) => string): FormFieldConfig[] {
     { name: 'emergency_name', label: t('hr.f.emergency_name') },
     { name: 'emergency_phone', label: t('hr.f.emergency_phone'), dir: 'ltr' },
     { name: 'job_title', label: t('hr.f.job_title') },
+    { name: 'education', label: t('hr.f.education') },
+    { name: 'graduation_year', label: t('hr.f.graduation_year'), dir: 'ltr' },
     sel('employment_type', t('hr.f.employment_type'), ['FULL', 'PART', 'CONTRACT', 'TEMP'], 'hr.etype.'),
     sel('status', t('hr.f.status'), ['ACTIVE', 'ON_LEAVE', 'SUSPENDED', 'TERMINATED'], 'status.'),
     { name: 'hire_date', label: t('hr.f.hire_date'), type: 'date' },
