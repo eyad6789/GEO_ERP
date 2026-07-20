@@ -206,6 +206,16 @@ registerStrings({
   'hr.detail.tab.leaves': { ar: 'الإجازات', en: 'Leaves' },
   'hr.detail.tab.training': { ar: 'التدريب', en: 'Training' },
 
+  // Delete / archive an employee
+  'hr.delete.title': { ar: 'حذف الموظف', en: 'Remove employee' },
+  'hr.delete.archived': { ar: 'تم نقل الموظف إلى الأرشيف', en: 'Employee archived' },
+  'hr.delete.deleted': { ar: 'تم حذف الموظف نهائياً', en: 'Employee permanently deleted' },
+  'hr.delete.archive_option': { ar: 'نقل إلى الأرشيف', en: 'Move to archive' },
+  'hr.delete.archive_hint': { ar: 'إخفاء من القائمة مع الاحتفاظ بكل بياناته — يمكن استرجاعه لاحقاً.', en: 'Hide from the roster but keep all data — reversible.' },
+  'hr.delete.permanent_option': { ar: 'حذف نهائي', en: 'Delete permanently' },
+  'hr.delete.permanent_hint': { ar: 'حذف الموظف وكل سجلاته (الحضور، الإجازات، السلف، الرواتب، المستندات، التدريب) نهائياً.', en: 'Permanently delete the employee and all their records (attendance, leaves, advances, payroll, documents, training).' },
+  'hr.delete.permanent_confirm': { ar: 'أفهم أن هذا الإجراء لا يمكن التراجع عنه.', en: 'I understand this action cannot be undone.' },
+
   // Training & activity rating
   'hr.training.title': { ar: 'الدورة التدريبية', en: 'Training' },
   'hr.training.title_ph': { ar: 'اسم الدورة أو التدريب', en: 'Course or training name' },
@@ -275,6 +285,8 @@ registerStrings({
   'hr.f.gender': { ar: 'الجنس', en: 'Gender' },
   'hr.f.marital_status': { ar: 'الحالة الاجتماعية', en: 'Marital Status' },
   'hr.f.children_count': { ar: 'عدد الأطفال', en: 'Children' },
+  'hr.f.education': { ar: 'المؤهل الدراسي', en: 'Education' },
+  'hr.f.graduation_year': { ar: 'سنة التخرج', en: 'Graduation Year' },
 
   // Contact fields
   'hr.f.phone_primary': { ar: 'الهاتف الأساسي', en: 'Primary Phone' },

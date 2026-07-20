@@ -19,6 +19,7 @@ import {
 import { EmptyState } from '../../components/shared'
 import { Badge, Button, Dialog, Field, Input, SearchSelect, Textarea, useToast } from '../../components/ui'
 import { useLang, useT } from '../../context/LangContext'
+import { useCompany } from '../../context/CompanyContext'
 import { apiPost, apiPut } from '../../lib/api'
 import { formatDate, formatNumber, pickName } from '../../lib/format'
 import type { Employee, LeaveRequest } from '../../types'
@@ -68,6 +69,7 @@ export function LeavesBoard({
 }) {
   const t = useT()
   const { lang } = useLang()
+  const { currentUser } = useCompany()
   const toast = useToast()
 
   const [requestOpen, setRequestOpen] = useState(false)
@@ -200,7 +202,7 @@ export function LeavesBoard({
                     apiPut(`/leave_requests/${decision.leave.id}`, {
                       status: decision.status,
                       decision_note: decisionNote.trim() || null,
-                      approved_by: 'أحمد المدير',
+                      approved_by: currentUser.name,
                     }),
                   t(decision.status === 'APPROVED' ? 'hr.leave.approved_toast' : 'hr.leave.rejected_toast'),
                   () => setDecision(null),

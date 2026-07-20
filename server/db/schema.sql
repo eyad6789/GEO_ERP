@@ -71,11 +71,15 @@ CREATE TABLE IF NOT EXISTS employees (
   contract_end_date TEXT,
   status TEXT,               -- ACTIVE | ON_LEAVE | SUSPENDED | TERMINATED
   manager_id TEXT,
+  education TEXT,
+  graduation_year TEXT,
   basic_salary REAL DEFAULT 0,
   salary_currency TEXT,
   bank_name TEXT,
   bank_account TEXT,
   iban TEXT,
+  archived INTEGER DEFAULT 0,
+  archived_at TEXT,
   created_at TEXT
 );
 

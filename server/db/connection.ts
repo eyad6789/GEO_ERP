@@ -51,6 +51,15 @@ function migrate(): void {
   const jlCols = db.prepare(`PRAGMA table_info(journal_lines)`).all() as Array<{ name: string }>
   if (!jlCols.some((c) => c.name === 'vehicle_id')) db.exec(`ALTER TABLE journal_lines ADD COLUMN vehicle_id TEXT`)
 
+  // Employees gained an educational qualification (المؤهل الدراسي) + graduation
+  // year (سنة التخرج) on the profile. Free text, nullable.
+  const empCols = db.prepare(`PRAGMA table_info(employees)`).all() as Array<{ name: string }>
+  if (empCols.length && !empCols.some((c) => c.name === 'education')) db.exec(`ALTER TABLE employees ADD COLUMN education TEXT`)
+  if (empCols.length && !empCols.some((c) => c.name === 'graduation_year')) db.exec(`ALTER TABLE employees ADD COLUMN graduation_year TEXT`)
+  // Employee archive (soft-delete) support.
+  if (empCols.length && !empCols.some((c) => c.name === 'archived')) db.exec(`ALTER TABLE employees ADD COLUMN archived INTEGER DEFAULT 0`)
+  if (empCols.length && !empCols.some((c) => c.name === 'archived_at')) db.exec(`ALTER TABLE employees ADD COLUMN archived_at TEXT`)
+
   // الآليات (Fleet) asset group: normalize the Arabic-digit code ٥ → 5 so the
   // generated child codes (5001, 5002, …) sort/work properly.
   if (db.prepare(`SELECT 1 FROM accounts WHERE code = '٥'`).get()) {

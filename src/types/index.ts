@@ -68,6 +68,13 @@ export interface Employee {
   gender: 'MALE' | 'FEMALE'
   marital_status: string
   children_count: number
+  /** Educational qualification (free text, e.g. "بكالوريوس هندسة مدنية"). */
+  education?: string
+  /** Graduation year (free text, e.g. "2015"). */
+  graduation_year?: string
+  /** Soft-delete: archived employees are hidden from the active roster. */
+  archived?: number
+  archived_at?: string | null
   phone_primary: string
   phone_secondary: string
   email_work: string

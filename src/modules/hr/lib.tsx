@@ -15,10 +15,12 @@ export function indexBy<T>(rows: T[], key: (row: T) => string): Map<string, T> {
 /** Shared lookups for HR sections: employees, departments, companies. */
 export function useHrLookups(companyId: string | null) {
   const empParams = companyId ? { company_id: companyId } : undefined
-  const { data: employees, loading: empLoading, refetch: refetchEmployees } = useResource<Employee>(
+  const { data: rawEmployees, loading: empLoading, refetch: refetchEmployees } = useResource<Employee>(
     'employees',
     empParams,
   )
+  // Archived (soft-deleted) employees are hidden from the active roster.
+  const employees = useMemo(() => rawEmployees.filter((e) => !e.archived), [rawEmployees])
   const { data: departments, loading: deptLoading } = useResource<Department>('departments')
   const { data: companies, loading: coLoading } = useResource<Company>('companies')
 

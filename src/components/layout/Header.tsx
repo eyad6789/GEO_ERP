@@ -1,29 +1,26 @@
 import { useRef, useState } from 'react'
-import { Bell, Languages, ChevronDown, AlertTriangle, Clock, Sun, Moon, Camera } from 'lucide-react'
+import { Bell, Languages, ChevronDown, Clock, Sun, Moon, Camera, CheckCircle2, XCircle, GraduationCap, HelpCircle, Truck, CalendarClock } from 'lucide-react'
 import { CompanySelector } from './CompanySelector'
 import { useLang, useT } from '../../context/LangContext'
 import { useTheme } from '../../context/ThemeContext'
-import { useCompany, ROLES } from '../../context/CompanyContext'
+import { useCompany, ROLES, DEFAULT_USER } from '../../context/CompanyContext'
 import { useApi, useResource } from '../../hooks/useResource'
-import { apiGet, apiPost, apiDelete } from '../../lib/api'
+import { useNotifications, type NotifIcon } from '../../hooks/useNotifications'
+import { apiPost, apiDelete } from '../../lib/api'
 import { Avatar } from '../ui/Avatar'
 import { Popover } from '../ui/Popover'
 import { Badge } from '../ui/Badge'
 import { useToast } from '../ui/Toast'
 import { formatDate } from '../../lib/format'
-import { VehicleModule } from '../../modules/vehicles/VehicleModule'
-import { DEFAULT_USER } from '../../context/CompanyContext'
-import type { Vehicle, Employee, EmployeeDoc } from '../../types'
+import type { Employee, EmployeeDoc } from '../../types'
 
-interface LicenseAlert {
-  id: string
-  plate_number: string
-  name_ar: string
-  name_en: string
-  driver_name: string
-  expiry: string
-  days: number
-  kind: 'expired' | 'soon'
+const NOTIF_ICON: Record<NotifIcon, typeof Bell> = {
+  check: CheckCircle2, x: XCircle, bell: Bell, clock: Clock,
+  graduation: GraduationCap, question: HelpCircle, truck: Truck, calendar: CalendarClock,
+}
+const NOTIF_TONE: Record<string, string> = {
+  green: 'text-emerald-500', red: 'text-red-500', amber: 'text-amber-500',
+  blue: 'text-blue-500', primary: 'text-primary', gray: 'text-slate-400',
 }
 
 export function Header() {
@@ -89,20 +86,8 @@ export function Header() {
     }
   }
 
-  // Vehicle license / registration expiry notifications — for the FLEET MANAGER only.
-  const isFleetManager = role.key === 'fleet_manager'
-  const { data: licenseData } = useApi<{ count: number; expired: number; soon: number; alerts: LicenseAlert[] }>(
-    '/fleet/license-alerts',
-  )
-  const alerts = isFleetManager ? licenseData?.alerts ?? [] : []
-  const notifCount = isFleetManager ? licenseData?.count ?? 0 : 0
-
-  // Clicking an alert opens that vehicle's full module (license + car details).
-  const [openVehicle, setOpenVehicle] = useState<Vehicle | null>(null)
-  const openCar = async (id: string, close: () => void) => {
-    close()
-    try { setOpenVehicle(await apiGet<Vehicle>(`/vehicles/${id}`)) } catch { /* ignore */ }
-  }
+  // Per-user notifications (keyed off the current "acting as" user).
+  const { items: notifs, unseenCount, markAllSeen } = useNotifications()
 
   return (
     <>
@@ -135,68 +120,46 @@ export function Header() {
         <Popover
           width="w-[22rem]"
           align="end"
-          trigger={({ toggle: tg }) => (
+          trigger={({ toggle: tg, open }) => (
             <button
-              onClick={tg}
+              onClick={() => { if (!open) markAllSeen(); tg() }}
               title={t('header.notif.title')}
               className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 transition hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               <Bell className="h-4 w-4" />
-              {notifCount > 0 && (
+              {unseenCount > 0 && (
                 <span className="absolute -end-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-800">
-                  {notifCount > 99 ? '99+' : notifCount}
+                  {unseenCount > 99 ? '99+' : unseenCount}
                 </span>
               )}
             </button>
           )}
         >
-          {(close) => (
+          {() => (
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
                   <Bell className="h-4 w-4 text-primary" />
                   {t('header.notif.title')}
                 </span>
-                {notifCount > 0 && <Badge color="red">{notifCount}</Badge>}
+                {notifs.length > 0 && <Badge color="gray">{notifs.length}</Badge>}
               </div>
 
-              {alerts.length === 0 ? (
-                <p className="py-6 text-center text-sm text-slate-400 dark:text-slate-400">
-                  {isFleetManager ? t('header.notif.empty') : t('header.notif.fleet_only')}
-                </p>
+              {notifs.length === 0 ? (
+                <p className="py-6 text-center text-sm text-slate-400 dark:text-slate-400">{t('header.notif.empty')}</p>
               ) : (
                 <div className="-mx-1 max-h-[22rem] space-y-1 overflow-y-auto px-1">
-                  {alerts.map((a) => {
-                    const expired = a.kind === 'expired'
+                  {notifs.map((n) => {
+                    const Icon = NOTIF_ICON[n.icon]
                     return (
-                      <button
-                        key={a.id}
-                        onClick={() => openCar(a.id, close)}
-                        className="block w-full rounded-lg border border-slate-100 dark:border-slate-700/70 p-2.5 text-start transition hover:border-slate-200 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="truncate font-semibold text-slate-700 dark:text-slate-200 tabular-nums" dir="ltr">{a.plate_number}</span>
-                          <span
-                            className={
-                              'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ' +
-                              (expired ? 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-300' : 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300')
-                            }
-                          >
-                            {expired ? <AlertTriangle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                            {t(expired ? 'header.notif.expired' : 'header.notif.soon')}
-                          </span>
+                      <div key={n.id} className="flex items-start gap-2.5 rounded-lg border border-slate-100 dark:border-slate-700/70 p-2.5">
+                        <Icon className={'mt-0.5 h-4 w-4 shrink-0 ' + (NOTIF_TONE[n.tone] ?? 'text-slate-400')} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{n.title}</p>
+                          {n.subtitle && <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{n.subtitle}</p>}
+                          {n.date && <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-400">{formatDate(n.date, lang)}</p>}
                         </div>
-                        <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
-                          {lang === 'ar' ? a.name_ar : a.name_en || a.name_ar}
-                          {a.driver_name ? ` · ${a.driver_name}` : ''}
-                        </p>
-                        <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-400">
-                          {formatDate(a.expiry, lang)} ·{' '}
-                          {expired
-                            ? `${Math.abs(a.days)} ${t('header.notif.days_overdue')}`
-                            : `${a.days} ${t('header.notif.days_left')}`}
-                        </p>
-                      </button>
+                      </div>
                     )
                   })}
                 </div>
@@ -288,16 +251,6 @@ export function Header() {
         onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMyPhoto(f) }}
       />
     </header>
-
-    {/* Full vehicle module opened from a license notification. */}
-    {openVehicle && (
-      <VehicleModule
-        vehicle={openVehicle}
-        focus="full"
-        onClose={() => setOpenVehicle(null)}
-        onChanged={() => setOpenVehicle(null)}
-      />
-    )}
     </>
   )
 }

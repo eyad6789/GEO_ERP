@@ -1,5 +1,5 @@
 import { type ReactNode, useMemo, useRef, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowRight,
   CalendarCheck,
@@ -44,6 +44,7 @@ import { currentMonthKey, minutesToHours, workedMinutes } from './hours'
 import { isHourlyLeave } from './policy'
 import { computeMonthStats } from './useHrStats'
 import { EmployeeTraining } from './EmployeeTraining'
+import { DeleteEmployeeDialog } from './DeleteEmployeeDialog'
 
 type DetailTab = 'info' | 'documents' | 'attendance' | 'leaves' | 'training'
 
@@ -75,6 +76,8 @@ export default function EmployeeDetail() {
   const toast = useToast()
   const [tab, setTab] = useState<DetailTab>('info')
   const [editing, setEditing] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const navigate = useNavigate()
 
   // HR management actions (photo, edit) — same gate as the shell.
   const isHR = role.key === 'hr_manager'
@@ -262,6 +265,10 @@ export default function EmployeeDetail() {
               <Pencil className="h-4 w-4" />
               {t('common.edit')}
             </Button>
+            <Button variant="ghost" size="sm" className="text-danger hover:bg-red-50 dark:hover:bg-red-500/15" onClick={() => setDeleteOpen(true)}>
+              <Trash2 className="h-4 w-4" />
+              {t('common.delete')}
+            </Button>
             <NoteWidget recordType="employee" recordId={emp.id} moduleId="hr" />
           </div>
         </CardBody>
@@ -323,6 +330,8 @@ export default function EmployeeDetail() {
             <InfoRow label={t('hr.f.gender')} value={emp.gender ? t(`hr.gender.${emp.gender}`) : '—'} />
             <InfoRow label={t('hr.f.marital_status')} value={emp.marital_status} />
             <InfoRow label={t('hr.f.children_count')} value={emp.children_count} />
+            <InfoRow label={t('hr.f.education')} value={emp.education} />
+            <InfoRow label={t('hr.f.graduation_year')} value={<span dir="ltr">{emp.graduation_year}</span>} />
           </InfoCard>
 
           <InfoCard title={t('hr.info.contact')} icon={<IdCard className="h-5 w-5" />}>
@@ -383,6 +392,13 @@ export default function EmployeeDetail() {
           }}
         />
       )}
+
+      <DeleteEmployeeDialog
+        employee={emp}
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onDone={() => navigate('/hr')}
+      />
     </div>
   )
 }
@@ -429,6 +445,8 @@ function EDIT_FIELDS(t: (k: string) => string): FormFieldConfig[] {
     { name: 'emergency_name', label: t('hr.f.emergency_name') },
     { name: 'emergency_phone', label: t('hr.f.emergency_phone'), dir: 'ltr' },
     { name: 'job_title', label: t('hr.f.job_title') },
+    { name: 'education', label: t('hr.f.education') },
+    { name: 'graduation_year', label: t('hr.f.graduation_year'), dir: 'ltr' },
     sel('employment_type', t('hr.f.employment_type'), ['FULL', 'PART', 'CONTRACT', 'TEMP'], 'hr.etype.'),
     sel('status', t('hr.f.status'), ['ACTIVE', 'ON_LEAVE', 'SUSPENDED', 'TERMINATED'], 'status.'),
     { name: 'hire_date', label: t('hr.f.hire_date'), type: 'date' },
