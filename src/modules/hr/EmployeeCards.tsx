@@ -3,13 +3,14 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CalendarClock, Clock, Search, Trophy, UserPlus } from 'lucide-react'
-import { EmptyState, FormDialog, Card, CardBody, CardHeader } from '../../components/shared'
+import { EmptyState, FormDialog, Card, CardBody, CardHeader, type FormFieldConfig } from '../../components/shared'
 import { Avatar, Button, Input } from '../../components/ui'
 import { useLang, useT } from '../../context/LangContext'
-import { apiPost } from '../../lib/api'
+import { apiPost, apiPut } from '../../lib/api'
 import { formatNumber, pickName } from '../../lib/format'
 import type { Company, Employee } from '../../types'
 import { EmployeeCard } from './EmployeeCard'
+import { DeleteEmployeeDialog } from './DeleteEmployeeDialog'
 import { emptyStats, type MonthStats } from './useHrStats'
 
 export function EmployeeCardsSection({
@@ -39,6 +40,8 @@ export function EmployeeCardsSection({
   const { lang } = useLang()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const [editing, setEditing] = useState<Employee | null>(null)
+  const [deleting, setDeleting] = useState<Employee | null>(null)
   const [query, setQuery] = useState('')
   const zero = useMemo(() => emptyStats(month), [month])
 
@@ -122,6 +125,8 @@ export function EmployeeCardsSection({
               stats={statsOf(e)}
               photoDocId={photoMap.get(e.id)}
               onClick={() => navigate(`/hr/employees/${e.id}`)}
+              onEdit={canManage ? () => setEditing(e) : undefined}
+              onDelete={canManage ? () => setDeleting(e) : undefined}
             />
           ))}
         </div>
@@ -163,53 +168,77 @@ export function EmployeeCardsSection({
         title={t('hr.emp.new')}
         size="lg"
         initial={{ company_id: companyId ?? 'co-000', status: 'ACTIVE', employment_type: 'FULL' }}
-        fields={[
-          { name: 'full_name_ar', label: t('hr.emp.full_name_ar'), required: true, dir: 'rtl' },
-          { name: 'full_name_en', label: t('hr.emp.full_name_en'), dir: 'ltr' },
-          { name: 'employee_number', label: t('hr.emp.number'), required: true },
-          { name: 'national_id', label: t('hr.f.national_id'), dir: 'ltr' },
-          { name: 'job_title', label: t('hr.emp.job_title') },
-          { name: 'education', label: t('hr.f.education') },
-          { name: 'graduation_year', label: t('hr.f.graduation_year'), dir: 'ltr' },
-          { name: 'phone_primary', label: t('hr.f.phone_primary'), dir: 'ltr' },
-          { name: 'address', label: t('hr.f.address'), colSpan: 2 },
-          { name: 'emergency_name', label: t('hr.f.emergency_name') },
-          { name: 'emergency_phone', label: t('hr.f.emergency_phone'), dir: 'ltr' },
-          {
-            name: 'company_id',
-            label: t('common.company'),
-            type: 'select',
-            required: true,
-            options: companies.map((c) => ({ value: c.id, label: pickName(c, lang) })),
-          },
-          { name: 'basic_salary', label: t('hr.emp.basic_salary'), type: 'number' },
-          {
-            name: 'employment_type',
-            label: t('hr.emp.employment_type'),
-            type: 'select',
-            options: (['FULL', 'PART', 'CONTRACT', 'TEMP'] as const).map((v) => ({
-              value: v,
-              label: t(`hr.etype.${v}`),
-            })),
-          },
-          {
-            name: 'status',
-            label: t('common.status'),
-            type: 'select',
-            options: (['ACTIVE', 'ON_LEAVE', 'SUSPENDED', 'TERMINATED'] as const).map((v) => ({
-              value: v,
-              label: t(`status.${v}`),
-            })),
-          },
-          { name: 'hire_date', label: t('hr.emp.hire_date'), type: 'date' },
-        ]}
+        fields={empFormFields(t, companies, lang)}
         onSubmit={async (values) => {
           await apiPost('/employees', values)
           refetch()
         }}
       />
+
+      {editing && (
+        <FormDialog
+          open={!!editing}
+          onClose={() => setEditing(null)}
+          title={t('hr.edit.title')}
+          size="lg"
+          initial={editing as unknown as Record<string, unknown>}
+          fields={empFormFields(t, companies, lang)}
+          submitLabel={t('common.save')}
+          onSubmit={async (values) => {
+            await apiPut(`/employees/${editing.id}`, values)
+            refetch()
+          }}
+        />
+      )}
+
+      {deleting && (
+        <DeleteEmployeeDialog
+          employee={deleting}
+          open={!!deleting}
+          onClose={() => setDeleting(null)}
+          onDone={() => { setDeleting(null); refetch() }}
+        />
+      )}
     </div>
   )
+}
+
+/** Shared field config for the add + edit employee dialogs. */
+function empFormFields(t: (k: string) => string, companies: Company[], lang: 'ar' | 'en'): FormFieldConfig[] {
+  return [
+    { name: 'full_name_ar', label: t('hr.emp.full_name_ar'), required: true, dir: 'rtl' },
+    { name: 'full_name_en', label: t('hr.emp.full_name_en'), dir: 'ltr' },
+    { name: 'employee_number', label: t('hr.emp.number'), required: true },
+    { name: 'national_id', label: t('hr.f.national_id'), dir: 'ltr' },
+    { name: 'job_title', label: t('hr.emp.job_title') },
+    { name: 'education', label: t('hr.f.education') },
+    { name: 'graduation_year', label: t('hr.f.graduation_year'), dir: 'ltr' },
+    { name: 'phone_primary', label: t('hr.f.phone_primary'), dir: 'ltr' },
+    { name: 'address', label: t('hr.f.address'), colSpan: 2 },
+    { name: 'emergency_name', label: t('hr.f.emergency_name') },
+    { name: 'emergency_phone', label: t('hr.f.emergency_phone'), dir: 'ltr' },
+    {
+      name: 'company_id',
+      label: t('common.company'),
+      type: 'select',
+      required: true,
+      options: companies.map((c) => ({ value: c.id, label: pickName(c, lang) })),
+    },
+    { name: 'basic_salary', label: t('hr.emp.basic_salary'), type: 'number' },
+    {
+      name: 'employment_type',
+      label: t('hr.emp.employment_type'),
+      type: 'select',
+      options: (['FULL', 'PART', 'CONTRACT', 'TEMP'] as const).map((v) => ({ value: v, label: t(`hr.etype.${v}`) })),
+    },
+    {
+      name: 'status',
+      label: t('common.status'),
+      type: 'select',
+      options: (['ACTIVE', 'ON_LEAVE', 'SUSPENDED', 'TERMINATED'] as const).map((v) => ({ value: v, label: t(`status.${v}`) })),
+    },
+    { name: 'hire_date', label: t('hr.emp.hire_date'), type: 'date' },
+  ]
 }
 
 // ---------------------------------------------------------------------------

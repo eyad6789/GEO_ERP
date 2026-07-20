@@ -27,7 +27,10 @@ export default function HrShell() {
   const [tab, setTab] = useState<TabKey>('employees')
 
   // HR management actions (add employee, decide leaves, import attendance).
-  const isHR = role.key === 'hr_manager'
+  // HR management (add / edit / delete / leave decisions) — the HR manager and
+  // the top admin role (the app boots as super_admin, and the role switcher is
+  // cosmetic, so gating to hr_manager alone hides these from the default user).
+  const isHR = role.key === 'hr_manager' || role.key === 'super_admin'
 
   const { employees, departments, companies, empMap, deptMap, coMap, refetchEmployees, loading } =
     useHrLookups(companyId)

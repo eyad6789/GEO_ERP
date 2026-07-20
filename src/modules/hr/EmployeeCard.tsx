@@ -4,7 +4,8 @@
 // centered in Cairo, and the month compresses into one tinted hours meter plus
 // a hairline-divided حضور/غياب/إجازة footer strip. The gold accent has exactly
 // one job: a star chip for people who completed their required hours.
-import { Star } from 'lucide-react'
+import { type KeyboardEvent } from 'react'
+import { Pencil, Star, Trash2 } from 'lucide-react'
 import { Avatar } from '../../components/ui'
 import { StatusBadge } from '../../components/shared'
 import { useLang, useT } from '../../context/LangContext'
@@ -20,14 +21,21 @@ export function EmployeeCard({
   stats,
   photoDocId,
   onClick,
+  onEdit,
+  onDelete,
 }: {
   emp: Employee
   stats: MonthStats
   photoDocId?: string
   onClick: () => void
+  onEdit?: () => void
+  onDelete?: () => void
 }) {
   const t = useT()
   const { lang } = useLang()
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() }
+  }
   const name = pickName(emp, lang)
   // Hex-alpha suffixes below need a clean 6-digit hex — fall back to primary.
   const tint = HEX6.test(emp.photo_color || '') ? emp.photo_color : '#1a5f7a'
@@ -36,10 +44,39 @@ export function EmployeeCard({
   const starred = emp.status === 'ACTIVE' && stats.requiredHours > 0 && stats.workedHours >= stats.requiredHours
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-center shadow-card transition duration-200 hover:-translate-y-1 hover:border-primary/25 hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:translate-y-0 active:shadow-card"
+      onKeyDown={onKeyDown}
+      className="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-center shadow-card transition duration-200 hover:-translate-y-1 hover:border-primary/25 hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:translate-y-0 active:shadow-card"
     >
+      {/* Edit / delete quick actions — always visible on the card top */}
+      {(onEdit || onDelete) && (
+        <div className="absolute end-2 top-2 z-10 flex items-center gap-1">
+          {onEdit && (
+            <button
+              type="button"
+              title={t('common.edit')}
+              onClick={(e) => { e.stopPropagation(); onEdit() }}
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 dark:bg-slate-900/80 text-slate-500 dark:text-slate-300 ring-1 ring-inset ring-slate-200 dark:ring-slate-700 backdrop-blur-sm transition hover:text-primary"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              title={t('common.delete')}
+              onClick={(e) => { e.stopPropagation(); onDelete() }}
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 dark:bg-slate-900/80 text-slate-500 dark:text-slate-300 ring-1 ring-inset ring-slate-200 dark:ring-slate-700 backdrop-blur-sm transition hover:text-danger"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Identity wash — the personal tint at whisper opacity, fading downward */}
       <div
         aria-hidden
@@ -152,6 +189,6 @@ export function EmployeeCard({
           <p className="mt-1 text-[11px] font-medium text-slate-400 dark:text-slate-400">{t('hr.card.leave_left_short')}</p>
         </div>
       </div>
-    </button>
+    </div>
   )
 }
